@@ -1,0 +1,52 @@
+{
+  "rules": {
+    "artifacts": {
+      "$appId": {
+        "users": {
+          "$userId": {
+            ".read": "$userId === auth.uid",
+            ".write": "$userId === auth.uid",
+            
+            "properties": {
+              "$propertyId": {
+                ".validate": "newData.hasChildren(['title', 'description', 'propertyType', 'pricing', 'capacity', 'location'])"
+              }
+            },
+            
+            "messages": {
+              "$messageId": {
+                ".validate": "newData.hasChildren(['guestName', 'guestEmail', 'message', 'createdAt'])"
+              }
+            },
+            
+            "subscription": {
+              ".validate": "newData.hasChildren(['plan', 'status', 'startDate'])"
+            }
+          }
+        },
+        
+        "public": {
+          "data": {
+            "listings": {
+              ".read": true,
+              
+              "$listingId": {
+                ".write": "auth != null && data.child('ownerId').val() === auth.uid",
+                ".validate": "newData.hasChildren(['title', 'description', 'propertyType', 'pricing', 'capacity', 'location', 'isActive'])"
+              }
+            },
+            
+            "reviews": {
+              ".read": true,
+              
+              "$reviewId": {
+                ".write": "auth != null",
+                ".validate": "newData.hasChildren(['listingId', 'guestName', 'rating', 'comment', 'createdAt'])"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
