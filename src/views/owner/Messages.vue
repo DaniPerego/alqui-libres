@@ -77,22 +77,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { mockMessages } from '@/data/mockData'
 
-const messages = ref([
-  // Datos de ejemplo
-  {
-    id: '1',
-    propertyTitle: 'Casa con Parrilla',
-    guestName: 'María González',
-    guestEmail: 'maria@example.com',
-    message: '¡Hola! Me interesa tu propiedad para las fechas indicadas. ¿Está disponible?',
-    status: 'unread',
-    checkIn: '2025-01-15',
-    checkOut: '2025-01-20',
-    guests: 4,
-    createdAt: new Date('2025-01-10')
-  }
-])
+const messages = ref([...mockMessages])
 
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString('es-ES', {

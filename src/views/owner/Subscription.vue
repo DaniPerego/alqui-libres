@@ -109,6 +109,98 @@
         </span>
       </div>
     </div>
+
+    <!-- Calculadora de Ahorro Interactiva -->
+    <div class="calculator card">
+      <h3 class="section-title">🧮 Calculadora de Ahorro</h3>
+      <p class="calculator-description">
+        Descubre cuánto puedes ahorrar con AlquiLibres vs plataformas tradicionales
+      </p>
+
+      <div class="calculator-inputs">
+        <div class="input-group">
+          <label for="monthly-bookings" class="label">Reservas mensuales</label>
+          <input 
+            id="monthly-bookings"
+            v-model.number="calculator.monthlyBookings" 
+            type="number" 
+            min="1"
+            max="100"
+            class="input"
+            @input="calculateSavings"
+          />
+        </div>
+
+        <div class="input-group">
+          <label for="avg-price" class="label">Precio promedio por noche ($)</label>
+          <input 
+            id="avg-price"
+            v-model.number="calculator.avgPrice" 
+            type="number" 
+            min="10"
+            step="10"
+            class="input"
+            @input="calculateSavings"
+          />
+        </div>
+      </div>
+
+      <div class="calculator-results">
+        <div class="result-row">
+          <div class="result-platform airbnb">
+            <div class="platform-header">
+              <h4>Airbnb</h4>
+              <span class="commission-badge">15% comisión</span>
+            </div>
+            <div class="platform-cost">
+              <span class="cost-label">Costo mensual:</span>
+              <span class="cost-value danger">${{ calculatedCosts.airbnb }}</span>
+            </div>
+          </div>
+
+          <div class="result-platform booking">
+            <div class="platform-header">
+              <h4>Booking.com</h4>
+              <span class="commission-badge">18% comisión</span>
+            </div>
+            <div class="platform-cost">
+              <span class="cost-label">Costo mensual:</span>
+              <span class="cost-value danger">${{ calculatedCosts.booking }}</span>
+            </div>
+          </div>
+
+          <div class="result-platform alquilubres">
+            <div class="platform-header">
+              <h4>AlquiLibres</h4>
+              <span class="subscription-badge">Suscripción fija</span>
+            </div>
+            <div class="platform-cost">
+              <span class="cost-label">Costo mensual:</span>
+              <span class="cost-value success">${{ planPrice }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="annual-savings">
+          <div class="savings-card">
+            <span class="savings-label">Ahorro anual vs Airbnb:</span>
+            <span class="savings-amount success">${{ calculatedSavings.vsAirbnb }}</span>
+          </div>
+          <div class="savings-card">
+            <span class="savings-label">Ahorro anual vs Booking:</span>
+            <span class="savings-amount success">${{ calculatedSavings.vsBooking }}</span>
+          </div>
+        </div>
+
+        <div class="calculator-summary">
+          <p class="summary-text">
+            Con <strong>{{ calculator.monthlyBookings }} reservas</strong> de 
+            <strong>${{ calculator.avgPrice }}</strong> por noche, ahorras hasta 
+            <strong class="highlight">${{ calculatedSavings.vsBooking }}</strong> al año
+          </p>
+        </div>
+      </div>
+    </div>
     
     <!-- Planes Disponibles -->
     <div class="available-plans">
@@ -165,10 +257,45 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive, computed } from 'vue'
 
 const currentPlan = ref('Premium')
 const planPrice = ref(49)
+
+// Calculadora de ahorro
+const calculator = reactive({
+  monthlyBookings: 10,
+  avgPrice: 100
+})
+
+const calculatedCosts = computed(() => {
+  const revenue = calculator.monthlyBookings * calculator.avgPrice
+  return {
+    airbnb: Math.round(revenue * 0.15),
+    booking: Math.round(revenue * 0.18)
+  }
+})
+
+const calculatedSavings = computed(() => {
+  const annualAirbnb = (calculatedCosts.value.airbnb - planPrice.value) * 12
+  const annualBooking = (calculatedCosts.value.booking - planPrice.value) * 12
+  return {
+    vsAirbnb: Math.max(0, annualAirbnb),
+    vsBooking: Math.max(0, annualBooking)
+  }
+})
+
+const calculateSavings = () => {
+  // La reactividad se encarga automáticamente
+  console.log('💰 Calculando ahorros...', {
+    reservas: calculator.monthlyBookings,
+    precio: calculator.avgPrice,
+    costoAirbnb: calculatedCosts.value.airbnb,
+    costoBooking: calculatedCosts.value.booking,
+    ahorroAnualAirbnb: calculatedSavings.value.vsAirbnb,
+    ahorroAnualBooking: calculatedSavings.value.vsBooking
+  })
+}
 </script>
 
 <style scoped>
@@ -447,6 +574,196 @@ const planPrice = ref(49)
   font-weight: 700;
 }
 
+/* Calculadora de Ahorro */
+.calculator {
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+  background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
+  border: 2px solid var(--primary-color);
+}
+
+.calculator-description {
+  color: var(--gray-600);
+  margin-bottom: var(--spacing-xl);
+  text-align: center;
+}
+
+.calculator-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
+  padding: var(--spacing-lg);
+  background: white;
+  border-radius: var(--radius-lg);
+}
+
+.calculator-inputs .input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.calculator-inputs .label {
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.calculator-inputs .input {
+  font-size: 1.125rem;
+  padding: var(--spacing-md);
+  border: 2px solid var(--gray-300);
+  transition: border-color 0.2s;
+}
+
+.calculator-inputs .input:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.calculator-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.result-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.result-platform {
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  background: white;
+  border: 2px solid var(--gray-200);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.result-platform:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.result-platform.alquilubres {
+  border-color: var(--secondary-color);
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.platform-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.platform-header h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.commission-badge {
+  background: #fee;
+  color: var(--danger-color);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.subscription-badge {
+  background: #e6f7ee;
+  color: var(--secondary-color);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.platform-cost {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cost-label {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+}
+
+.cost-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.cost-value.danger {
+  color: var(--danger-color);
+}
+
+.cost-value.success {
+  color: var(--secondary-color);
+}
+
+.annual-savings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: white;
+  border-radius: var(--radius-lg);
+}
+
+.savings-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #e6f7ee 0%, #f0fdf4 100%);
+  border: 1px solid var(--secondary-color);
+}
+
+.savings-label {
+  font-size: 0.875rem;
+  color: var(--gray-700);
+  font-weight: 500;
+}
+
+.savings-amount {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.savings-amount.success {
+  color: var(--secondary-color);
+}
+
+.calculator-summary {
+  padding: var(--spacing-xl);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #1e40af 100%);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.summary-text {
+  color: white;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.summary-text strong {
+  font-weight: 700;
+}
+
+.summary-text .highlight {
+  font-size: 1.5rem;
+  color: #fbbf24;
+}
+
 @media (max-width: 768px) {
   .status-header {
     flex-direction: column;
@@ -459,6 +776,34 @@ const planPrice = ref(49)
   
   .status-actions .btn {
     width: 100%;
+  }
+
+  .calculator-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .result-row {
+    grid-template-columns: 1fr;
+  }
+
+  .annual-savings {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-value {
+    font-size: 1.5rem;
+  }
+
+  .savings-amount {
+    font-size: 1.5rem;
+  }
+
+  .summary-text {
+    font-size: 1rem;
+  }
+
+  .summary-text .highlight {
+    font-size: 1.25rem;
   }
 }
 </style>

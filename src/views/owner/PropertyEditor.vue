@@ -5,6 +5,55 @@
     </div>
     
     <form @submit.prevent="handleSubmit" class="editor-form">
+      <!-- Imágenes -->
+      <section class="form-section card">
+        <h2 class="section-title">Imágenes de la Propiedad</h2>
+        <p class="section-description">Añade fotos atractivas de tu propiedad. La primera será la imagen principal.</p>
+        
+        <div class="image-upload-area">
+          <div class="image-preview-grid">
+            <div 
+              v-for="(image, index) in formData.images" 
+              :key="index"
+              class="image-preview-item"
+            >
+              <img :src="image" :alt="`Imagen ${index + 1}`" />
+              <div class="image-overlay">
+                <button 
+                  type="button" 
+                  @click="removeImage(index)" 
+                  class="btn-remove-image"
+                  title="Eliminar imagen"
+                >
+                  ✕
+                </button>
+                <span v-if="index === 0" class="badge-main">Principal</span>
+              </div>
+            </div>
+            
+            <!-- Upload Button -->
+            <label class="upload-box">
+              <input 
+                type="file" 
+                accept="image/*" 
+                multiple
+                @change="handleImageUpload"
+                style="display: none;"
+              />
+              <div class="upload-content">
+                <span class="upload-icon">📷</span>
+                <span class="upload-text">Añadir Fotos</span>
+                <span class="upload-hint">JPG, PNG hasta 5MB</span>
+              </div>
+            </label>
+          </div>
+          
+          <div v-if="formData.images.length === 0" class="no-images">
+            <p>No has añadido imágenes aún. Añade al menos una foto de tu propiedad.</p>
+          </div>
+        </div>
+      </section>
+      
       <!-- Información Básica -->
       <section class="form-section card">
         <h2 class="section-title">Información Básica</h2>
@@ -310,30 +359,76 @@ const availableAmenities = [
   'Jardín', 'Balcón', 'Gimnasio', 'Mascotas Permitidas'
 ]
 
+const handleImageUpload = (event) => {
+  const files = event.target.files
+  if (!files || files.length === 0) return
+  
+  Array.from(files).forEach(file => {
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`La imagen ${file.name} supera los 5MB`)
+      return
+    }
+    
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      formData.value.images.push(e.target.result)
+      if (formData.value.images.length === 1) {
+        formData.value.mainImage = e.target.result
+      }
+    }
+    reader.readAsDataURL(file)
+  })
+  
+  event.target.value = ''
+}
+
+const removeImage = (index) => {
+  formData.value.images.splice(index, 1)
+  if (index === 0 && formData.value.images.length > 0) {
+    formData.value.mainImage = formData.value.images[0]
+  } else if (formData.value.images.length === 0) {
+    formData.value.mainImage = ''
+  }
+}
+
 const handleSubmit = async () => {
   loading.value = true
   
-  let result
-  if (isEditing.value) {
-    result = await propertyStore.updateProperty(
-      authStore.userId,
-      route.params.id,
-      formData.value
-    )
-  } else {
-    result = await propertyStore.createProperty(
-      authStore.userId,
-      formData.value
-    )
+  try {
+    let result
+    if (isEditing.value) {
+      result = await propertyStore.updateProperty(
+        authStore.userId,
+        route.params.id,
+        formData.value
+      )
+    } else {
+      result = await propertyStore.createProperty(
+        authStore.userId,
+        formData.value
+      )
+    }
+    
+    if (result.success) {
+      // Mostrar mensaje de éxito
+      const action = isEditing.value ? 'actualizada' : 'creada'
+      console.log(`✅ Propiedad ${action} exitosamente`)
+      
+      // Mensaje especial en modo demo
+      if (result.message) {
+        alert(`✅ ${result.message}\n\nSerás redirigido al listado de propiedades.`)
+      }
+      
+      // Redirigir al listado
+      router.push('/panel/propiedades')
+    } else {
+      alert('❌ Error: ' + result.error)
+    }
+  } catch (err) {
+    alert('❌ Error inesperado: ' + err.message)
+  } finally {
+    loading.value = false
   }
-  
-  if (result.success) {
-    router.push('/panel/propiedades')
-  } else {
-    alert('Error: ' + result.error)
-  }
-  
-  loading.value = false
 }
 
 onMounted(async () => {
@@ -402,6 +497,132 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: var(--spacing-md);
+}
+
+/* Image Upload Styles */
+.image-upload-area {
+  margin-top: var(--spacing-md);
+}
+
+.image-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.image-preview-item {
+  position: relative;
+  aspect-ratio: 4/3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 2px solid var(--gray-200);
+  background: var(--gray-100);
+}
+
+.image-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview-item:hover .image-overlay {
+  opacity: 1;
+}
+
+.btn-remove-image {
+  background: #ef4444;
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-remove-image:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.badge-main {
+  position: absolute;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  background: var(--primary-color);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.upload-box {
+  aspect-ratio: 4/3;
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-box:hover {
+  border-color: var(--primary-color);
+  background: #eff6ff;
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.upload-icon {
+  font-size: 2.5rem;
+}
+
+.upload-text {
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.upload-hint {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+}
+
+.no-images {
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--gray-600);
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--gray-300);
 }
 
 .amenity-checkbox {

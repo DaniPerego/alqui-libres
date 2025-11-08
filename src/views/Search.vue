@@ -5,8 +5,9 @@
       <div class="search-filters card">
         <div class="filters-row">
           <div class="filter-group">
-            <label class="label">Ciudad</label>
+            <label for="search-city" class="label">Ciudad</label>
             <input 
+              id="search-city"
               v-model="searchStore.filters.city" 
               @input="handleSearch"
               type="text" 
@@ -16,8 +17,9 @@
           </div>
           
           <div class="filter-group">
-            <label class="label">Check-in</label>
+            <label for="search-checkin" class="label">Check-in</label>
             <input 
+              id="search-checkin"
               v-model="searchStore.filters.checkIn" 
               @change="handleSearch"
               type="date" 
@@ -26,8 +28,9 @@
           </div>
           
           <div class="filter-group">
-            <label class="label">Check-out</label>
+            <label for="search-checkout" class="label">Check-out</label>
             <input 
+              id="search-checkout"
               v-model="searchStore.filters.checkOut" 
               @change="handleSearch"
               type="date" 
@@ -36,8 +39,9 @@
           </div>
           
           <div class="filter-group">
-            <label class="label">Huéspedes</label>
+            <label for="search-guests" class="label">Huéspedes</label>
             <select 
+              id="search-guests"
               v-model.number="searchStore.filters.guests" 
               @change="handleSearch"
               class="select"
@@ -60,8 +64,8 @@
           <div v-if="showAdvanced" class="advanced-content">
             <div class="filters-row">
               <div class="filter-group">
-                <label class="label">Tipo de Propiedad</label>
-                <select v-model="searchStore.filters.propertyType" @change="handleSearch" class="select">
+                <label for="property-type" class="label">Tipo de Propiedad</label>
+                <select id="property-type" v-model="searchStore.filters.propertyType" @change="handleSearch" class="select">
                   <option value="">Todos</option>
                   <option value="casa">Casa</option>
                   <option value="apartamento">Apartamento</option>
@@ -72,8 +76,9 @@
               
               <!-- FILTROS HIPER-LOCALES (Ventaja Competitiva) -->
               <div class="filter-group">
-                <label class="label">🔥 Tipo de Parrilla</label>
+                <label for="grill-type" class="label">🔥 Tipo de Parrilla</label>
                 <select 
+                  id="grill-type"
                   v-model="searchStore.filters.localFeatures.grillType" 
                   @change="handleSearch" 
                   class="select"
@@ -86,8 +91,9 @@
               </div>
               
               <div class="filter-group">
-                <label class="label">🚗 Tamaño de Cochera</label>
+                <label for="parking-size" class="label">🚗 Tamaño de Cochera</label>
                 <select 
+                  id="parking-size"
                   v-model="searchStore.filters.localFeatures.parkingSize" 
                   @change="handleSearch" 
                   class="select"
@@ -101,20 +107,24 @@
             </div>
             
             <div class="filter-group">
-              <label class="label">Precio por Noche</label>
+              <label for="price-range">Precio por Noche</label>
               <div class="price-range">
                 <input 
+                  id="price-min"
                   v-model.number="searchStore.filters.priceMin" 
                   @input="handleSearch"
                   type="number" 
                   class="input" 
                   placeholder="Mín"
+                  aria-label="Precio mínimo"
                 />
                 <span>-</span>
                 <input 
+                  id="price-max"
                   v-model.number="searchStore.filters.priceMax" 
                   @input="handleSearch"
-                  type="number" 
+                  type="number"
+                  aria-label="Precio máximo" 
                   class="input" 
                   placeholder="Máx"
                 />

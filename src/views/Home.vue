@@ -17,8 +17,9 @@
           <div class="search-form">
             <div class="search-inputs">
               <div class="search-input-group">
-                <label>Ciudad</label>
+                <label for="home-city">Ciudad</label>
                 <input 
+                  id="home-city"
                   v-model="searchFilters.city" 
                   type="text" 
                   placeholder="¿A dónde vas?"
@@ -27,8 +28,9 @@
               </div>
               
               <div class="search-input-group">
-                <label>Check-in</label>
+                <label for="home-checkin">Check-in</label>
                 <input 
+                  id="home-checkin"
                   v-model="searchFilters.checkIn" 
                   type="date" 
                   class="input"
@@ -36,8 +38,9 @@
               </div>
               
               <div class="search-input-group">
-                <label>Check-out</label>
+                <label for="home-checkout">Check-out</label>
                 <input 
+                  id="home-checkout"
                   v-model="searchFilters.checkOut" 
                   type="date" 
                   class="input"
@@ -45,8 +48,8 @@
               </div>
               
               <div class="search-input-group">
-                <label>Huéspedes</label>
-                <select v-model.number="searchFilters.guests" class="select">
+                <label for="home-guests">Huéspedes</label>
+                <select id="home-guests" v-model.number="searchFilters.guests" class="select">
                   <option :value="1">1 huésped</option>
                   <option :value="2">2 huéspedes</option>
                   <option :value="3">3 huéspedes</option>

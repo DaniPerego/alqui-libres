@@ -8,8 +8,9 @@
           
           <form @submit.prevent="handleSubmit" class="auth-form">
             <div class="form-group">
-              <label class="label">Nombre Completo</label>
+              <label for="displayName" class="label">Nombre Completo</label>
               <input 
+                id="displayName"
                 v-model="formData.displayName" 
                 type="text" 
                 class="input" 
@@ -19,8 +20,9 @@
             </div>
             
             <div class="form-group">
-              <label class="label">Correo Electrónico</label>
+              <label for="email" class="label">Correo Electrónico</label>
               <input 
+                id="email"
                 v-model="formData.email" 
                 type="email" 
                 class="input" 
@@ -30,8 +32,9 @@
             </div>
             
             <div class="form-group">
-              <label class="label">Contraseña</label>
+              <label for="password" class="label">Contraseña</label>
               <input 
+                id="password"
                 v-model="formData.password" 
                 type="password" 
                 class="input" 
@@ -42,8 +45,9 @@
             </div>
             
             <div class="form-group">
-              <label class="label">Confirmar Contraseña</label>
+              <label for="confirmPassword" class="label">Confirmar Contraseña</label>
               <input 
+                id="confirmPassword"
                 v-model="formData.confirmPassword" 
                 type="password" 
                 class="input" 

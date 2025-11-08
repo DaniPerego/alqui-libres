@@ -74,6 +74,12 @@ body {
   padding: 0 var(--spacing-lg);
 }
 
+@media (max-width: 640px) {
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
