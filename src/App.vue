@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <DemoBanner />
     <AppHeader />
     <main class="main-content">
       <router-view />
@@ -11,6 +12,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import DemoBanner from '@/components/layout/DemoBanner.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 

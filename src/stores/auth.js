@@ -7,6 +7,7 @@ import {
   updateProfile
 } from 'firebase/auth'
 import { auth } from '@/config/firebase'
+import { mockUser } from '@/data/mockData'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -25,6 +26,16 @@ export const useAuthStore = defineStore('auth', {
   
   actions: {
     async checkAuth() {
+      // Si no hay Firebase configurado, verificar si hay usuario mock en localStorage
+      if (!auth) {
+        const mockUserData = localStorage.getItem('mockUser')
+        if (mockUserData) {
+          this.user = JSON.parse(mockUserData)
+        }
+        this.initialized = true
+        return this.user
+      }
+
       return new Promise((resolve) => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           this.user = user
@@ -40,11 +51,25 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
       
       try {
+        // Modo demo - permite login sin Firebase configurado
+        if (!auth) {
+          if (email === 'demo@alquilubres.com' && password === 'demo123') {
+            console.log('🧪 Login exitoso en modo demo (mock data)')
+            await new Promise(resolve => setTimeout(resolve, 500))
+            this.user = mockUser
+            this.initialized = true
+            localStorage.setItem('mockUser', JSON.stringify(mockUser))
+            return { success: true }
+          } else {
+            throw new Error('Modo Demo: Use las credenciales demo@alquilubres.com / demo123')
+          }
+        }
+
         const userCredential = await signInWithEmailAndPassword(auth, email, password)
         this.user = userCredential.user
         return { success: true }
       } catch (error) {
-        this.error = this.getErrorMessage(error.code)
+        this.error = this.getErrorMessage(error.code || error.message)
         return { success: false, error: this.error }
       } finally {
         this.loading = false
@@ -76,6 +101,13 @@ export const useAuthStore = defineStore('auth', {
     async logout() {
       this.loading = true
       try {
+        // Modo demo
+        if (!auth) {
+          localStorage.removeItem('mockUser')
+          this.user = null
+          return { success: true }
+        }
+        
         await signOut(auth)
         this.user = null
         return { success: true }
