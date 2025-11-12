@@ -1,809 +1,228 @@
-<template>
-  <div class="subscription-page">
-    <div class="page-header">
+﻿<template>
+  <div class="subscription-view">
+    <div class="container">
       <h1 class="page-title">Mi Suscripción</h1>
-    </div>
-    
-    <!-- Estado Actual de la Suscripción -->
-    <div class="subscription-status card">
-      <div class="status-header">
-        <div>
-          <h2 class="status-title">Plan {{ currentPlan }}</h2>
-          <p class="status-subtitle">Estado: <span class="status-badge active">Activo</span></p>
-        </div>
-        <div class="status-price">
-          <span class="price-amount">${{ planPrice }}</span>
-          <span class="price-period">/mes</span>
-        </div>
+
+      <div v-if="paymentStore.loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando información...</p>
       </div>
-      
-      <div class="status-details">
-        <div class="detail-item">
-          <span class="detail-label">Fecha de inicio:</span>
-          <span class="detail-value">1 de Noviembre, 2025</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Próxima renovación:</span>
-          <span class="detail-value">1 de Diciembre, 2025</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Método de pago:</span>
-          <span class="detail-value">Tarjeta •••• 4242</span>
-        </div>
+
+      <div v-else-if="!paymentStore.hasActiveSubscription" class="empty-state card">
+        <div class="empty-icon">📋</div>
+        <h2>No tienes una suscripción activa</h2>
+        <p>Elige un plan para comenzar a publicar propiedades</p>
+        <button @click="showPlansModal = true" class="btn btn-primary">
+          Ver Planes Disponibles
+        </button>
       </div>
-      
-      <div class="status-actions">
-        <button class="btn btn-secondary">Cambiar Método de Pago</button>
-        <button class="btn btn-danger">Cancelar Suscripción</button>
-      </div>
-    </div>
-    
-    <!-- Beneficios del Plan Actual -->
-    <div class="plan-benefits card">
-      <h3 class="section-title">Beneficios de tu Plan</h3>
-      <ul class="benefits-list">
-        <li class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <span>Publicaciones ilimitadas de propiedades</span>
-        </li>
-        <li class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <span>0% de comisión en todas las reservas</span>
-        </li>
-        <li class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <span>Sincronización de calendario (iCal)</span>
-        </li>
-        <li class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <span>Sistema de mensajería con huéspedes</span>
-        </li>
-        <li class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <span>Soporte prioritario</span>
-        </li>
-      </ul>
-    </div>
-    
-    <!-- Comparación con Plataformas Tradicionales -->
-    <div class="comparison card">
-      <h3 class="section-title">💰 Ahorro vs Plataformas Tradicionales</h3>
-      <p class="comparison-description">
-        Comparativa de costos basada en 10 reservas de $100/noche (promedio)
-      </p>
-      
-      <div class="comparison-grid">
-        <div class="comparison-card competitor">
-          <h4>Airbnb / Booking</h4>
-          <div class="comparison-stats">
-            <div class="stat">
-              <span class="stat-label">Comisión promedio:</span>
-              <span class="stat-value danger">15-25%</span>
+
+      <div v-else class="subscription-content">
+        <div class="current-plan card">
+          <div class="plan-header">
+            <div>
+              <h2 class="plan-name">{{ paymentStore.currentPlan?.name }}</h2>
+              <div class="plan-price">
+                <span class="price-amount">{{ formatPrice(paymentStore.currentPlan?.price) }}</span>
+                <span class="price-currency">ARS/mes</span>
+              </div>
             </div>
-            <div class="stat">
-              <span class="stat-label">Costo en 10 reservas:</span>
-              <span class="stat-value danger">$150 - $250</span>
+            <div class="status-badges">
+              <span class="status-badge" :class="subscriptionStatusClass">
+                {{ subscriptionStatusText }}
+              </span>
             </div>
           </div>
-        </div>
-        
-        <div class="comparison-card us">
-          <h4>AlquiLibres</h4>
-          <div class="comparison-stats">
-            <div class="stat">
-              <span class="stat-label">Suscripción mensual:</span>
-              <span class="stat-value success">${{ planPrice }}</span>
+
+          <div class="plan-details">
+            <div class="detail-item">
+              <span class="detail-label">📅 Fecha de inicio:</span>
+              <span class="detail-value">{{ formatDate(paymentStore.currentSubscription?.startedAt) }}</span>
             </div>
-            <div class="stat">
-              <span class="stat-label">Costo en 10 reservas:</span>
-              <span class="stat-value success">${{ planPrice }}</span>
+            <div class="detail-item">
+              <span class="detail-label">🔄 Próxima renovación:</span>
+              <span class="detail-value">{{ formatDate(paymentStore.currentSubscription?.expiresAt) }}</span>
             </div>
           </div>
+
+          <div class="plan-features">
+            <h3>Beneficios:</h3>
+            <ul>
+              <li v-for="(feature, index) in paymentStore.currentPlan?.features" :key="index">
+                {{ feature }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="plan-actions">
+            <button @click="showPlansModal = true" class="btn btn-primary">
+              Cambiar Plan
+            </button>
+            <button v-if="paymentStore.currentSubscription?.status === 'active'" @click="handleCancelSubscription" class="btn btn-outline">
+              Cancelar Suscripción
+            </button>
+          </div>
         </div>
-      </div>
-      
-      <div class="savings-highlight">
-        <span class="savings-icon">💵</span>
-        <span class="savings-text">
-          Ahorras entre ${{ 150 - planPrice }} y ${{ 250 - planPrice }} con solo 10 reservas al mes
-        </span>
       </div>
     </div>
 
-    <!-- Calculadora de Ahorro Interactiva -->
-    <div class="calculator card">
-      <h3 class="section-title">🧮 Calculadora de Ahorro</h3>
-      <p class="calculator-description">
-        Descubre cuánto puedes ahorrar con AlquiLibres vs plataformas tradicionales
-      </p>
-
-      <div class="calculator-inputs">
-        <div class="input-group">
-          <label for="monthly-bookings" class="label">Reservas mensuales</label>
-          <input 
-            id="monthly-bookings"
-            v-model.number="calculator.monthlyBookings" 
-            type="number" 
-            min="1"
-            max="100"
-            class="input"
-            @input="calculateSavings"
-          />
-        </div>
-
-        <div class="input-group">
-          <label for="avg-price" class="label">Precio promedio por noche ($)</label>
-          <input 
-            id="avg-price"
-            v-model.number="calculator.avgPrice" 
-            type="number" 
-            min="10"
-            step="10"
-            class="input"
-            @input="calculateSavings"
-          />
+    <Teleport to="body">
+      <div v-if="showPlansModal" class="modal-overlay" @click="showPlansModal = false">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h2>Elige tu Plan</h2>
+            <button @click="showPlansModal = false" class="btn-close">✕</button>
+          </div>
+          <div class="plans-grid">
+            <div 
+              v-for="plan in activePlans" 
+              :key="plan.id" 
+              class="plan-card"
+              :class="{ 
+                'current': paymentStore.currentSubscription?.planId === plan.id,
+                'recommended': plan.recommended 
+              }"
+            >
+              <div v-if="plan.recommended" class="badge-recommended">Recomendado</div>
+              <div v-if="paymentStore.currentSubscription?.planId === plan.id" class="badge-current">
+                Plan Actual
+              </div>
+              
+              <h3>{{ plan.name }}</h3>
+              <div class="plan-price">
+                <span class="price-amount">{{ formatPrice(plan.price) }}</span>
+                <span class="price-period">ARS/mes</span>
+              </div>
+              
+              <ul class="plan-features-list">
+                <li v-for="(feature, index) in plan.features" :key="index">
+                  ✓ {{ feature }}
+                </li>
+              </ul>
+              
+              <button 
+                @click="handleSelectPlan(plan.id)" 
+                class="btn btn-primary"
+                :disabled="paymentStore.currentSubscription?.planId === plan.id"
+              >
+                {{ paymentStore.currentSubscription?.planId === plan.id ? 'Plan Actual' : 'Seleccionar' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div class="calculator-results">
-        <div class="result-row">
-          <div class="result-platform airbnb">
-            <div class="platform-header">
-              <h4>Airbnb</h4>
-              <span class="commission-badge">15% comisión</span>
-            </div>
-            <div class="platform-cost">
-              <span class="cost-label">Costo mensual:</span>
-              <span class="cost-value danger">${{ calculatedCosts.airbnb }}</span>
-            </div>
-          </div>
-
-          <div class="result-platform booking">
-            <div class="platform-header">
-              <h4>Booking.com</h4>
-              <span class="commission-badge">18% comisión</span>
-            </div>
-            <div class="platform-cost">
-              <span class="cost-label">Costo mensual:</span>
-              <span class="cost-value danger">${{ calculatedCosts.booking }}</span>
-            </div>
-          </div>
-
-          <div class="result-platform alquilubres">
-            <div class="platform-header">
-              <h4>AlquiLibres</h4>
-              <span class="subscription-badge">Suscripción fija</span>
-            </div>
-            <div class="platform-cost">
-              <span class="cost-label">Costo mensual:</span>
-              <span class="cost-value success">${{ planPrice }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="annual-savings">
-          <div class="savings-card">
-            <span class="savings-label">Ahorro anual vs Airbnb:</span>
-            <span class="savings-amount success">${{ calculatedSavings.vsAirbnb }}</span>
-          </div>
-          <div class="savings-card">
-            <span class="savings-label">Ahorro anual vs Booking:</span>
-            <span class="savings-amount success">${{ calculatedSavings.vsBooking }}</span>
-          </div>
-        </div>
-
-        <div class="calculator-summary">
-          <p class="summary-text">
-            Con <strong>{{ calculator.monthlyBookings }} reservas</strong> de 
-            <strong>${{ calculator.avgPrice }}</strong> por noche, ahorras hasta 
-            <strong class="highlight">${{ calculatedSavings.vsBooking }}</strong> al año
-          </p>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Planes Disponibles -->
-    <div class="available-plans">
-      <h3 class="section-title">Otros Planes Disponibles</h3>
-      
-      <div class="plans-grid">
-        <div class="plan-card card">
-          <h4 class="plan-name">Básico</h4>
-          <div class="plan-price">
-            <span class="price-amount">$29</span>
-            <span class="price-period">/mes</span>
-          </div>
-          <ul class="plan-features">
-            <li>Hasta 3 propiedades</li>
-            <li>0% comisión</li>
-            <li>Soporte por email</li>
-          </ul>
-          <button class="btn btn-secondary">Cambiar a este Plan</button>
-        </div>
-        
-        <div class="plan-card card featured">
-          <div class="plan-badge">Más Popular</div>
-          <h4 class="plan-name">Premium</h4>
-          <div class="plan-price">
-            <span class="price-amount">$49</span>
-            <span class="price-period">/mes</span>
-          </div>
-          <ul class="plan-features">
-            <li>Propiedades ilimitadas</li>
-            <li>0% comisión</li>
-            <li>Soporte prioritario</li>
-            <li>Calendario sincronizado</li>
-          </ul>
-          <button class="btn btn-primary">Plan Actual</button>
-        </div>
-        
-        <div class="plan-card card">
-          <h4 class="plan-name">Enterprise</h4>
-          <div class="plan-price">
-            <span class="price-amount">$99</span>
-            <span class="price-period">/mes</span>
-          </div>
-          <ul class="plan-features">
-            <li>Todo de Premium +</li>
-            <li>Cuenta manager dedicado</li>
-            <li>Herramientas avanzadas</li>
-            <li>API access</li>
-          </ul>
-          <button class="btn btn-secondary">Cambiar a este Plan</button>
-        </div>
-      </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { usePaymentStore } from '@/stores/payment'
+import { useAdminStore } from '@/stores/admin'
 
-const currentPlan = ref('Premium')
-const planPrice = ref(49)
+const router = useRouter()
+const paymentStore = usePaymentStore()
+const adminStore = useAdminStore()
+const showPlansModal = ref(false)
 
-// Calculadora de ahorro
-const calculator = reactive({
-  monthlyBookings: 10,
-  avgPrice: 100
-})
+const activePlans = computed(() => adminStore.subscriptionPlans.filter(p => p.isActive))
 
-const calculatedCosts = computed(() => {
-  const revenue = calculator.monthlyBookings * calculator.avgPrice
+const subscriptionStatusClass = computed(() => {
+  const status = paymentStore.currentSubscription?.status
   return {
-    airbnb: Math.round(revenue * 0.15),
-    booking: Math.round(revenue * 0.18)
+    'active': status === 'active',
+    'cancelled': status === 'cancelled',
+    'expired': status === 'expired'
   }
 })
 
-const calculatedSavings = computed(() => {
-  const annualAirbnb = (calculatedCosts.value.airbnb - planPrice.value) * 12
-  const annualBooking = (calculatedCosts.value.booking - planPrice.value) * 12
-  return {
-    vsAirbnb: Math.max(0, annualAirbnb),
-    vsBooking: Math.max(0, annualBooking)
-  }
+const subscriptionStatusText = computed(() => {
+  const status = paymentStore.currentSubscription?.status
+  const statusMap = { 'active': 'Activa', 'cancelled': 'Cancelada', 'expired': 'Expirada' }
+  return statusMap[status] || status
 })
 
-const calculateSavings = () => {
-  // La reactividad se encarga automáticamente
-  console.log('💰 Calculando ahorros...', {
-    reservas: calculator.monthlyBookings,
-    precio: calculator.avgPrice,
-    costoAirbnb: calculatedCosts.value.airbnb,
-    costoBooking: calculatedCosts.value.booking,
-    ahorroAnualAirbnb: calculatedSavings.value.vsAirbnb,
-    ahorroAnualBooking: calculatedSavings.value.vsBooking
-  })
+const formatPrice = (price) => price?.toLocaleString('es-AR') || '0'
+
+const formatDate = (dateString) => {
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
 }
+
+const handleSelectPlan = async (planId) => {
+  try {
+    // Si ya tiene suscripción, cambiar directamente
+    if (paymentStore.currentSubscription && paymentStore.currentSubscription.status === 'active') {
+      if (confirm('¿Confirmas el cambio de plan? Se aplicará de inmediato.')) {
+        await paymentStore.changePlan(planId)
+        alert('Plan cambiado exitosamente')
+        showPlansModal.value = false
+      }
+    } else {
+      // Si no tiene suscripción, ir al checkout
+      showPlansModal.value = false
+      router.push({ name: 'checkout', query: { plan: planId } })
+    }
+  } catch (error) {
+    alert('Error: ' + error.message)
+  }
+}
+
+const handleCancelSubscription = async () => {
+  if (!confirm('¿Cancelar suscripción?')) return
+  try {
+    await paymentStore.cancelSubscription()
+    alert('Suscripción cancelada')
+  } catch (error) {
+    alert('Error: ' + error.message)
+  }
+}
+
+onMounted(() => paymentStore.fetchCurrentSubscription())
 </script>
 
 <style scoped>
-.page-header {
-  margin-bottom: var(--spacing-xl);
-}
-
-.page-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--gray-900);
-}
-
-.subscription-status {
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-xl);
-}
-
-.status-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--spacing-xl);
-  padding-bottom: var(--spacing-lg);
-  border-bottom: 1px solid var(--gray-200);
-}
-
-.status-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: var(--spacing-sm);
-  color: var(--gray-900);
-}
-
-.status-subtitle {
-  color: var(--gray-600);
-}
-
-.status-badge {
-  display: inline-block;
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.status-badge.active {
-  background-color: var(--secondary-color);
-  color: white;
-}
-
-.status-price {
-  text-align: right;
-}
-
-.price-amount {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-.price-period {
-  font-size: 1rem;
-  color: var(--gray-600);
-}
-
-.status-details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-}
-
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-}
-
-.detail-label {
-  color: var(--gray-600);
-}
-
-.detail-value {
-  font-weight: 600;
-  color: var(--gray-900);
-}
-
-.status-actions {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.plan-benefits {
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-xl);
-}
-
-.section-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: var(--spacing-lg);
-  color: var(--gray-900);
-}
-
-.benefits-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.benefit-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  font-size: 1rem;
-}
-
-.benefit-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background-color: var(--secondary-color);
-  color: white;
-  border-radius: 50%;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.comparison {
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-xl);
-  background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
-}
-
-.comparison-description {
-  color: var(--gray-600);
-  margin-bottom: var(--spacing-lg);
-}
-
-.comparison-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-}
-
-.comparison-card {
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-md);
-  background: white;
-}
-
-.comparison-card h4 {
-  font-size: 1.125rem;
-  margin-bottom: var(--spacing-md);
-}
-
-.comparison-stats {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: var(--gray-600);
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.stat-value.danger {
-  color: var(--danger-color);
-}
-
-.stat-value.success {
-  color: var(--secondary-color);
-}
-
-.savings-highlight {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  background-color: #d1fae5;
-  border-radius: var(--radius-md);
-  border: 2px solid var(--secondary-color);
-}
-
-.savings-icon {
-  font-size: 2rem;
-}
-
-.savings-text {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--gray-900);
-}
-
-.available-plans {
-  margin-top: var(--spacing-2xl);
-}
-
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-xl);
-}
-
-.plan-card {
-  padding: var(--spacing-xl);
-  position: relative;
-  transition: transform var(--transition-base);
-}
-
-.plan-card:hover {
-  transform: translateY(-5px);
-}
-
-.plan-card.featured {
-  border: 2px solid var(--primary-color);
-}
-
-.plan-badge {
-  position: absolute;
-  top: -12px;
-  right: var(--spacing-lg);
-  background-color: var(--primary-color);
-  color: white;
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.plan-name {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: var(--spacing-md);
-  color: var(--gray-900);
-}
-
-.plan-price {
-  margin-bottom: var(--spacing-lg);
-}
-
-.plan-features {
-  list-style: none;
-  margin-bottom: var(--spacing-xl);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.plan-features li {
-  padding-left: var(--spacing-lg);
-  position: relative;
-}
-
-.plan-features li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: var(--secondary-color);
-  font-weight: 700;
-}
-
-/* Calculadora de Ahorro */
-.calculator {
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-xl);
-  background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
-  border: 2px solid var(--primary-color);
-}
-
-.calculator-description {
-  color: var(--gray-600);
-  margin-bottom: var(--spacing-xl);
-  text-align: center;
-}
-
-.calculator-inputs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-2xl);
-  padding: var(--spacing-lg);
-  background: white;
-  border-radius: var(--radius-lg);
-}
-
-.calculator-inputs .input-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.calculator-inputs .label {
-  font-weight: 600;
-  color: var(--gray-700);
-}
-
-.calculator-inputs .input {
-  font-size: 1.125rem;
-  padding: var(--spacing-md);
-  border: 2px solid var(--gray-300);
-  transition: border-color 0.2s;
-}
-
-.calculator-inputs .input:focus {
-  border-color: var(--primary-color);
-  outline: none;
-}
-
-.calculator-results {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xl);
-}
-
-.result-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-lg);
-}
-
-.result-platform {
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-lg);
-  background: white;
-  border: 2px solid var(--gray-200);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.result-platform:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.result-platform.alquilubres {
-  border-color: var(--secondary-color);
-  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
-}
-
-.platform-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-sm);
-  border-bottom: 1px solid var(--gray-200);
-}
-
-.platform-header h4 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--gray-900);
-}
-
-.commission-badge {
-  background: #fee;
-  color: var(--danger-color);
-  padding: 4px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.subscription-badge {
-  background: #e6f7ee;
-  color: var(--secondary-color);
-  padding: 4px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.platform-cost {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.cost-label {
-  font-size: 0.875rem;
-  color: var(--gray-600);
-}
-
-.cost-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-}
-
-.cost-value.danger {
-  color: var(--danger-color);
-}
-
-.cost-value.success {
-  color: var(--secondary-color);
-}
-
-.annual-savings {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg);
-  background: white;
-  border-radius: var(--radius-lg);
-}
-
-.savings-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, #e6f7ee 0%, #f0fdf4 100%);
-  border: 1px solid var(--secondary-color);
-}
-
-.savings-label {
-  font-size: 0.875rem;
-  color: var(--gray-700);
-  font-weight: 500;
-}
-
-.savings-amount {
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-.savings-amount.success {
-  color: var(--secondary-color);
-}
-
-.calculator-summary {
-  padding: var(--spacing-xl);
-  background: linear-gradient(135deg, var(--primary-color) 0%, #1e40af 100%);
-  border-radius: var(--radius-lg);
-  text-align: center;
-}
-
-.summary-text {
-  color: white;
-  font-size: 1.125rem;
-  line-height: 1.6;
-}
-
-.summary-text strong {
-  font-weight: 700;
-}
-
-.summary-text .highlight {
-  font-size: 1.5rem;
-  color: #fbbf24;
-}
-
-@media (max-width: 768px) {
-  .status-header {
-    flex-direction: column;
-    gap: var(--spacing-lg);
-  }
-  
-  .status-actions {
-    flex-direction: column;
-  }
-  
-  .status-actions .btn {
-    width: 100%;
-  }
-
-  .calculator-inputs {
-    grid-template-columns: 1fr;
-  }
-
-  .result-row {
-    grid-template-columns: 1fr;
-  }
-
-  .annual-savings {
-    grid-template-columns: 1fr;
-  }
-
-  .cost-value {
-    font-size: 1.5rem;
-  }
-
-  .savings-amount {
-    font-size: 1.5rem;
-  }
-
-  .summary-text {
-    font-size: 1rem;
-  }
-
-  .summary-text .highlight {
-    font-size: 1.25rem;
-  }
-}
+.subscription-view { min-height: calc(100vh - 200px); padding: 2rem 0; }
+.page-title { font-size: 2rem; margin-bottom: 2rem; color: #1a202c; }
+.loading-state { text-align: center; padding: 4rem 2rem; }
+.spinner { width: 48px; height: 48px; border: 4px solid #e2e8f0; border-top-color: #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-state { text-align: center; padding: 4rem 2rem; }
+.empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+.current-plan { padding: 2rem; }
+.plan-header { display: flex; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid #e2e8f0; }
+.plan-name { font-size: 1.75rem; margin-bottom: 0.5rem; }
+.plan-price { display: flex; align-items: baseline; gap: 0.5rem; }
+.price-amount { font-size: 2rem; font-weight: 700; color: #4f46e5; }
+.price-currency { color: #64748b; }
+.status-badge { padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; }
+.status-badge.active { background: #d1fae5; color: #065f46; }
+.status-badge.cancelled { background: #fee2e2; color: #991b1b; }
+.plan-details { display: grid; gap: 1rem; margin-bottom: 2rem; }
+.detail-item { display: flex; justify-content: space-between; padding: 0.75rem; background: #f8fafc; border-radius: 0.5rem; }
+.detail-label { font-weight: 500; color: #475569; }
+.plan-features { margin-bottom: 2rem; }
+.plan-features ul { list-style: disc; padding-left: 1.5rem; }
+.plan-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 1000; }
+.modal-content { background: white; border-radius: 0.75rem; max-width: 1200px; width: 100%; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; padding: 1.5rem 2rem; border-bottom: 1px solid #e2e8f0; }
+.btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+.plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; padding: 2rem; }
+.plan-card { position: relative; padding: 2rem; border: 2px solid #e2e8f0; border-radius: 0.75rem; transition: all 0.3s; }
+.plan-card:hover { border-color: #4f46e5; transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+.plan-card.current { border-color: #10b981; background: #f0fdf4; }
+.plan-card.recommended { border-color: #4f46e5; }
+.badge-recommended, .badge-current { position: absolute; top: -12px; right: 1rem; padding: 0.375rem 1rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+.badge-recommended { background: #4f46e5; color: white; }
+.badge-current { background: #10b981; color: white; }
+.plan-card h3 { font-size: 1.5rem; margin-bottom: 1rem; color: #1a202c; margin-top: 0.5rem; }
+.plan-card .plan-price { margin-bottom: 1.5rem; }
+.plan-card .price-amount { font-size: 2rem; font-weight: 700; color: #4f46e5; }
+.plan-card .price-period { color: #64748b; font-size: 0.875rem; margin-left: 0.25rem; }
+.plan-features-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+.plan-features-list li { padding: 0.5rem 0; color: #475569; font-size: 0.875rem; }
+.plan-card .btn { width: 100%; margin-top: 1rem; }
+.plan-card .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>

@@ -6,7 +6,9 @@
         <strong>Modo de Prueba:</strong> 
         Usando datos de ejemplo. 
         <span class="demo-credentials">
-          Login: <code>demo@alquilubres.com</code> / <code>demo123</code>
+          <strong>Propietario:</strong> <code>demo@alquilibres.com</code> / <code>demo123</code>
+          <span class="separator">|</span>
+          <strong>Admin:</strong> <code>admin@alquilibres.com</code> / <code>admin123</code>
         </span>
       </p>
       <button @click="dismiss" class="demo-close" aria-label="Cerrar banner">
@@ -74,8 +76,11 @@ const dismiss = () => {
 }
 
 .demo-credentials {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin-left: 8px;
+  flex-wrap: wrap;
 }
 
 .demo-credentials code {
@@ -84,6 +89,11 @@ const dismiss = () => {
   border-radius: 3px;
   font-family: 'Courier New', monospace;
   font-size: 0.85em;
+}
+
+.separator {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 300;
 }
 
 .demo-close {

@@ -186,8 +186,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useSEO, generatePropertySchema } from '@/composables/useSEO'
 
 const route = useRoute()
+const { updateMetaTags, addStructuredData } = useSEO()
 
 // Estado
 const property = ref(null)
@@ -271,6 +273,19 @@ onMounted(async () => {
   }
   
   currentImage.value = property.value.images[0]
+  
+  // Actualizar meta tags SEO para esta propiedad
+  updateMetaTags({
+    title: `${property.value.title} | AlquiLibres`,
+    description: property.value.description.substring(0, 160),
+    url: `https://alquilibres.com/propiedad/${property.value.id}`,
+    image: property.value.images[0] + '?w=1200&h=630&fit=crop',
+    keywords: `${property.value.propertyType}, ${property.value.location.city}, alquiler temporario, ${property.value.amenities.join(', ')}`,
+    type: 'product'
+  })
+  
+  // Agregar Schema.org structured data
+  addStructuredData(generatePropertySchema(property.value))
   
   // Reseñas de ejemplo
   reviews.value = [

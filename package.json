@@ -17,11 +17,12 @@
     "firebase:init": "firebase init"
   },
   "dependencies": {
-    "vue": "^3.4.0",
-    "vue-router": "^4.2.5",
+    "@mercadopago/sdk-js": "^0.0.3",
+    "@vueuse/core": "^10.7.0",
     "firebase": "^10.7.1",
     "pinia": "^2.1.7",
-    "@vueuse/core": "^10.7.0"
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",

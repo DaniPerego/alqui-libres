@@ -7,7 +7,7 @@ import {
   updateProfile
 } from 'firebase/auth'
 import { auth } from '@/config/firebase'
-import { mockUser } from '@/data/mockData'
+import { mockUser, mockAdminUser } from '@/data/mockData'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -53,15 +53,22 @@ export const useAuthStore = defineStore('auth', {
       try {
         // Modo demo - permite login sin Firebase configurado
         if (!auth) {
-          if (email === 'demo@alquilubres.com' && password === 'demo123') {
-            console.log('🧪 Login exitoso en modo demo (mock data)')
+          if (email === 'demo@alquilibres.com' && password === 'demo123') {
+            console.log('🧪 Login exitoso en modo demo como propietario')
             await new Promise(resolve => setTimeout(resolve, 500))
             this.user = mockUser
             this.initialized = true
             localStorage.setItem('mockUser', JSON.stringify(mockUser))
             return { success: true }
+          } else if (email === 'admin@alquilibres.com' && password === 'admin123') {
+            console.log('👑 Login exitoso en modo demo como ADMINISTRADOR')
+            await new Promise(resolve => setTimeout(resolve, 500))
+            this.user = mockAdminUser
+            this.initialized = true
+            localStorage.setItem('mockUser', JSON.stringify(mockAdminUser))
+            return { success: true }
           } else {
-            throw new Error('Modo Demo: Use las credenciales demo@alquilubres.com / demo123')
+            throw new Error('Modo Demo: Use demo@alquilibres.com/demo123 o admin@alquilibres.com/admin123')
           }
         }
 

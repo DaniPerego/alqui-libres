@@ -257,7 +257,33 @@ export const mockMessages = [
 
 export const mockUser = {
   uid: 'user123',
-  email: 'demo@alquilubres.com',
+  email: 'demo@alquilibres.com',
   displayName: 'Usuario Demo',
-  emailVerified: true
+  emailVerified: true,
+  role: 'owner',
+  subscription: null // Sin suscripción para probar el flujo completo
+  // subscription: {
+  //   planId: 'pro',
+  //   status: 'active',
+  //   startedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Hace 30 días
+  //   expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // En 30 días
+  //   autoRenew: true,
+  //   lastPaymentDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  // }
+}
+
+export const mockAdminUser = {
+  uid: 'admin001',
+  email: 'admin@alquilibres.com',
+  displayName: 'Administrador',
+  emailVerified: true,
+  role: 'admin',
+  subscription: {
+    planId: 'enterprise',
+    status: 'active',
+    startedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+    expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+    autoRenew: true,
+    lastPaymentDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+  }
 }

@@ -1,0 +1,33 @@
+# robots.txt para AlquiLibres
+
+# Permitir acceso a todos los bots
+User-agent: *
+Allow: /
+
+# Bloquear acceso a rutas privadas
+Disallow: /panel/
+Disallow: /admin/
+
+# Bloquear archivos sensibles
+Disallow: /*.json$
+Disallow: /api/
+
+# Permitir acceso a assets
+Allow: /assets/
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.svg$
+Allow: /*.webp$
+
+# Sitemap
+Sitemap: https://alquilibres.com/sitemap.xml
+
+# Crawl-delay para bots específicos (opcional)
+# User-agent: Googlebot
+# Crawl-delay: 0
+
+# User-agent: Bingbot
+# Crawl-delay: 1

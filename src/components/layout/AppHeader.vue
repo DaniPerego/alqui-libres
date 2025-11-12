@@ -16,6 +16,9 @@
           </template>
           
           <template v-else>
+            <router-link v-if="authStore.user?.role === 'admin'" to="/admin" class="nav-link admin-link">
+              👑 Admin
+            </router-link>
             <router-link to="/panel" class="nav-link">Mi Panel</router-link>
             <button @click="handleLogout" class="btn btn-secondary btn-sm">Cerrar Sesión</button>
           </template>
@@ -64,9 +67,17 @@
               <div class="user-section">
                 <div class="user-info">
                   <div class="user-avatar">{{ authStore.user?.email?.charAt(0).toUpperCase() }}</div>
-                  <span class="user-email">{{ authStore.user?.email }}</span>
+                  <div class="user-details">
+                    <span class="user-email">{{ authStore.user?.email }}</span>
+                    <span v-if="authStore.user?.role === 'admin'" class="user-role">Administrador</span>
+                  </div>
                 </div>
               </div>
+              
+              <router-link v-if="authStore.user?.role === 'admin'" to="/admin" class="mobile-link admin-link-mobile" @click="mobileMenuOpen = false">
+                <span class="link-icon">👑</span>
+                <span>Panel de Administración</span>
+              </router-link>
               
               <router-link to="/panel" class="mobile-link" @click="mobileMenuOpen = false">
                 <span class="link-icon">📊</span>
@@ -189,6 +200,19 @@ const handleLogout = async () => {
 
 .nav-link.router-link-active {
   color: var(--primary-color);
+}
+
+.admin-link {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white !important;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+}
+
+.admin-link:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white !important;
 }
 
 /* Mobile Menu Button */
@@ -426,12 +450,37 @@ const handleLogout = async () => {
   font-size: 1.125rem;
 }
 
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
 .user-email {
   font-size: 0.875rem;
   color: var(--gray-700);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 0.625rem;
+  color: #f59e0b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-link-mobile {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e !important;
+  font-weight: 700;
+  border-left: 3px solid #f59e0b !important;
+}
+
+.admin-link-mobile:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
 }
 
 .divider {
