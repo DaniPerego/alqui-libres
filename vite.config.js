@@ -4,6 +4,8 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [vue()],
+  // Configuración para GitHub Pages
+  base: '/alqui-libres/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
@@ -12,6 +14,8 @@ export default defineConfig({
   build: {
     target: 'esnext',
     minify: 'terser',
+    outDir: 'dist',
+    assetsDir: 'assets',
     rollupOptions: {
       output: {
         manualChunks: {
