@@ -103,6 +103,124 @@
 
 ---
 
+---
+
+## 🏠 PANEL DEL PROPIETARIO - PLAN DE IMPLEMENTACIÓN
+
+### ✅ YA IMPLEMENTADO:
+- [x] Dashboard layout con sidebar
+- [x] Mis Propiedades (listado)
+- [x] Editor de Propiedades (crear/editar)
+- [x] Sistema de Mensajes
+- [x] Gestión de Suscripción
+- [x] Checkout y pagos con MercadoPago
+- [x] Resultado de pago
+
+### 🥇 FASE 1 - FUNCIONALIDAD BÁSICA (Esta semana):
+
+#### 1. Dashboard/Home del Panel
+- [ ] Vista principal con métricas rápidas
+- [ ] Resumen de propiedades activas/inactivas
+- [ ] Últimos mensajes sin leer
+- [ ] Estado de suscripción y días restantes
+- [ ] Acciones rápidas (nueva propiedad, ver mensajes)
+- [ ] Notificaciones recientes
+
+#### 2. Perfil del Propietario CON Contacto ⭐
+- [ ] Editar información personal (nombre, bio, foto)
+- [ ] **CONTACTO PRINCIPAL:**
+  - Teléfono
+  - WhatsApp
+  - Email
+- [ ] **CONTACTO SECUNDARIO (opcional):**
+  - Teléfono secundario
+  - WhatsApp secundario
+  - Email secundario
+  - Descripción del contacto (ej: "Administrador")
+- [ ] **REDES SOCIALES:**
+  - Instagram
+  - Facebook  
+  - LinkedIn
+  - Website personal
+- [ ] Toggle "Mostrar contacto solo a usuarios registrados" ✅
+- [ ] Vista previa de perfil público
+- [ ] Verificación de WhatsApp (badge)
+
+#### 3. Mostrar Contacto en PropertyDetail
+- [ ] Botones de contacto (solo usuarios registrados)
+- [ ] Botón WhatsApp con mensaje pre-cargado
+- [ ] Botón llamar (tel:)
+- [ ] Botón email (mailto:)
+- [ ] Íconos redes sociales del propietario
+- [ ] Mostrar ambos contactos (principal y secundario)
+- [ ] Blur/ocultar info si no está registrado
+
+#### 4. Sistema de Reservas Básico
+- [ ] Formulario de solicitud de reserva
+- [ ] Calendario de disponibilidad
+- [ ] Ver reservas pendientes
+- [ ] Aprobar/Rechazar reservas
+- [ ] **EMAIL al propietario:**
+  - Nueva solicitud de reserva
+  - Datos del huésped
+  - Botones aprobar/rechazar
+- [ ] **WhatsApp al propietario:**
+  - Notificación a contacto principal
+  - Notificación a contacto secundario
+- [ ] **EMAIL al huésped:**
+  - Confirmación de reserva
+  - Datos de contacto del propietario
+  - Instrucciones de check-in
+- [ ] **WhatsApp al huésped:**
+  - Confirmación con datos del propietario
+
+### 🥈 FASE 2 - ESTADÍSTICAS Y REVIEWS (Semana siguiente):
+
+#### 5. Ingresos y Estadísticas
+- [ ] Ganancias totales y por propiedad
+- [ ] Gráficos de ocupación
+- [ ] Proyección de ingresos mensuales
+- [ ] Comparativas mes a mes
+- [ ] Exportar reportes PDF/Excel
+
+#### 6. Gestión de Reviews
+- [ ] Ver todas las reseñas recibidas
+- [ ] Responder a reviews
+- [ ] Rating promedio por propiedad
+- [ ] Alertas de nuevas reseñas
+- [ ] Moderación de respuestas
+
+#### 7. Centro de Notificaciones
+- [ ] Panel de notificaciones in-app
+- [ ] Nueva reserva
+- [ ] Nuevo mensaje
+- [ ] Suscripción por vencer
+- [ ] Nueva review
+- [ ] Cambios en políticas
+- [ ] Marcar como leído/no leído
+
+### 🥉 FASE 3 - AVANZADO (Post-lanzamiento):
+
+#### 8. Gestión de Contratos
+- [ ] Templates de contratos personalizados
+- [ ] Generar contrato por reserva
+- [ ] Firmas digitales
+- [ ] Historial de contratos
+
+#### 9. Configuraciones Avanzadas
+- [ ] Políticas de cancelación por propiedad
+- [ ] Reglas de la casa editables
+- [ ] Precios automáticos (temporada)
+- [ ] Descuentos por estadía larga
+
+#### 10. Chat en Vivo Mejorado
+- [ ] Indicador "en línea"
+- [ ] Respuestas automáticas
+- [ ] Plantillas de mensajes
+- [ ] Upload de archivos en chat
+
+---
+
 ## 🎨 UX/UI y Experiencia de Usuario
 
 ### 11. Onboarding y Tutorial
