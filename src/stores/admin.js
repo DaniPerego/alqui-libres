@@ -14,6 +14,9 @@ import {
 } from 'firebase/firestore'
 
 export const useAdminStore = defineStore('admin', () => {
+  // Version para invalidar caché cuando cambien los planes
+  const PLANS_VERSION = '1.1' // Incrementa esto cuando cambies precios/características
+  
   // Default plans
   const defaultPlans = [
     {
@@ -73,17 +76,29 @@ export const useAdminStore = defineStore('admin', () => {
   // Load plans from localStorage or use defaults
   const loadPlansFromStorage = () => {
     try {
+      const storedVersion = localStorage.getItem('plansVersion')
       const stored = localStorage.getItem('subscriptionPlans')
+      
+      // Si la versión no coincide, forzar actualización
+      if (storedVersion !== PLANS_VERSION) {
+        console.log(`🔄 Versión desactualizada (${storedVersion} → ${PLANS_VERSION}). Actualizando planes...`)
+        localStorage.removeItem('subscriptionPlans')
+        localStorage.setItem('plansVersion', PLANS_VERSION)
+        return defaultPlans
+      }
+      
       if (stored) {
         const plans = JSON.parse(stored)
         console.log('📂 Planes cargados desde localStorage:', plans)
         return plans
       } else {
         console.log('🆕 Usando planes por defecto (no hay datos guardados)')
+        localStorage.setItem('plansVersion', PLANS_VERSION)
         return defaultPlans
       }
     } catch (error) {
       console.error('❌ Error loading plans from storage:', error)
+      localStorage.setItem('plansVersion', PLANS_VERSION)
       return defaultPlans
     }
   }
@@ -92,7 +107,9 @@ export const useAdminStore = defineStore('admin', () => {
   const savePlansToStorage = (plans) => {
     try {
       localStorage.setItem('subscriptionPlans', JSON.stringify(plans))
+      localStorage.setItem('plansVersion', PLANS_VERSION)
       console.log('💾 Planes guardados en localStorage:', plans)
+      console.log('🔖 Versión guardada:', PLANS_VERSION)
     } catch (error) {
       console.error('❌ Error saving plans to storage:', error)
     }
