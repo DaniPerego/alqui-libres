@@ -222,10 +222,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
 
 const adminStore = useAdminStore()
+onMounted(() => {
+  adminStore.initPlans()
+})
 
 // Estado para feedback de guardado
 const saveStatus = ref({
@@ -314,8 +317,10 @@ const togglePlanStatus = (planId, isActive) => {
 
 const updateFeature = (planId, index, newText) => {
   const plan = adminStore.subscriptionPlans.find(p => p.id === planId)
-  if (plan && plan.features[index]) {
-    plan.features[index] = newText
+  if (plan && plan.features[index] !== undefined) {
+    const updatedFeatures = [...plan.features]
+    updatedFeatures[index] = newText
+    adminStore.updateSubscriptionPlan(planId, { features: updatedFeatures })
     showSaveMessage('Característica actualizada')
   }
 }
@@ -323,7 +328,8 @@ const updateFeature = (planId, index, newText) => {
 const addFeature = (planId) => {
   const plan = adminStore.subscriptionPlans.find(p => p.id === planId)
   if (plan) {
-    plan.features.push('Nueva característica')
+    const updatedFeatures = [...plan.features, 'Nueva característica']
+    adminStore.updateSubscriptionPlan(planId, { features: updatedFeatures })
     showSaveMessage('Característica agregada')
   }
 }
@@ -331,7 +337,8 @@ const addFeature = (planId) => {
 const removeFeature = (planId, index) => {
   const plan = adminStore.subscriptionPlans.find(p => p.id === planId)
   if (plan && plan.features.length > 1) {
-    plan.features.splice(index, 1)
+    const updatedFeatures = plan.features.filter((_, i) => i !== index)
+    adminStore.updateSubscriptionPlan(planId, { features: updatedFeatures })
     showSaveMessage('Característica eliminada')
   } else {
     showSaveMessage('Debe haber al menos una característica', 'error')

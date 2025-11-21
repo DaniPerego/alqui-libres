@@ -1,0 +1,19 @@
+# Ignorar dependencias
+node_modules/
+
+# Ignorar archivo de configuración local
+.env
+.runtimeconfig.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Firebase
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

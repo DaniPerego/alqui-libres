@@ -179,7 +179,10 @@ const handleCancelSubscription = async () => {
   }
 }
 
-onMounted(() => paymentStore.fetchCurrentSubscription())
+onMounted(() => {
+  adminStore.initPlans()
+  paymentStore.fetchCurrentSubscription()
+})
 </script>
 
 <style scoped>

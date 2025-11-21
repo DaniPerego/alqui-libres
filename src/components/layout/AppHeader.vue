@@ -19,7 +19,8 @@
             <router-link v-if="authStore.user?.role === 'admin'" to="/admin" class="nav-link admin-link">
               👑 Admin
             </router-link>
-            <router-link to="/panel" class="nav-link">Mi Panel</router-link>
+            <router-link v-if="authStore.user?.role === 'guest'" to="/panel/perfil" class="nav-link">Mi Perfil</router-link>
+            <router-link v-else-if="authStore.user?.role !== 'admin'" to="/panel" class="nav-link">Mi Panel</router-link>
             <button @click="handleLogout" class="btn btn-secondary btn-sm">Cerrar Sesión</button>
           </template>
         </div>
@@ -79,19 +80,23 @@
                 <span>Panel de Administración</span>
               </router-link>
               
-              <router-link to="/panel" class="mobile-link" @click="mobileMenuOpen = false">
+              <router-link v-if="authStore.user?.role === 'guest'" to="/panel/perfil" class="mobile-link" @click="mobileMenuOpen = false">
+                <span class="link-icon">👤</span>
+                <span>Mi Perfil</span>
+              </router-link>
+              <router-link v-else-if="authStore.user?.role !== 'admin'" to="/panel" class="mobile-link" @click="mobileMenuOpen = false">
                 <span class="link-icon">📊</span>
                 <span>Mi Panel</span>
               </router-link>
-              <router-link to="/panel/propiedades" class="mobile-link" @click="mobileMenuOpen = false">
+              <router-link v-if="authStore.user?.role === 'owner'" to="/panel/propiedades" class="mobile-link" @click="mobileMenuOpen = false">
                 <span class="link-icon">🏘️</span>
                 <span>Mis Propiedades</span>
               </router-link>
-              <router-link to="/panel/mensajes" class="mobile-link" @click="mobileMenuOpen = false">
+              <router-link v-if="authStore.user?.role === 'owner'" to="/panel/mensajes" class="mobile-link" @click="mobileMenuOpen = false">
                 <span class="link-icon">💬</span>
                 <span>Mensajes</span>
               </router-link>
-              <router-link to="/panel/suscripcion" class="mobile-link" @click="mobileMenuOpen = false">
+              <router-link v-if="authStore.user?.role === 'owner'" to="/panel/suscripcion" class="mobile-link" @click="mobileMenuOpen = false">
                 <span class="link-icon">💳</span>
                 <span>Suscripción</span>
               </router-link>

@@ -7,6 +7,8 @@ import {
   doc, 
   updateDoc, 
   deleteDoc,
+  setDoc,
+  onSnapshot,
   query,
   where,
   orderBy,
@@ -16,6 +18,7 @@ import {
 export const useAdminStore = defineStore('admin', () => {
   // Version para invalidar caché cuando cambien los planes
   const PLANS_VERSION = '1.1' // Incrementa esto cuando cambies precios/características
+  const PLANS_COLLECTION = 'subscriptionPlans'
   
   // Default plans
   const defaultPlans = [
@@ -115,6 +118,112 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  // Firestore-backed plans initialization and sync
+  let unsubscribePlans = null
+  let unsubscribeSettings = null
+
+  const seedPlansInFirestoreIfEmpty = async () => {
+    const plansRef = collection(db, PLANS_COLLECTION)
+    const snap = await getDocs(plansRef)
+    if (snap.empty) {
+      // Seed defaults
+      await Promise.all(defaultPlans.map(p => setDoc(doc(db, PLANS_COLLECTION, p.id), p)))
+    }
+  }
+
+  const subscribeToPlans = () => {
+    if (!db) return
+    if (unsubscribePlans) unsubscribePlans()
+    const plansRef = collection(db, PLANS_COLLECTION)
+    unsubscribePlans = onSnapshot(plansRef, (snapshot) => {
+      const plans = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      // Orden opcional: mantener orden por defecto si existe
+      // Persistir cache local para modo offline
+      subscriptionPlans.value = plans
+      savePlansToStorage(plans)
+      console.log('🔄 Planes actualizados desde Firestore:', plans)
+    }, (err) => {
+      console.error('Error en suscripción de planes:', err)
+    })
+  }
+
+  const initPlans = async () => {
+    if (db) {
+      try {
+        await seedPlansInFirestoreIfEmpty()
+        subscribeToPlans()
+      } catch (e) {
+        console.warn('No se pudo inicializar planes en Firestore, usando localStorage:', e?.message || e)
+        subscriptionPlans.value = loadPlansFromStorage()
+      }
+    } else {
+      subscriptionPlans.value = loadPlansFromStorage()
+    }
+  }
+
+  // Firestore-backed platform settings
+  const SETTINGS_DOC_ID = 'general'
+
+  const initPlatformSettings = async () => {
+    if (!db) {
+      // Modo demo: cargar de localStorage
+      const stored = localStorage.getItem('platformSettings')
+      if (stored) {
+        platformSettings.value = { ...platformSettings.value, ...JSON.parse(stored) }
+      }
+      return
+    }
+
+    try {
+      const settingsRef = doc(db, 'platformSettings', SETTINGS_DOC_ID)
+      const snap = await getDocs(collection(db, 'platformSettings'))
+      
+      // Seed si no existe
+      if (snap.empty) {
+        await setDoc(settingsRef, platformSettings.value)
+        console.log('🌱 Settings iniciales creados en Firestore')
+      }
+
+      // Suscribirse a cambios en tiempo real
+      if (unsubscribeSettings) unsubscribeSettings()
+      unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+          platformSettings.value = { ...platformSettings.value, ...docSnap.data() }
+          // Cache local
+          localStorage.setItem('platformSettings', JSON.stringify(platformSettings.value))
+          console.log('🔄 Settings actualizados desde Firestore:', platformSettings.value)
+        }
+      }, (err) => {
+        console.error('Error suscribiéndose a settings:', err)
+      })
+    } catch (e) {
+      console.warn('No se pudieron cargar settings de Firestore, usando localStorage:', e?.message || e)
+      const stored = localStorage.getItem('platformSettings')
+      if (stored) {
+        platformSettings.value = { ...platformSettings.value, ...JSON.parse(stored) }
+      }
+    }
+  }
+
+  const updatePlatformSettings = async (updates) => {
+    if (!db) {
+      // Modo demo: guardar en localStorage
+      platformSettings.value = { ...platformSettings.value, ...updates }
+      localStorage.setItem('platformSettings', JSON.stringify(platformSettings.value))
+      return { success: true }
+    }
+
+    try {
+      const settingsRef = doc(db, 'platformSettings', SETTINGS_DOC_ID)
+      await setDoc(settingsRef, { ...platformSettings.value, ...updates }, { merge: true })
+      console.log('✅ Settings guardados en Firestore:', updates)
+      return { success: true }
+    } catch (err) {
+      console.error('❌ Error guardando settings en Firestore:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
   // Load payment settings from localStorage
   const loadPaymentSettingsFromStorage = () => {
     try {
@@ -141,6 +250,16 @@ export const useAdminStore = defineStore('admin', () => {
   const subscriptions = ref([])
   const subscriptionPlans = ref(loadPlansFromStorage())
   const paymentSettings = ref(loadPaymentSettingsFromStorage())
+  const platformSettings = ref({
+    platformName: 'AlquiLibres',
+    contactEmail: 'info@alquilibres.com',
+    supportPhone: '+54 9 11 1234-5678',
+    commissionRate: 0,
+    emailNotifications: true,
+    whatsappNotifications: true,
+    requireEmailVerification: false,
+    moderateProperties: false
+  })
   const stats = ref({
     totalUsers: 0,
     totalProperties: 0,
@@ -430,24 +549,31 @@ export const useAdminStore = defineStore('admin', () => {
    */
   const updateSubscriptionPlan = (planId, updates) => {
     const planIndex = subscriptionPlans.value.findIndex(p => p.id === planId)
-    if (planIndex !== -1) {
-      // Crear un nuevo array completo para forzar la reactividad
+    if (planIndex === -1) return { success: false, error: 'Plan no encontrado' }
+
+    const current = subscriptionPlans.value[planIndex]
+    const merged = { ...current, ...updates }
+
+    if (db) {
+      // Persistir en Firestore
+      return updateDoc(doc(db, PLANS_COLLECTION, planId), merged)
+        .then(() => {
+          console.log('✅ Plan actualizado en Firestore:', planId, updates)
+          return { success: true }
+        })
+        .catch(err => {
+          console.error('❌ Error actualizando plan en Firestore:', err)
+          return { success: false, error: err.message }
+        })
+    } else {
+      // Local fallback
       const updatedPlans = [...subscriptionPlans.value]
-      updatedPlans[planIndex] = {
-        ...updatedPlans[planIndex],
-        ...updates
-      }
+      updatedPlans[planIndex] = merged
       subscriptionPlans.value = updatedPlans
-      
-      // Guardar en localStorage
       savePlansToStorage(subscriptionPlans.value)
-      
-      console.log('✅ Plan actualizado:', planId, updates)
-      console.log('📦 Planes actuales:', JSON.parse(JSON.stringify(subscriptionPlans.value)))
-      
+      console.log('✅ Plan actualizado (localStorage):', planId, updates)
       return { success: true }
     }
-    return { success: false, error: 'Plan no encontrado' }
   }
 
   /**
@@ -502,6 +628,7 @@ export const useAdminStore = defineStore('admin', () => {
     subscriptions,
     subscriptionPlans,
     paymentSettings,
+    platformSettings,
     stats,
     loading,
     error,
@@ -521,6 +648,9 @@ export const useAdminStore = defineStore('admin', () => {
     updateSubscriptionPlan,
     updatePaymentSettings,
     updateStats,
-    loadAllData
+    loadAllData,
+    initPlans,
+    initPlatformSettings,
+    updatePlatformSettings
   }
 })

@@ -1,25 +1,47 @@
 <template>
   <div class="dashboard">
-    <aside class="sidebar">
-      <nav class="sidebar-nav">
-        <router-link to="/panel/propiedades" class="sidebar-link">
-          <span class="sidebar-icon">🏠</span>
-          Mis Propiedades
-        </router-link>
-        <router-link to="/panel/mensajes" class="sidebar-link">
-          <span class="sidebar-icon">💬</span>
-          Mensajes
-        </router-link>
-        <router-link to="/panel/suscripcion" class="sidebar-link">
-          <span class="sidebar-icon">💳</span>
-          Mi Suscripción
-        </router-link>
-      </nav>
-    </aside>
-    
-    <main class="dashboard-content">
-      <router-view />
-    </main>
+    <template v-if="$auth?.user?.role !== 'guest'">
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <router-link to="/panel" class="sidebar-link" exact>
+            <span class="sidebar-icon">📊</span>
+            Inicio
+          </router-link>
+          <router-link to="/panel/propiedades" class="sidebar-link">
+            <span class="sidebar-icon">🏠</span>
+            Mis Propiedades
+          </router-link>
+          <router-link to="/panel/reservas" class="sidebar-link">
+            <span class="sidebar-icon">📅</span>
+            Reservas
+          </router-link>
+          <router-link to="/panel/mensajes" class="sidebar-link">
+            <span class="sidebar-icon">💬</span>
+            Mensajes
+          </router-link>
+          <router-link to="/panel/perfil" class="sidebar-link">
+            <span class="sidebar-icon">👤</span>
+            Mi Perfil
+          </router-link>
+          <router-link to="/panel/suscripcion" class="sidebar-link">
+            <span class="sidebar-icon">💳</span>
+            Mi Suscripción
+          </router-link>
+          <router-link to="/panel/estadisticas" class="sidebar-link">
+            <span class="sidebar-icon">📈</span>
+            Estadísticas
+          </router-link>
+        </nav>
+      </aside>
+      <main class="dashboard-content">
+        <router-view />
+      </main>
+    </template>
+    <template v-else>
+      <main class="dashboard-content">
+        <router-view />
+      </main>
+    </template>
   </div>
 </template>
 
@@ -84,11 +106,9 @@
   .dashboard {
     grid-template-columns: 1fr;
   }
-  
   .sidebar {
     position: static;
   }
-  
   .sidebar-nav {
     flex-direction: row;
     overflow-x: auto;

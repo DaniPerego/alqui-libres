@@ -5,7 +5,7 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig({
   plugins: [vue()],
   // Configuración para GitHub Pages
-  base: '/alqui-libres/',
+  // base: '/alqui-libres/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

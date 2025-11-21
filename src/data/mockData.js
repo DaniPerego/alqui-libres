@@ -255,21 +255,41 @@ export const mockMessages = [
   }
 ]
 
-export const mockUser = {
-  uid: 'user123',
-  email: 'demo@alquilibres.com',
-  displayName: 'Usuario Demo',
+// =============================
+// USUARIOS DE PRUEBA (MODO DEMO)
+// =============================
+// Huésped:
+//   Email: huesped@alquilibres.com
+//   Contraseña: guest123
+// Usuario general:
+//   Email: usuario@alquilibres.com
+//   Contraseña: user123
+// Administrador:
+//   Email: admin@alquilibres.com
+//   Contraseña: admin123
+//
+// ⚠️ Solo funcionan en modo demo (sin Firebase real)
+// =============================
+
+// Usuario huésped (inquilino)
+export const mockGuestUser = {
+  uid: 'guest001',
+  email: 'huesped@alquilibres.com',
+  displayName: 'Huésped Prueba',
+  emailVerified: true,
+  role: 'guest',
+  subscription: null
+}
+
+// Usuario general (no propietario, no admin)
+// Usuario propietario (puede publicar y administrar propiedades)
+export const mockOwnerUser = {
+  uid: 'owner001',
+  email: 'usuario@alquilibres.com',
+  displayName: 'Propietario Demo',
   emailVerified: true,
   role: 'owner',
-  subscription: null // Sin suscripción para probar el flujo completo
-  // subscription: {
-  //   planId: 'pro',
-  //   status: 'active',
-  //   startedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Hace 30 días
-  //   expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // En 30 días
-  //   autoRenew: true,
-  //   lastPaymentDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  // }
+  subscription: null
 }
 
 export const mockAdminUser = {

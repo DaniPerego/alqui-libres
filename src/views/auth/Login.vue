@@ -9,23 +9,26 @@
             <strong>Modo de Prueba</strong>
           </div>
           <p class="demo-info-text">
-            Use estas credenciales para acceder al panel demo:
+            Usa cualquiera de estas credenciales para probar el sistema:
           </p>
           <div class="demo-credentials">
             <div class="demo-credential-item">
-              <span class="demo-label">Email:</span>
-              <code class="demo-value">demo@alquilubres.com</code>
-              <button @click="copyToClipboard('demo@alquilubres.com')" class="copy-btn" title="Copiar">📋</button>
+              <span class="demo-label">Huésped (alquila):</span>
+              <code class="demo-value">huesped@alquilibres.com / guest123</code>
+              <button @click="autofillDemo('huesped@alquilibres.com','guest123')" class="copy-btn" title="Autocompletar">⚡</button>
             </div>
             <div class="demo-credential-item">
-              <span class="demo-label">Password:</span>
-              <code class="demo-value">demo123</code>
-              <button @click="copyToClipboard('demo123')" class="copy-btn" title="Copiar">📋</button>
+              <span class="demo-label">Propietario (publica):</span>
+              <code class="demo-value">usuario@alquilibres.com / user123</code>
+              <button @click="autofillDemo('usuario@alquilibres.com','user123')" class="copy-btn" title="Autocompletar">⚡</button>
+            </div>
+            <div class="demo-credential-item">
+              <span class="demo-label">Administrador:</span>
+              <code class="demo-value">admin@alquilibres.com / admin123</code>
+              <button @click="autofillDemo('admin@alquilibres.com','admin123')" class="copy-btn" title="Autocompletar">⚡</button>
             </div>
           </div>
-          <button @click="autofillDemo" class="btn-autofill">
-            ⚡ Autocompletar credenciales
-          </button>
+          <p style="font-size:0.95em;opacity:0.8;margin-top:8px;">⚠️ Solo funcionan en modo demo (sin Firebase real)</p>
         </div>
 
         <div class="auth-card card">
@@ -101,9 +104,9 @@ const error = ref('')
 const isDemoMode = computed(() => !auth)
 
 // Autocompletar credenciales demo
-const autofillDemo = () => {
-  formData.value.email = 'demo@alquilubres.com'
-  formData.value.password = 'demo123'
+const autofillDemo = (email, password) => {
+  formData.value.email = email
+  formData.value.password = password
 }
 
 // Copiar al portapapeles
@@ -123,8 +126,12 @@ const handleSubmit = async () => {
   const result = await authStore.login(formData.value.email, formData.value.password)
   
   if (result.success) {
-    const redirect = router.currentRoute.value.query.redirect || '/panel'
-    router.push(redirect)
+    const requested = router.currentRoute.value.query.redirect
+    if (authStore.user?.role === 'admin') {
+      router.push('/admin/dashboard')
+    } else {
+      router.push(requested || '/panel')
+    }
   } else {
     error.value = result.error
   }

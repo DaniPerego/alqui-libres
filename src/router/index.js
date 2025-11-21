@@ -11,9 +11,12 @@ const Register = () => import('@/views/auth/Register.vue')
 
 // Panel del Locatario
 const Dashboard = () => import('@/views/owner/Dashboard.vue')
+const DashboardHome = () => import('@/views/owner/DashboardHome.vue')
 const MyProperties = () => import('@/views/owner/MyProperties.vue')
 const PropertyEditor = () => import('@/views/owner/PropertyEditor.vue')
 const Messages = () => import('@/views/owner/Messages.vue')
+const Reservations = () => import('@/views/owner/Reservations.vue')
+const Profile = () => import('@/views/owner/Profile.vue')
 const Subscription = () => import('@/views/owner/Subscription.vue')
 
 // Panel de Administración
@@ -84,8 +87,18 @@ const routes = [
       title: 'Panel de Control', 
       requiresAuth: true 
     },
-    redirect: { name: 'my-properties' },
+    redirect: { name: 'dashboard-home' },
     children: [
+      {
+        path: '',
+        name: 'dashboard-home',
+        component: DashboardHome,
+        meta: { 
+          title: 'Dashboard | AlquiLibres',
+          description: 'Panel de control del propietario',
+          requiresAuth: true 
+        }
+      },
       {
         path: 'propiedades',
         name: 'my-properties',
@@ -123,6 +136,36 @@ const routes = [
         meta: { 
           title: 'Mensajes | AlquiLibres',
           description: 'Gestiona tus conversaciones con huéspedes',
+          requiresAuth: true 
+        }
+      },
+      {
+        path: 'reservas',
+        name: 'reservations',
+        component: Reservations,
+        meta: { 
+          title: 'Reservas | AlquiLibres',
+          description: 'Gestiona las solicitudes de reserva de tus propiedades',
+          requiresAuth: true 
+        }
+      },
+      {
+        path: 'estadisticas',
+        name: 'dashboard-stats',
+        component: () => import('@/views/owner/DashboardStats.vue'),
+        meta: {
+          title: 'Estadísticas e Ingresos | AlquiLibres',
+          description: 'Visualiza tus ingresos, ocupación y reportes',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'perfil',
+        name: 'profile',
+        component: Profile,
+        meta: { 
+          title: 'Mi Perfil | AlquiLibres',
+          description: 'Administra tu información personal y de contacto',
           requiresAuth: true 
         }
       },
@@ -204,6 +247,17 @@ const routes = [
         meta: { 
           title: 'Gestión de Planes | Admin',
           description: 'Configurar planes de suscripción',
+          requiresAuth: true, 
+          requiresAdmin: true 
+        }
+      },
+      {
+        path: 'configuracion',
+        name: 'admin-settings',
+        component: () => import('@/views/admin/AdminSettings.vue'),
+        meta: { 
+          title: 'Configuración General | Admin',
+          description: 'Configuración general de la plataforma',
           requiresAuth: true, 
           requiresAdmin: true 
         }
@@ -327,9 +381,26 @@ router.beforeEach(async (to, from, next) => {
     next({ name: 'home' })
     return
   }
+
+  // Evitar que un admin entre al panel de propietarios
+  if (authStore.user?.role === 'admin' && to.path.startsWith('/panel')) {
+    next({ name: 'admin-dashboard' })
+    return
+  }
+  // Evitar que un huésped entre al panel de propietarios, excepto su perfil
+  if (
+    authStore.user?.role === 'guest' &&
+    to.path.startsWith('/panel') &&
+    to.name !== 'profile' &&
+    to.path !== '/perfil'
+  ) {
+    alert('⛔ Acceso denegado. Solo propietarios pueden administrar propiedades.')
+    next({ name: 'search' })
+    return
+  }
   
   if (isGuest && authStore.isAuthenticated) {
-    next({ name: 'dashboard' })
+    next({ name: authStore.user?.role === 'admin' ? 'admin-dashboard' : 'dashboard' })
   } else {
     next()
   }

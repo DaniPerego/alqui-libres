@@ -7,7 +7,7 @@ import {
   updateProfile
 } from 'firebase/auth'
 import { auth } from '@/config/firebase'
-import { mockUser, mockAdminUser } from '@/data/mockData'
+import { mockGuestUser, mockOwnerUser, mockAdminUser } from '@/data/mockData'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -53,12 +53,19 @@ export const useAuthStore = defineStore('auth', {
       try {
         // Modo demo - permite login sin Firebase configurado
         if (!auth) {
-          if (email === 'demo@alquilibres.com' && password === 'demo123') {
-            console.log('🧪 Login exitoso en modo demo como propietario')
+          if (email === 'huesped@alquilibres.com' && password === 'guest123') {
+            console.log('🧪 Login exitoso en modo demo como HUÉSPED')
             await new Promise(resolve => setTimeout(resolve, 500))
-            this.user = mockUser
+            this.user = mockGuestUser
             this.initialized = true
-            localStorage.setItem('mockUser', JSON.stringify(mockUser))
+            localStorage.setItem('mockUser', JSON.stringify(mockGuestUser))
+            return { success: true }
+          } else if (email === 'usuario@alquilibres.com' && password === 'user123') {
+            console.log('🧪 Login exitoso en modo demo como PROPIETARIO')
+            await new Promise(resolve => setTimeout(resolve, 500))
+            this.user = mockOwnerUser
+            this.initialized = true
+            localStorage.setItem('mockUser', JSON.stringify(mockOwnerUser))
             return { success: true }
           } else if (email === 'admin@alquilibres.com' && password === 'admin123') {
             console.log('👑 Login exitoso en modo demo como ADMINISTRADOR')
@@ -68,7 +75,11 @@ export const useAuthStore = defineStore('auth', {
             localStorage.setItem('mockUser', JSON.stringify(mockAdminUser))
             return { success: true }
           } else {
-            throw new Error('Modo Demo: Use demo@alquilibres.com/demo123 o admin@alquilibres.com/admin123')
+            console.error('Modo Demo: Credenciales válidas para pruebas:')
+            console.error('Huésped: huesped@alquilibres.com / guest123')
+            console.error('Usuario general: usuario@alquilibres.com / user123')
+            console.error('Administrador: admin@alquilibres.com / admin123')
+            throw new Error('Modo Demo: Email o contraseña incorrectos. Verifique las credenciales de prueba en la consola.')
           }
         }
 
@@ -96,6 +107,35 @@ export const useAuthStore = defineStore('auth', {
         }
         
         this.user = userCredential.user
+        return { success: true }
+      } catch (error) {
+        this.error = this.getErrorMessage(error.code)
+        return { success: false, error: this.error }
+      } finally {
+        this.loading = false
+      }
+    },
+    
+    async updateProfile(profileData) {
+      this.loading = true
+      try {
+        // Modo demo
+        if (!auth) {
+          // Actualizar usuario mock
+          this.user = {
+            ...this.user,
+            ...profileData
+          }
+          localStorage.setItem('mockUser', JSON.stringify(this.user))
+          return { success: true }
+        }
+        
+        // Firebase real
+        await updateProfile(auth.currentUser, profileData)
+        this.user = {
+          ...this.user,
+          ...profileData
+        }
         return { success: true }
       } catch (error) {
         this.error = this.getErrorMessage(error.code)
