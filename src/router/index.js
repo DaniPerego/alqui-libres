@@ -35,7 +35,7 @@ const routes = [
     path: '/',
     name: 'home',
     component: Home,
-    meta: { 
+    meta: {
       ...routeMetadata.home,
       title: 'AlquiLibres - Alquileres Sin Comisiones'
     }
@@ -44,7 +44,7 @@ const routes = [
     path: '/buscar',
     name: 'search',
     component: Search,
-    meta: { 
+    meta: {
       ...routeMetadata.search,
       title: 'Buscar Alojamiento'
     }
@@ -53,7 +53,7 @@ const routes = [
     path: '/propiedad/:id',
     name: 'property-detail',
     component: PropertyDetail,
-    meta: { 
+    meta: {
       title: 'Detalle de Propiedad',
       type: 'product' // Para Open Graph
     }
@@ -62,30 +62,30 @@ const routes = [
     path: '/login',
     name: 'login',
     component: Login,
-    meta: { 
+    meta: {
       ...routeMetadata.login,
-      title: 'Iniciar Sesión', 
-      guest: true 
+      title: 'Iniciar Sesión',
+      guest: true
     }
   },
   {
     path: '/registro',
     name: 'register',
     component: Register,
-    meta: { 
+    meta: {
       ...routeMetadata.register,
-      title: 'Registrarse', 
-      guest: true 
+      title: 'Registrarse',
+      guest: true
     }
   },
   {
     path: '/panel',
     name: 'dashboard',
     component: Dashboard,
-    meta: { 
+    meta: {
       ...routeMetadata.dashboard,
-      title: 'Panel de Control', 
-      requiresAuth: true 
+      title: 'Panel de Control',
+      requiresAuth: true
     },
     redirect: { name: 'dashboard-home' },
     children: [
@@ -93,60 +93,60 @@ const routes = [
         path: '',
         name: 'dashboard-home',
         component: DashboardHome,
-        meta: { 
+        meta: {
           title: 'Dashboard | AlquiLibres',
           description: 'Panel de control del propietario',
-          requiresAuth: true 
+          requiresAuth: true
         }
       },
       {
         path: 'propiedades',
         name: 'my-properties',
         component: MyProperties,
-        meta: { 
+        meta: {
           title: 'Mis Propiedades | AlquiLibres',
           description: 'Administra tus propiedades publicadas en AlquiLibres',
-          requiresAuth: true 
+          requiresAuth: true
         }
       },
       {
         path: 'propiedades/nueva',
         name: 'new-property',
         component: PropertyEditor,
-        meta: { 
+        meta: {
           title: 'Nueva Propiedad | AlquiLibres',
           description: 'Publica una nueva propiedad en AlquiLibres sin comisiones',
-          requiresAuth: true 
+          requiresAuth: true
         }
       },
       {
         path: 'propiedades/:id/editar',
         name: 'edit-property',
         component: PropertyEditor,
-        meta: { 
+        meta: {
           title: 'Editar Propiedad | AlquiLibres',
           description: 'Modifica los detalles de tu propiedad',
-          requiresAuth: true 
+          requiresAuth: true
         }
       },
       {
         path: 'mensajes',
         name: 'messages',
         component: Messages,
-        meta: { 
+        meta: {
           title: 'Mensajes | AlquiLibres',
           description: 'Gestiona tus conversaciones con huéspedes',
-          requiresAuth: true 
+          requiresAuth: true
         }
       },
       {
         path: 'reservas',
         name: 'reservations',
         component: Reservations,
-        meta: { 
+        meta: {
           title: 'Reservas | AlquiLibres',
           description: 'Gestiona las solicitudes de reserva de tus propiedades',
-          requiresAuth: true 
+          requiresAuth: true
         }
       },
       {
@@ -163,40 +163,40 @@ const routes = [
         path: 'perfil',
         name: 'profile',
         component: Profile,
-        meta: { 
+        meta: {
           title: 'Mi Perfil | AlquiLibres',
           description: 'Administra tu información personal y de contacto',
-          requiresAuth: true 
+          requiresAuth: true
         }
       },
       {
         path: 'suscripcion',
         name: 'subscription',
         component: Subscription,
-        meta: { 
+        meta: {
           title: 'Mi Suscripción | AlquiLibres',
           description: 'Administra tu plan de suscripción mensual',
-          requiresAuth: true 
+          requiresAuth: true
         }
       },
       {
         path: 'checkout',
         name: 'checkout',
         component: () => import('@/views/owner/Checkout.vue'),
-        meta: { 
+        meta: {
           title: 'Checkout | AlquiLibres',
           description: 'Completa tu suscripción',
-          requiresAuth: true 
+          requiresAuth: true
         }
       },
       {
         path: 'payment-result',
         name: 'payment-result',
         component: () => import('@/views/owner/PaymentResult.vue'),
-        meta: { 
+        meta: {
           title: 'Resultado del Pago | AlquiLibres',
           description: 'Estado de tu pago',
-          requiresAuth: true 
+          requiresAuth: true
         }
       }
     ]
@@ -211,66 +211,66 @@ const routes = [
         path: 'dashboard',
         name: 'admin-dashboard',
         component: AdminDashboard,
-        meta: { 
+        meta: {
           title: 'Admin Dashboard | AlquiLibres',
           description: 'Panel de administración de AlquiLibres',
-          requiresAuth: true, 
-          requiresAdmin: true 
+          requiresAuth: true,
+          requiresAdmin: true
         }
       },
       {
         path: 'usuarios',
         name: 'admin-users',
         component: AdminUsers,
-        meta: { 
+        meta: {
           title: 'Gestión de Usuarios | Admin',
           description: 'Administrar usuarios de la plataforma',
-          requiresAuth: true, 
-          requiresAdmin: true 
+          requiresAuth: true,
+          requiresAdmin: true
         }
       },
       {
         path: 'propiedades',
         name: 'admin-properties',
         component: AdminProperties,
-        meta: { 
+        meta: {
           title: 'Gestión de Propiedades | Admin',
           description: 'Moderar y administrar propiedades publicadas',
-          requiresAuth: true, 
-          requiresAdmin: true 
+          requiresAuth: true,
+          requiresAdmin: true
         }
       },
       {
         path: 'planes',
         name: 'admin-plans',
         component: AdminPlans,
-        meta: { 
+        meta: {
           title: 'Gestión de Planes | Admin',
           description: 'Configurar planes de suscripción',
-          requiresAuth: true, 
-          requiresAdmin: true 
+          requiresAuth: true,
+          requiresAdmin: true
         }
       },
       {
         path: 'configuracion',
         name: 'admin-settings',
         component: () => import('@/views/admin/AdminSettings.vue'),
-        meta: { 
+        meta: {
           title: 'Configuración General | Admin',
           description: 'Configuración general de la plataforma',
-          requiresAuth: true, 
-          requiresAdmin: true 
+          requiresAuth: true,
+          requiresAdmin: true
         }
       },
       {
         path: 'pagos',
         name: 'admin-payments',
         component: () => import('@/views/admin/AdminPaymentSettings.vue'),
-        meta: { 
+        meta: {
           title: 'Configuración de Pagos | Admin',
           description: 'Configurar integración con MercadoPago',
-          requiresAuth: true, 
-          requiresAdmin: true 
+          requiresAuth: true,
+          requiresAdmin: true
         }
       }
     ]
@@ -325,17 +325,17 @@ const router = createRouter({
 // Navigation guard para proteger rutas y actualizar SEO
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-  
+
   // Actualizar título de la página
   document.title = to.meta.title || 'AlquiLibres'
-  
+
   // Actualizar meta tags dinámicos
   if (to.meta.description) {
     updateMetaTag('description', to.meta.description)
     updateMetaTag('og:description', to.meta.description)
     updateMetaTag('twitter:description', to.meta.description)
   }
-  
+
   if (to.meta.url) {
     const fullUrl = to.meta.url
     updateMetaTag('og:url', fullUrl)
@@ -349,32 +349,32 @@ router.beforeEach(async (to, from, next) => {
     updateMetaTag('twitter:url', fullUrl)
     updateCanonicalUrl(fullUrl)
   }
-  
+
   if (to.meta.keywords) {
     updateMetaTag('keywords', to.meta.keywords)
   }
-  
+
   if (to.meta.type) {
     updateMetaTag('og:type', to.meta.type)
   } else {
     updateMetaTag('og:type', 'website')
   }
-  
+
   // Esperar a que se cargue el estado de autenticación
   if (!authStore.initialized) {
     await authStore.checkAuth()
   }
-  
+
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
   const isGuest = to.matched.some(record => record.meta.guest)
-  
+
   // Check authentication
   if (requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'login', query: { redirect: to.fullPath } })
     return
   }
-  
+
   // Check admin access
   if (requiresAdmin && authStore.user?.role !== 'admin') {
     alert('⛔ Acceso denegado. Se requieren permisos de administrador.')
@@ -394,11 +394,10 @@ router.beforeEach(async (to, from, next) => {
     to.name !== 'profile' &&
     to.path !== '/perfil'
   ) {
-    alert('⛔ Acceso denegado. Solo propietarios pueden administrar propiedades.')
     next({ name: 'search' })
     return
   }
-  
+
   if (isGuest && authStore.isAuthenticated) {
     next({ name: authStore.user?.role === 'admin' ? 'admin-dashboard' : 'dashboard' })
   } else {
@@ -408,9 +407,9 @@ router.beforeEach(async (to, from, next) => {
 
 // Helper functions para actualizar meta tags
 function updateMetaTag(name, content) {
-  let element = document.querySelector(`meta[name="${name}"]`) || 
-                document.querySelector(`meta[property="${name}"]`)
-  
+  let element = document.querySelector(`meta[name="${name}"]`) ||
+    document.querySelector(`meta[property="${name}"]`)
+
   if (!element) {
     element = document.createElement('meta')
     const isProperty = name.includes(':')
@@ -421,7 +420,7 @@ function updateMetaTag(name, content) {
     }
     document.head.appendChild(element)
   }
-  
+
   element.setAttribute('content', content)
 }
 

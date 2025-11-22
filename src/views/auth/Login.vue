@@ -298,4 +298,73 @@ const handleSubmit = async () => {
 .auth-link:hover {
   text-decoration: underline;
 }
+
+/* Responsive - Mobile adjustments */
+@media (max-width: 600px) {
+  .auth-page {
+    padding: var(--spacing-md) 0;
+    min-height: auto;
+  }
+
+  .demo-info-card {
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.875rem;
+  }
+
+  .demo-info-header {
+    font-size: 1rem;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .demo-icon {
+    font-size: 1.25rem;
+  }
+
+  .demo-info-text {
+    font-size: 0.875rem;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .demo-credentials {
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .demo-credential-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .demo-label {
+    font-size: 0.8rem;
+    min-width: auto;
+  }
+
+  .demo-value {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    width: 100%;
+    word-break: break-all;
+  }
+
+  .copy-btn {
+    align-self: flex-end;
+    margin-top: -4px;
+  }
+
+  .auth-card {
+    padding: var(--spacing-lg);
+  }
+
+  .auth-title {
+    font-size: 1.5rem;
+  }
+
+  .auth-subtitle {
+    font-size: 0.875rem;
+  }
+}
 </style>
