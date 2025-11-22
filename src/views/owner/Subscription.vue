@@ -228,4 +228,20 @@ onMounted(() => {
 .plan-features-list li { padding: 0.5rem 0; color: #475569; font-size: 0.875rem; }
 .plan-card .btn { width: 100%; margin-top: 1rem; }
 .plan-card .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+  .subscription-view { padding: 1rem 0; }
+  .page-title { font-size: 1.5rem; margin-bottom: 1rem; }
+  .current-plan { padding: 1rem; }
+  .plan-header { flex-direction: column; gap: 1rem; }
+  .plan-name { font-size: 1.5rem; }
+  .price-amount { font-size: 1.5rem; }
+  .plan-actions { flex-direction: column; }
+  .plan-actions button { width: 100%; }
+  .modal-content { margin: 0.5rem; max-height: 95vh; }
+  .modal-header { padding: 1rem; }
+  .plans-grid { grid-template-columns: 1fr; padding: 1rem; gap: 1rem; }
+  .plan-card { padding: 1.5rem; }
+  .detail-item { flex-direction: column; gap: 0.25rem; text-align: left; }
+}
 </style>

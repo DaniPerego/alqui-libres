@@ -81,4 +81,15 @@ function exportReport() {
 section {
   margin-bottom: 2rem;
 }
+
+@media (max-width: 768px) {
+  .dashboard-stats {
+    padding: 1rem;
+  }
+
+  .stats-grid {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
 </style>

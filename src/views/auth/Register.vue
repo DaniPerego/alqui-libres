@@ -193,4 +193,24 @@ const handleSubmit = async () => {
 .auth-link:hover {
   text-decoration: underline;
 }
+
+/* Responsive - Mobile adjustments */
+@media (max-width: 600px) {
+  .auth-page {
+    padding: var(--spacing-md) 0;
+    min-height: auto;
+  }
+
+  .auth-card {
+    padding: var(--spacing-lg);
+  }
+
+  .auth-title {
+    font-size: 1.5rem;
+  }
+
+  .auth-subtitle {
+    font-size: 0.875rem;
+  }
+}
 </style>

@@ -121,18 +121,57 @@ const dismiss = () => {
 }
 
 @media (max-width: 768px) {
+  .demo-banner {
+    padding: 8px 12px;
+  }
+
   .demo-content {
     flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .demo-icon {
+    font-size: 1.25rem;
   }
   
   .demo-credentials {
     display: block;
     margin-left: 0;
     margin-top: 4px;
+    font-size: 0.75rem;
+  }
+
+  .demo-credentials code {
+    font-size: 0.75rem;
+    padding: 1px 4px;
+  }
+
+  .demo-credentials .separator {
+    display: none;
+  }
+
+  .demo-credentials strong {
+    display: block;
+    margin-top: 4px;
   }
   
   .demo-text {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .demo-text br {
+    display: none;
+  }
+
+  .demo-text small {
+    font-size: 0.7rem;
+  }
+
+  .demo-close {
+    width: 24px;
+    height: 24px;
+    font-size: 1.25rem;
   }
 }
 </style>
