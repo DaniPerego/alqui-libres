@@ -4,8 +4,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [vue()],
-  // Configuración para GitHub Pages
-  base: '/alqui-libres/',
+  base: process.env.VITE_BASE_PATH || '/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

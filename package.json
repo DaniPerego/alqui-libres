@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@mercadopago/sdk-js": "^0.0.3",
+    "@vercel/blob": "^2.6.1",
     "@vueuse/core": "^10.7.0",
     "firebase": "^10.7.1",
     "pinia": "^2.1.7",
