@@ -108,21 +108,29 @@
                     🔑
                   </button>
                   <button 
-                    v-if="user.subscription?.status === 'active' || user.subscription?.status === 'paused'"
+                    v-if="user.subscription"
                     @click="setSubStatus(user.uid, user.subscription.status === 'paused' ? 'active' : 'paused')"
                     class="btn-sm"
-                    :class="user.subscription.status === 'paused' ? 'btn-success' : 'btn-warning'"
-                    :title="user.subscription.status === 'paused' ? 'Reanudar suscripci&oacute;n' : 'Suspender suscripci&oacute;n'"
+                    :class="user.subscription.status === 'paused' ? 'btn-success' : user.subscription.status === 'canceled' ? 'btn-success' : 'btn-warning'"
+                    :title="getSubToggleTitle(user.subscription.status)"
                   >
-                    {{ user.subscription.status === 'paused' ? '▶' : '⏸' }}
+                    {{ getSubToggleIcon(user.subscription.status) }}
                   </button>
                   <button 
-                    v-if="user.subscription?.status === 'active' || user.subscription?.status === 'paused'"
-                    @click="setSubStatus(user.uid, 'canceled')"
-                    class="btn-sm btn-danger"
-                    title="Cancelar suscripci&oacute;n"
+                    v-if="user.subscription"
+                    @click="setSubStatus(user.uid, user.subscription.status === 'canceled' ? 'active' : 'canceled')"
+                    class="btn-sm"
+                    :class="user.subscription.status === 'canceled' ? 'btn-success' : 'btn-danger'"
+                    :title="user.subscription.status === 'canceled' ? 'Reactivar suscripci&oacute;n' : 'Cancelar suscripci&oacute;n'"
                   >
-                    ⏹
+                    {{ user.subscription.status === 'canceled' ? '🔄' : '⏹' }}
+                  </button>
+                  <button 
+                    @click="openEditUser(user)"
+                    class="btn-sm btn-edit"
+                    title="Editar usuario"
+                  >
+                    ✏️
                   </button>
                   <button 
                     @click="viewUserDetails(user)"
@@ -195,6 +203,40 @@
       </div>
     </teleport>
 
+    <!-- Edit User Modal -->
+    <teleport to="body">
+      <div v-if="editingUser" class="modal-overlay" @click="editingUser = null">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h2>Editar Usuario</h2>
+            <button @click="editingUser = null" class="close-btn">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Nombre completo</label>
+              <input v-model="editForm.displayName" type="text" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input v-model="editForm.email" type="email" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Rol</label>
+              <select v-model="editForm.role" class="form-input">
+                <option value="guest">Hu&eacute;sped</option>
+                <option value="owner">Propietario</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button @click="editingUser = null" class="btn-cancel">Cancelar</button>
+              <button @click="saveEditUser" class="btn-primary">Guardar Cambios</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
     <!-- User Details Modal -->
     <teleport to="body">
       <div v-if="selectedUser" class="modal-overlay" @click="selectedUser = null">
@@ -260,9 +302,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
+import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 
 const adminStore = useAdminStore()
+const authStore = useAuthStore()
 const { show } = useToast()
 
 const searchQuery = ref('')
@@ -358,10 +402,65 @@ const resetPassword = async (userId) => {
   }
 }
 
+const getSubToggleTitle = (status) => {
+  if (status === 'paused') return 'Reanudar suscripción'
+  if (status === 'canceled') return 'Reanudar suscripción'
+  return 'Suspender suscripción'
+}
+
+const getSubToggleIcon = (status) => {
+  if (status === 'paused' || status === 'canceled') return '▶'
+  return '⏸'
+}
+
 const setSubStatus = async (userId, status) => {
   const labels = { canceled: 'cancelada', paused: 'suspendida', active: 'reanudada' }
   const result = await adminStore.setUserSubscriptionStatus(userId, status)
   show(result.success ? `Suscripción ${labels[status] || status} correctamente` : 'Error: ' + result.error, result.success ? 'success' : 'error')
+}
+
+const editingUser = ref(null)
+const editForm = ref({ displayName: '', email: '', role: '' })
+
+const openEditUser = (user) => {
+  editingUser.value = user
+  editForm.value = {
+    displayName: user.displayName || '',
+    email: user.email || '',
+    role: user.role || 'owner'
+  }
+}
+
+const saveEditUser = async () => {
+  const user = editingUser.value
+  if (!user) return
+
+  const updates = {}
+  if (editForm.value.displayName !== user.displayName) updates.displayName = editForm.value.displayName
+  if (editForm.value.email !== user.email) updates.email = editForm.value.email
+  if (editForm.value.role !== user.role) {
+    const roleResult = await adminStore.updateUserRole(user.uid, editForm.value.role)
+    if (!roleResult.success) {
+      show('Error al actualizar rol: ' + roleResult.error, 'error')
+      return
+    }
+  }
+
+  if (updates.displayName || updates.email) {
+    const authStore = useAuthStore()
+    if (!authStore) {
+      if (updates.displayName) user.displayName = updates.displayName
+      if (updates.email) user.email = updates.email
+      localStorage.setItem('mockUser', JSON.stringify(authStore.user))
+    }
+  }
+
+  user.displayName = editForm.value.displayName
+  user.email = editForm.value.email
+  user.role = editForm.value.role
+
+  show('Usuario actualizado correctamente', 'success')
+  editingUser.value = null
 }
 
 const viewUserDetails = (user) => {
@@ -629,6 +728,15 @@ onMounted(() => {
 
 .btn-danger:hover {
   background: #fecaca;
+}
+
+.btn-edit {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.btn-edit:hover {
+  background: #c7d2fe;
 }
 
 .empty-state {
