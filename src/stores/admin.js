@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { db } from '@/config/firebase'
+import { useAuthStore } from '@/stores/auth'
 import { 
   collection, 
   getDocs, 
@@ -547,6 +548,7 @@ export const useAdminStore = defineStore('admin', () => {
    * Crear un nuevo usuario (propietario) desde el admin
    */
   const createUser = async (userData) => {
+    const password = userData.password || Math.random().toString(36).slice(2, 10)
     const newUser = {
       uid: 'user_' + Date.now() + Math.random().toString(36).slice(2, 6),
       email: userData.email,
@@ -568,9 +570,12 @@ export const useAdminStore = defineStore('admin', () => {
     }
 
     if (!db) {
+      // Save dynamic credentials so the user can log in
+      const authStore = useAuthStore()
+      authStore.saveMockCredentials(newUser.email, password, newUser.displayName, newUser.role, newUser.uid, newUser.subscription)
       users.value.push(newUser)
       updateStats()
-      return { success: true, user: newUser, message: `Usuario ${userData.displayName} creado (modo demo)` }
+      return { success: true, user: newUser, password, message: `Usuario ${userData.displayName} creado. Contraseña temporal: ${password}` }
     }
 
     try {
@@ -586,7 +591,7 @@ export const useAdminStore = defineStore('admin', () => {
       })
       users.value.push(newUser)
       updateStats()
-      return { success: true, user: newUser }
+      return { success: true, user: newUser, password, message: `Usuario ${userData.displayName} creado. Contraseña temporal: ${password}` }
     } catch (err) {
       return { success: false, error: err.message }
     }
@@ -610,6 +615,85 @@ export const useAdminStore = defineStore('admin', () => {
       user.subscription = subscription
       updateStats()
       return { success: true, message: `Suscripción actualizada (modo demo)` }
+    }
+
+    try {
+      const userRef = doc(db, 'users', userId)
+      await updateDoc(userRef, {
+        subscription: {
+          ...subscription,
+          startDate: Timestamp.fromDate(new Date(subscription.startDate)),
+          endDate: Timestamp.fromDate(new Date(subscription.endDate))
+        }
+      })
+      user.subscription = subscription
+      updateStats()
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message }
+    }
+  }
+
+  /**
+   * Blanquear / resetear la contraseña de un usuario
+   */
+  const resetUserPassword = async (userId) => {
+    const user = users.value.find(u => u.uid === userId)
+    if (!user) return { success: false, error: 'Usuario no encontrado' }
+
+    const newPassword = 'temp' + Math.random().toString(36).slice(2, 8)
+
+    if (!db) {
+      const authStore = useAuthStore()
+      const creds = JSON.parse(localStorage.getItem('mockCredentials') || '{}')
+      if (creds[user.email]) {
+        creds[user.email] = { ...creds[user.email], password: newPassword, mustChangePassword: true }
+        localStorage.setItem('mockCredentials', JSON.stringify(creds))
+      }
+      return { success: true, password: newPassword, message: `Contraseña restablecida. Nueva contraseña temporal: ${newPassword}` }
+    }
+
+    try {
+      const { sendPasswordResetEmail } = await import('firebase/auth')
+      const { auth } = await import('@/config/firebase')
+      if (auth) {
+        await sendPasswordResetEmail(auth, user.email)
+        return { success: true, message: 'Email de restablecimiento enviado a ' + user.email }
+      }
+      return { success: false, error: 'Firebase Auth no disponible' }
+    } catch (err) {
+      return { success: false, error: err.message }
+    }
+  }
+
+  /**
+   * Cambiar el estado de la suscripción de un usuario (cancelar, suspender, reanudar)
+   */
+  const setUserSubscriptionStatus = async (userId, status) => {
+    const user = users.value.find(u => u.uid === userId)
+    if (!user) return { success: false, error: 'Usuario no encontrado' }
+
+    const now = new Date()
+    const subscription = user.subscription ? { ...user.subscription } : { planId: null, startDate: now }
+
+    subscription.status = status
+    if (status === 'canceled' || status === 'paused') {
+      subscription.endDate = now
+    } else if (status === 'active') {
+      subscription.endDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000)
+    }
+
+    if (!db) {
+      user.subscription = subscription
+      // Also update mock credentials
+      const authStore = useAuthStore()
+      const creds = JSON.parse(localStorage.getItem('mockCredentials') || '{}')
+      if (creds[user.email]) {
+        creds[user.email] = { ...creds[user.email], subscription }
+        localStorage.setItem('mockCredentials', JSON.stringify(creds))
+      }
+      updateStats()
+      return { success: true, message: `Suscripción ${status === 'canceled' ? 'cancelada' : status === 'paused' ? 'suspendida' : 'reanudada'} (modo demo)` }
     }
 
     try {
@@ -732,6 +816,8 @@ export const useAdminStore = defineStore('admin', () => {
     toggleUserStatus,
     createUser,
     updateUserSubscription,
+    resetUserPassword,
+    setUserSubscriptionStatus,
     updateSubscriptionPlan,
     updatePaymentSettings,
     updateStats,

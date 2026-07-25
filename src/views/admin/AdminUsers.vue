@@ -101,6 +101,30 @@
                     {{ user.isActive ? '🔒' : '🔓' }}
                   </button>
                   <button 
+                    @click="resetPassword(user.uid)"
+                    class="btn-sm btn-reset-pass"
+                    title="Blanquear contrase&ntilde;a"
+                  >
+                    🔑
+                  </button>
+                  <button 
+                    v-if="user.subscription?.status === 'active' || user.subscription?.status === 'paused'"
+                    @click="setSubStatus(user.uid, user.subscription.status === 'paused' ? 'active' : 'paused')"
+                    class="btn-sm"
+                    :class="user.subscription.status === 'paused' ? 'btn-success' : 'btn-warning'"
+                    :title="user.subscription.status === 'paused' ? 'Reanudar suscripci&oacute;n' : 'Suspender suscripci&oacute;n'"
+                  >
+                    {{ user.subscription.status === 'paused' ? '▶' : '⏸' }}
+                  </button>
+                  <button 
+                    v-if="user.subscription?.status === 'active' || user.subscription?.status === 'paused'"
+                    @click="setSubStatus(user.uid, 'canceled')"
+                    class="btn-sm btn-danger"
+                    title="Cancelar suscripci&oacute;n"
+                  >
+                    ⏹
+                  </button>
+                  <button 
                     @click="viewUserDetails(user)"
                     class="btn-info btn-sm"
                     title="Ver detalles"
@@ -135,6 +159,10 @@
             <div class="form-group">
               <label>Email</label>
               <input v-model="newUserForm.email" type="email" class="form-input" placeholder="ejemplo@correo.com" />
+            </div>
+            <div class="form-group">
+              <label>Contrase&ntilde;a <span class="field-optional">(opcional &mdash; se genera una autom&aacute;tica si se deja vac&iacute;a)</span></label>
+              <input v-model="newUserForm.password" type="text" class="form-input" placeholder="Dejar vac&iacute;o para generar autom&aacute;ticamente" />
             </div>
             <div class="form-row">
               <div class="form-group">
@@ -246,7 +274,8 @@ const newUserForm = ref({
   displayName: '',
   email: '',
   role: 'owner',
-  planId: ''
+  planId: '',
+  password: ''
 })
 
 const filteredUsers = computed(() => {
@@ -296,9 +325,9 @@ const createUser = async () => {
   const result = await adminStore.createUser({ ...newUserForm.value })
   creating.value = false
   if (result.success) {
-    show(result.message || 'Usuario creado correctamente', 'success')
+    show(result.message || 'Usuario creado correctamente', 'success', 8000)
     showCreateModal.value = false
-    newUserForm.value = { displayName: '', email: '', role: 'owner', planId: '' }
+    newUserForm.value = { displayName: '', email: '', role: 'owner', planId: '', password: '' }
   } else {
     show(result.error || 'Error al crear usuario', 'error')
   }
@@ -318,6 +347,21 @@ const toggleStatus = async (userId, newStatus) => {
 const changeUserPlan = async (userId, planId) => {
   const result = await adminStore.updateUserSubscription(userId, planId || null, planId ? 'active' : null)
   show(result.success ? 'Plan de suscripción actualizado' : 'Error: ' + result.error, result.success ? 'success' : 'error')
+}
+
+const resetPassword = async (userId) => {
+  const result = await adminStore.resetUserPassword(userId)
+  if (result.success) {
+    show(result.message, 'info', 10000)
+  } else {
+    show('Error: ' + result.error, 'error')
+  }
+}
+
+const setSubStatus = async (userId, status) => {
+  const labels = { canceled: 'cancelada', paused: 'suspendida', active: 'reanudada' }
+  const result = await adminStore.setUserSubscriptionStatus(userId, status)
+  show(result.success ? `Suscripción ${labels[status] || status} correctamente` : 'Error: ' + result.error, result.success ? 'success' : 'error')
 }
 
 const viewUserDetails = (user) => {
@@ -569,6 +613,24 @@ onMounted(() => {
   background: #bfdbfe;
 }
 
+.btn-reset-pass {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.btn-reset-pass:hover {
+  background: #e9d5ff;
+}
+
+.btn-danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-danger:hover {
+  background: #fecaca;
+}
+
 .empty-state {
   padding: var(--spacing-2xl);
   text-align: center;
@@ -647,6 +709,12 @@ onMounted(() => {
   font-weight: 600;
   color: var(--gray-700);
   margin-bottom: var(--spacing-xs);
+}
+
+.field-optional {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--gray-500);
 }
 
 .form-input {

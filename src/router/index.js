@@ -8,6 +8,7 @@ const Search = () => import('@/views/Search.vue')
 const PropertyDetail = () => import('@/views/PropertyDetail.vue')
 const Login = () => import('@/views/auth/Login.vue')
 const Register = () => import('@/views/auth/Register.vue')
+const ForcePasswordChange = () => import('@/views/auth/ForcePasswordChange.vue')
 
 // Panel del Locatario
 const Dashboard = () => import('@/views/owner/Dashboard.vue')
@@ -82,6 +83,15 @@ const routes = [
       ...routeMetadata.register,
       title: 'Registrarse',
       guest: true
+    }
+  },
+  {
+    path: '/cambiar-contrasena',
+    name: 'force-password-change',
+    component: ForcePasswordChange,
+    meta: {
+      title: 'Cambiar Contraseña | AlquiLibres',
+      requiresAuth: true
     }
   },
   {
@@ -443,6 +453,12 @@ router.beforeEach(async (to, from, next) => {
   // Check authentication
   if (requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  // Force password change if mustChangePassword is set
+  if (authStore.mustChangePassword && to.name !== 'force-password-change') {
+    next({ name: 'force-password-change' })
     return
   }
 

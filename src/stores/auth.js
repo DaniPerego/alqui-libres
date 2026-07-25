@@ -4,17 +4,32 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from 'firebase/auth'
 import { auth } from '@/config/firebase'
 import { mockGuestUser, mockOwnerUser, mockAdminUser } from '@/data/mockData'
+
+const MOCK_CREDENTIALS_KEY = 'mockCredentials'
+
+function getMockCredentials() {
+  try {
+    const raw = localStorage.getItem(MOCK_CREDENTIALS_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch { return {} }
+}
+
+function saveMockCredentials(creds) {
+  localStorage.setItem(MOCK_CREDENTIALS_KEY, JSON.stringify(creds))
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     initialized: false,
     loading: false,
-    error: null
+    error: null,
+    mustChangePassword: false
   }),
   
   getters: {
@@ -26,11 +41,15 @@ export const useAuthStore = defineStore('auth', {
   
   actions: {
     async checkAuth() {
-      // Si no hay Firebase configurado, verificar si hay usuario mock en localStorage
       if (!auth) {
         const mockUserData = localStorage.getItem('mockUser')
         if (mockUserData) {
           this.user = JSON.parse(mockUserData)
+          const creds = getMockCredentials()
+          const entry = creds[this.user.email]
+          if (entry?.mustChangePassword) {
+            this.mustChangePassword = true
+          }
         }
         this.initialized = true
         return this.user
@@ -49,37 +68,52 @@ export const useAuthStore = defineStore('auth', {
     async login(email, password) {
       this.loading = true
       this.error = null
+      this.mustChangePassword = false
       
       try {
-        // Modo demo - permite login sin Firebase configurado
         if (!auth) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+
+          // Check dynamic mock credentials first
+          const creds = getMockCredentials()
+          const entry = creds[email]
+          if (entry && entry.password === password) {
+            const { mockUsersCredentials: _, ...rest } = creds
+            const userData = {
+              uid: entry.uid,
+              email,
+              displayName: entry.displayName || email.split('@')[0],
+              emailVerified: true,
+              role: entry.role || 'owner',
+              subscription: entry.subscription || null,
+              stats: { properties: 0, bookings: 0, revenue: 0 }
+            }
+            this.user = userData
+            localStorage.setItem('mockUser', JSON.stringify(userData))
+            if (entry.mustChangePassword) {
+              this.mustChangePassword = true
+            }
+            return { success: true }
+          }
+
+          // Fallback to hardcoded users
           if (email === 'huesped@alquilibres.com' && password === 'guest123') {
-            console.log('🧪 Login exitoso en modo demo como HUÉSPED')
-            await new Promise(resolve => setTimeout(resolve, 500))
             this.user = mockGuestUser
             this.initialized = true
             localStorage.setItem('mockUser', JSON.stringify(mockGuestUser))
             return { success: true }
           } else if (email === 'usuario@alquilibres.com' && password === 'user123') {
-            console.log('🧪 Login exitoso en modo demo como PROPIETARIO')
-            await new Promise(resolve => setTimeout(resolve, 500))
             this.user = mockOwnerUser
             this.initialized = true
             localStorage.setItem('mockUser', JSON.stringify(mockOwnerUser))
             return { success: true }
           } else if (email === 'admin@alquilibres.com' && password === 'admin123') {
-            console.log('👑 Login exitoso en modo demo como ADMINISTRADOR')
-            await new Promise(resolve => setTimeout(resolve, 500))
             this.user = mockAdminUser
             this.initialized = true
             localStorage.setItem('mockUser', JSON.stringify(mockAdminUser))
             return { success: true }
           } else {
-            console.error('Modo Demo: Credenciales válidas para pruebas:')
-            console.error('Huésped: huesped@alquilibres.com / guest123')
-            console.error('Usuario general: usuario@alquilibres.com / user123')
-            console.error('Administrador: admin@alquilibres.com / admin123')
-            throw new Error('Modo Demo: Email o contraseña incorrectos. Verifique las credenciales de prueba en la consola.')
+            throw new Error('Modo Demo: Email o contraseña incorrectos')
           }
         }
 
@@ -93,19 +127,85 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
-    
+
+    async changePassword(newPassword) {
+      this.loading = true
+      try {
+        if (!auth) {
+          const userData = this.user
+          if (!userData) throw new Error('No hay usuario autenticado')
+
+          const creds = getMockCredentials()
+          const entry = creds[userData.email]
+          if (entry) {
+            creds[userData.email] = { ...entry, password: newPassword, mustChangePassword: false }
+            saveMockCredentials(creds)
+          }
+          this.mustChangePassword = false
+          return { success: true }
+        }
+
+        const user = auth.currentUser
+        if (!user) throw new Error('No hay usuario autenticado')
+        await user.updatePassword(newPassword)
+        return { success: true }
+      } catch (error) {
+        this.error = this.getErrorMessage(error.code || error.message)
+        return { success: false, error: this.error }
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async resetPassword(email) {
+      if (!auth) {
+        const creds = getMockCredentials()
+        const entry = creds[email]
+        if (entry) {
+          creds[email] = { ...entry, password: 'temporal123', mustChangePassword: true }
+          saveMockCredentials(creds)
+          return { success: true, message: 'Contraseña restablecida a: temporal123' }
+        }
+        return { success: false, error: 'Email no encontrado' }
+      }
+
+      try {
+        await sendPasswordResetEmail(auth, email)
+        return { success: true, message: 'Email de restablecimiento enviado' }
+      } catch (error) {
+        return { success: false, error: this.getErrorMessage(error.code) }
+      }
+    },
+
+    // Called by admin store when creating a new user
+    saveMockCredentials(email, password, displayName, role, uid, subscription) {
+      const creds = getMockCredentials()
+      creds[email] = {
+        password,
+        uid,
+        displayName,
+        role,
+        subscription,
+        mustChangePassword: true
+      }
+      saveMockCredentials(creds)
+    },
+
+    clearMockCredentials(email) {
+      const creds = getMockCredentials()
+      delete creds[email]
+      saveMockCredentials(creds)
+    },
+
     async register(email, password, displayName) {
       this.loading = true
       this.error = null
       
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-        
-        // Actualizar perfil con nombre
         if (displayName) {
           await updateProfile(userCredential.user, { displayName })
         }
-        
         this.user = userCredential.user
         return { success: true }
       } catch (error) {
@@ -119,23 +219,13 @@ export const useAuthStore = defineStore('auth', {
     async updateProfile(profileData) {
       this.loading = true
       try {
-        // Modo demo
         if (!auth) {
-          // Actualizar usuario mock
-          this.user = {
-            ...this.user,
-            ...profileData
-          }
+          this.user = { ...this.user, ...profileData }
           localStorage.setItem('mockUser', JSON.stringify(this.user))
           return { success: true }
         }
-        
-        // Firebase real
         await updateProfile(auth.currentUser, profileData)
-        this.user = {
-          ...this.user,
-          ...profileData
-        }
+        this.user = { ...this.user, ...profileData }
         return { success: true }
       } catch (error) {
         this.error = this.getErrorMessage(error.code)
@@ -148,13 +238,12 @@ export const useAuthStore = defineStore('auth', {
     async logout() {
       this.loading = true
       try {
-        // Modo demo
         if (!auth) {
           localStorage.removeItem('mockUser')
           this.user = null
+          this.mustChangePassword = false
           return { success: true }
         }
-        
         await signOut(auth)
         this.user = null
         return { success: true }
@@ -178,7 +267,6 @@ export const useAuthStore = defineStore('auth', {
         'auth/invalid-credential': 'Credenciales inválidas',
         'auth/too-many-requests': 'Demasiados intentos. Intente más tarde'
       }
-      
       return messages[code] || 'Ocurrió un error. Intente nuevamente'
     }
   }
