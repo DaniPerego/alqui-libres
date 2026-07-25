@@ -435,9 +435,16 @@ const saveEditUser = async () => {
   const user = editingUser.value
   if (!user) return
 
-  const updates = {}
-  if (editForm.value.displayName !== user.displayName) updates.displayName = editForm.value.displayName
-  if (editForm.value.email !== user.email) updates.email = editForm.value.email
+  const nameChanged = editForm.value.displayName !== user.displayName
+  const emailChanged = editForm.value.email !== user.email
+
+  if (nameChanged || emailChanged) {
+    await adminStore.updateUser(user.uid, {
+      displayName: editForm.value.displayName,
+      email: editForm.value.email
+    })
+  }
+
   if (editForm.value.role !== user.role) {
     const roleResult = await adminStore.updateUserRole(user.uid, editForm.value.role)
     if (!roleResult.success) {
@@ -445,19 +452,6 @@ const saveEditUser = async () => {
       return
     }
   }
-
-  if (updates.displayName || updates.email) {
-    const authStore = useAuthStore()
-    if (!authStore) {
-      if (updates.displayName) user.displayName = updates.displayName
-      if (updates.email) user.email = updates.email
-      localStorage.setItem('mockUser', JSON.stringify(authStore.user))
-    }
-  }
-
-  user.displayName = editForm.value.displayName
-  user.email = editForm.value.email
-  user.role = editForm.value.role
 
   show('Usuario actualizado correctamente', 'success')
   editingUser.value = null

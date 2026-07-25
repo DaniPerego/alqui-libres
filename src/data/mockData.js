@@ -6,6 +6,7 @@ export const mockProperties = [
     title: 'Casa Familiar con Parrilla y Pileta',
     description: 'Hermosa casa ideal para familias, con amplio jardín, parrilla de carbón profesional y pileta climatizada. A solo 5 minutos del centro de la ciudad.',
     propertyType: 'casa',
+    rentalType: 'temporario',
     mainImage: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800',
     images: [
       'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800',
@@ -50,6 +51,7 @@ export const mockProperties = [
     title: 'Departamento Céntrico con Vista al Mar',
     description: 'Moderno departamento en pleno centro, con impresionantes vistas al mar. Ideal para parejas o pequeñas familias.',
     propertyType: 'apartamento',
+    rentalType: 'temporario',
     mainImage: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
     images: [
       'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
@@ -93,6 +95,7 @@ export const mockProperties = [
     title: 'Cabaña Rústica en las Sierras',
     description: 'Cabaña de montaña perfecta para desconectarse. Rodeada de naturaleza, con fogón y quincho. Ideal para grupos de amigos.',
     propertyType: 'cabana',
+    rentalType: 'temporario',
     mainImage: 'https://images.unsplash.com/photo-1542718610-a1d656d1884c?w=800',
     images: [
       'https://images.unsplash.com/photo-1542718610-a1d656d1884c?w=800',
@@ -136,6 +139,7 @@ export const mockProperties = [
     title: 'Loft Moderno en Palermo',
     description: 'Loft de diseño en el corazón de Palermo. Perfecto para profesionales o parejas que buscan comodidad y estilo.',
     propertyType: 'loft',
+    rentalType: 'temporario',
     mainImage: 'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=800',
     images: [
       'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=800',
@@ -181,6 +185,7 @@ export const mockPendingProperties = [
     title: 'Casa Quinta con Piscula y Cancha de Tenis',
     description: 'Espectacular casa quinta con amplio parque, piscina olímpica y cancha de tenis. Ideal para eventos y reuniones familiares. Capacidad para hasta 20 personas en evento.',
     propertyType: 'casa',
+    rentalType: 'temporario',
     mainImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
     images: [
       'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
@@ -223,6 +228,7 @@ export const mockPendingProperties = [
     title: 'PH Moderno en Palermo Soho',
     description: 'PH de diseño en Palermo Soho con terraza y parrilla. Recién renovado con materiales de primera calidad. A pasos de los mejores bares y restaurantes.',
     propertyType: 'apartamento',
+    rentalType: 'temporario',
     mainImage: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
     images: [
       'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
@@ -265,13 +271,14 @@ export const mockPendingProperties = [
     title: 'Departamento Estudiantil',
     description: 'Departamento pequeño pero funcional, cerca de la universidad. Precio económico para estudiantes. Consultar por estadías mínimas.',
     propertyType: 'departamento',
+    rentalType: 'anual',
     mainImage: 'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800',
     images: [
       'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800'
     ],
     pricing: {
-      basePrice: 45,
-      cleaningFee: 10,
+      basePrice: 450,
+      cleaningFee: 0,
       currency: 'USD'
     },
     capacity: {

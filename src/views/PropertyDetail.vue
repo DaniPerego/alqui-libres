@@ -28,6 +28,9 @@
               <p class="property-location">
                 📍 {{ property.location.city }}, {{ property.location.state }}
               </p>
+              <div class="rental-type-badge" :class="property.rentalType">
+                {{ property.rentalType === 'anual' ? '📆 Alquiler Anual' : '📅 Alquiler Temporario' }}
+              </div>
               <div class="property-meta">
                 <span>{{ property.capacity.guests }} huéspedes</span>
                 <span>•</span>
@@ -251,15 +254,19 @@
         <aside class="booking-sidebar card">
           <div class="pricing-info">
             <div class="price-display">
-             
-              <span class="price-period">/ noche</span>
+              
+              <span class="price-period">{{ property.rentalType === 'anual' ? '/ mes' : '/ noche' }}</span>
             </div>
-            <div v-if="property.pricing.cleaningFee > 0" class="additional-fees">
+            <div v-if="property.rentalType !== 'anual' && property.pricing.cleaningFee > 0" class="additional-fees">
               <span>Tarifa de limpieza: ${{ property.pricing.cleaningFee }}</span>
             </div>
           </div>
           
-          <div class="booking-form">
+          <div v-if="property.rentalType === 'anual'" class="annual-notice">
+            <p>📆 Esta propiedad se alquila por mes.</p>
+            <p>Consultá disponibilidad y condiciones contactando al propietario.</p>
+          </div>
+          <div v-else class="booking-form">
             <div class="form-group">
               <label class="label">Check-in</label>
               <DatePicker
@@ -292,7 +299,13 @@
             </div>
           </div>
           
-          <div v-if="totalPrice > 0" class="price-breakdown">
+          <div v-if="property.rentalType === 'anual'" class="price-breakdown">
+            <div class="price-row total">
+              <strong>Precio mensual</strong>
+              <strong>${{ property.pricing.basePrice }}</strong>
+            </div>
+          </div>
+          <div v-else-if="totalPrice > 0" class="price-breakdown">
             <div class="price-row">
               <span>${{ property.pricing.basePrice }} x {{ nights }} noches</span>
               <span>${{ property.pricing.basePrice * nights }}</span>
@@ -576,6 +589,9 @@ const reservationNights = computed(() => {
 })
 
 const reservationTotal = computed(() => {
+  if (property.value.rentalType === 'anual') {
+    return property.value.pricing.basePrice
+  }
   if (reservationNights.value <= 0) return 0
   const basePrice = property.value.pricing.basePrice * reservationNights.value
   const cleaningFee = property.value.pricing.cleaningFee || 0
@@ -599,6 +615,7 @@ const nights = computed(() => {
 })
 
 const totalPrice = computed(() => {
+  if (property.value.rentalType === 'anual') return property.value.pricing.basePrice
   if (nights.value <= 0) return 0
   const basePrice = property.value.pricing.basePrice * nights.value
   const cleaningFee = property.value.pricing.cleaningFee || 0
@@ -960,7 +977,7 @@ onMounted(async () => {
     description: property.value.description.substring(0, 160),
     url: `https://alquilibres.com/propiedad/${property.value.id}`,
     image: property.value.images[0] + '?w=1200&h=630&fit=crop',
-    keywords: `${property.value.propertyType}, ${property.value.location.city}, alquiler temporario, ${property.value.amenities.join(', ')}`,
+    keywords: `${property.value.propertyType}, ${property.value.location.city}, alquiler ${property.value.rentalType || 'temporario'}, ${property.value.amenities.join(', ')}`,
     type: 'product'
   })
   
@@ -1047,6 +1064,25 @@ onMounted(async () => {
   font-size: 1rem;
   color: var(--gray-600);
   margin-bottom: var(--spacing-sm);
+}
+
+.rental-type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+}
+
+.rental-type-badge.temporario {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.rental-type-badge.anual {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .property-meta {
@@ -1225,6 +1261,17 @@ onMounted(async () => {
 
 .form-group {
   margin-bottom: var(--spacing-md);
+}
+
+.annual-notice {
+  padding: var(--spacing-lg);
+  background: #fef3c7;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+  text-align: center;
+  line-height: 1.6;
+  color: #92400e;
+  font-size: 0.875rem;
 }
 
 .price-breakdown {

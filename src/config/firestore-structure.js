@@ -9,9 +9,10 @@
 //   title: string,
 //   description: string,
 //   propertyType: string, // casa, apartamento, cabaña, etc.
+//   rentalType: string, // 'temporario' | 'anual'
 //   images: string[], // URLs de las imágenes
 //   pricing: {
-//     basePrice: number,
+//     basePrice: number, // precio por noche (temporario) o por mes (anual)
 //     cleaningFee: number,
 //     currency: string
 //   },

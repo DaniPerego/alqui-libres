@@ -96,6 +96,27 @@
               <option value="loft">Loft</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="label">Tipo de Alquiler *</label>
+            <div class="rental-type-toggle">
+              <button
+                type="button"
+                :class="['toggle-btn', { active: formData.rentalType === 'temporario' }]"
+                @click="formData.rentalType = 'temporario'"
+              >
+                📅 Temporario
+                <small>Por noche</small>
+              </button>
+              <button
+                type="button"
+                :class="['toggle-btn', { active: formData.rentalType === 'anual' }]"
+                @click="formData.rentalType = 'anual'"
+              >
+                📆 Anual
+                <small>Por mes</small>
+              </button>
+            </div>
+          </div>
         </div>
       </section>
       
@@ -201,10 +222,16 @@
       <!-- Precios -->
       <section class="form-section card">
         <h2 class="section-title">Precios</h2>
+        <p class="section-subtitle" v-if="formData.rentalType === 'temporario'">
+          Precios por noche para alquiler temporario
+        </p>
+        <p class="section-subtitle" v-else>
+          Precio mensual para alquiler anual
+        </p>
         
         <div class="form-row">
           <div class="form-group">
-            <label class="label">Precio por Noche *</label>
+            <label class="label">{{ formData.rentalType === 'anual' ? 'Precio por Mes' : 'Precio por Noche' }} *</label>
             <input 
               v-model.number="formData.pricing.basePrice" 
               type="number" 
@@ -214,7 +241,7 @@
             />
           </div>
           
-          <div class="form-group">
+          <div class="form-group" v-if="formData.rentalType !== 'anual'">
             <label class="label">Tarifa de Limpieza</label>
             <input 
               v-model.number="formData.pricing.cleaningFee" 
@@ -327,6 +354,7 @@ const formData = ref({
   title: '',
   description: '',
   propertyType: '',
+  rentalType: 'temporario',
   images: [],
   pricing: {
     basePrice: 0,
@@ -681,6 +709,55 @@ onMounted(async () => {
   background: var(--gray-50);
   border-radius: var(--radius-md);
   border: 1px dashed var(--gray-300);
+}
+
+.section-subtitle {
+  color: var(--gray-600);
+  margin-bottom: var(--spacing-lg);
+  font-size: 0.875rem;
+}
+
+.rental-type-toggle {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.toggle-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--spacing-md);
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.toggle-btn.active {
+  border-color: var(--primary-color);
+  background: #fef3f2;
+  color: var(--primary-color);
+}
+
+.toggle-btn small {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--gray-500);
+}
+
+.toggle-btn.active small {
+  color: var(--primary-color);
 }
 
 .amenity-checkbox {

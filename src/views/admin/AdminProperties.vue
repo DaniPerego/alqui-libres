@@ -45,6 +45,9 @@
               {{ getStatusText(property.status) }}
             </span>
             <span class="badge-type">{{ property.propertyType }}</span>
+            <span class="badge-rental" :class="property.rentalType || 'temporario'">
+              {{ (property.rentalType || 'temporario') === 'anual' ? 'Anual' : 'Temp.' }}
+            </span>
           </div>
         </div>
 
@@ -62,7 +65,7 @@
             </div>
             <div class="info-item">
               <span class="info-icon">💰</span>
-              <span>${{ property.pricing.basePrice }}/noche</span>
+              <span>${{ property.pricing.basePrice }}{{ property.rentalType === 'anual' ? '/mes' : '/noche' }}</span>
             </div>
           </div>
 
@@ -414,6 +417,24 @@ onMounted(() => {
 .badge-type {
   background: rgba(0, 0, 0, 0.6);
   color: white;
+}
+
+.badge-rental {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-rental.temporario {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-rental.anual {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .property-content {

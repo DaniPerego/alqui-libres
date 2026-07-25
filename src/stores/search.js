@@ -25,6 +25,7 @@ export const useSearchStore = defineStore('search', {
       priceMin: 0,
       priceMax: 100000,
       propertyType: '',
+      rentalType: '',
       amenities: [],
       localFeatures: {
         grillType: '',
@@ -39,6 +40,7 @@ export const useSearchStore = defineStore('search', {
     hasActiveFilters: (state) => {
       return state.filters.city !== '' ||
              state.filters.propertyType !== '' ||
+             state.filters.rentalType !== '' ||
              state.filters.amenities.length > 0 ||
              state.filters.localFeatures.grillType !== ''
     }
@@ -107,6 +109,11 @@ export const useSearchStore = defineStore('search', {
         if (this.filters.propertyType && listing.propertyType !== this.filters.propertyType) {
           return false
         }
+
+        // Filtro de tipo de alquiler (temporario / anual)
+        if (this.filters.rentalType && listing.rentalType !== this.filters.rentalType) {
+          return false
+        }
         
         // Filtro de amenidades
         if (this.filters.amenities.length > 0) {
@@ -145,6 +152,7 @@ export const useSearchStore = defineStore('search', {
         priceMin: 0,
         priceMax: 100000,
         propertyType: '',
+        rentalType: '',
         amenities: [],
         localFeatures: {
           grillType: '',

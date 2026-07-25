@@ -290,6 +290,15 @@ export const useAdminStore = defineStore('admin', () => {
     return revenue
   })
 
+  // Helper: guarda usuarios creados desde el admin en localStorage para que persistan
+  const saveCustomUsers = () => {
+    try {
+      localStorage.setItem('mockAdminUsers', JSON.stringify(users.value.filter(u => u.uid.startsWith('user_'))))
+    } catch (e) {
+      console.warn('No se pudo guardar usuarios personalizados:', e)
+    }
+  }
+
   // Actions
 
   /**
@@ -297,8 +306,8 @@ export const useAdminStore = defineStore('admin', () => {
    */
   const fetchUsers = async () => {
     if (!db) {
-      // Modo demo con datos mock
-      users.value = [
+      // Modo demo: cargar usuarios guardados + hardcoded
+      const hardcoded = [
         {
           uid: 'user123',
           email: 'demo@alquilubres.com',
@@ -352,6 +361,26 @@ export const useAdminStore = defineStore('admin', () => {
           }
         }
       ]
+
+      const stored = localStorage.getItem('mockAdminUsers')
+      const customUsers = stored ? JSON.parse(stored) : []
+
+      // Merge: custom users override hardcoded by uid
+      const merged = [...hardcoded]
+      for (const cu of customUsers) {
+        const idx = merged.findIndex(u => u.uid === cu.uid)
+        cu.createdAt = new Date(cu.createdAt)
+        if (cu.subscription) {
+          cu.subscription.startDate = cu.subscription.startDate ? new Date(cu.subscription.startDate) : new Date()
+          cu.subscription.endDate = cu.subscription.endDate ? new Date(cu.subscription.endDate) : new Date()
+        }
+        if (idx >= 0) {
+          merged[idx] = cu
+        } else {
+          merged.push(cu)
+        }
+      }
+      users.value = merged
       updateStats()
       return { success: true }
     }
@@ -494,6 +523,7 @@ export const useAdminStore = defineStore('admin', () => {
       if (user) {
         user.role = role
       }
+      saveCustomUsers()
       return { success: true, message: `Usuario actualizado a ${role} (modo demo)` }
     }
 
@@ -501,12 +531,11 @@ export const useAdminStore = defineStore('admin', () => {
       const userRef = doc(db, 'users', userId)
       await updateDoc(userRef, { role })
 
-      // Actualizar en estado local
       const user = users.value.find(u => u.uid === userId)
       if (user) {
         user.role = role
       }
-
+      saveCustomUsers()
       return { success: true }
     } catch (err) {
       console.error('Error updating user role:', err)
@@ -524,6 +553,7 @@ export const useAdminStore = defineStore('admin', () => {
       if (user) {
         user.isActive = isActive
       }
+      saveCustomUsers()
       return { success: true, message: `Usuario ${isActive ? 'activado' : 'suspendido'} (modo demo)` }
     }
 
@@ -531,12 +561,11 @@ export const useAdminStore = defineStore('admin', () => {
       const userRef = doc(db, 'users', userId)
       await updateDoc(userRef, { isActive })
 
-      // Actualizar en estado local
       const user = users.value.find(u => u.uid === userId)
       if (user) {
         user.isActive = isActive
       }
-
+      saveCustomUsers()
       return { success: true }
     } catch (err) {
       console.error('Error toggling user status:', err)
@@ -570,10 +599,10 @@ export const useAdminStore = defineStore('admin', () => {
     }
 
     if (!db) {
-      // Save dynamic credentials so the user can log in
       const authStore = useAuthStore()
       authStore.saveMockCredentials(newUser.email, password, newUser.displayName, newUser.role, newUser.uid, newUser.subscription)
       users.value.push(newUser)
+      saveCustomUsers()
       updateStats()
       return { success: true, user: newUser, password, message: `Usuario ${userData.displayName} creado. Contraseña temporal: ${password}` }
     }
@@ -590,6 +619,7 @@ export const useAdminStore = defineStore('admin', () => {
         } : null
       })
       users.value.push(newUser)
+      saveCustomUsers()
       updateStats()
       return { success: true, user: newUser, password, message: `Usuario ${userData.displayName} creado. Contraseña temporal: ${password}` }
     } catch (err) {
@@ -613,6 +643,7 @@ export const useAdminStore = defineStore('admin', () => {
 
     if (!db) {
       user.subscription = subscription
+      saveCustomUsers()
       updateStats()
       return { success: true, message: `Suscripción actualizada (modo demo)` }
     }
@@ -627,11 +658,26 @@ export const useAdminStore = defineStore('admin', () => {
         }
       })
       user.subscription = subscription
+      saveCustomUsers()
       updateStats()
       return { success: true }
     } catch (err) {
       return { success: false, error: err.message }
     }
+  }
+
+  /**
+   * Actualizar datos básicos de un usuario (nombre, email)
+   */
+  const updateUser = async (userId, data) => {
+    const user = users.value.find(u => u.uid === userId)
+    if (!user) return { success: false, error: 'Usuario no encontrado' }
+
+    if (data.displayName !== undefined) user.displayName = data.displayName
+    if (data.email !== undefined) user.email = data.email
+
+    saveCustomUsers()
+    return { success: true, message: 'Usuario actualizado (modo demo)' }
   }
 
   /**
@@ -685,13 +731,13 @@ export const useAdminStore = defineStore('admin', () => {
 
     if (!db) {
       user.subscription = subscription
-      // Also update mock credentials
       const authStore = useAuthStore()
       const creds = JSON.parse(localStorage.getItem('mockCredentials') || '{}')
       if (creds[user.email]) {
         creds[user.email] = { ...creds[user.email], subscription }
         localStorage.setItem('mockCredentials', JSON.stringify(creds))
       }
+      saveCustomUsers()
       updateStats()
       return { success: true, message: `Suscripción ${status === 'canceled' ? 'cancelada' : status === 'paused' ? 'suspendida' : 'reanudada'} (modo demo)` }
     }
@@ -706,6 +752,7 @@ export const useAdminStore = defineStore('admin', () => {
         }
       })
       user.subscription = subscription
+      saveCustomUsers()
       updateStats()
       return { success: true }
     } catch (err) {
@@ -815,6 +862,7 @@ export const useAdminStore = defineStore('admin', () => {
     updateUserRole,
     toggleUserStatus,
     createUser,
+    updateUser,
     updateUserSubscription,
     resetUserPassword,
     setUserSubscriptionStatus,

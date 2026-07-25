@@ -240,6 +240,7 @@ export const usePropertyStore = defineStore('property', {
         title: propertyData.title,
         description: propertyData.description,
         propertyType: propertyData.propertyType,
+        rentalType: propertyData.rentalType || 'temporario',
         mainImage: propertyData.images?.[0] || '',
         images: propertyData.images || [],
         pricing: propertyData.pricing,

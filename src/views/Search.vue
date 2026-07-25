@@ -73,6 +73,15 @@
                   <option value="departamento">Departamento</option>
                 </select>
               </div>
+
+              <div class="filter-group">
+                <label for="rental-type" class="label">Tipo de Alquiler</label>
+                <select id="rental-type" v-model="searchStore.filters.rentalType" @change="handleSearch" class="select">
+                  <option value="">Todos</option>
+                  <option value="temporario">Temporario</option>
+                  <option value="anual">Anual</option>
+                </select>
+              </div>
               
               <!-- FILTROS HIPER-LOCALES (Ventaja Competitiva) -->
               <div class="filter-group">
@@ -179,7 +188,12 @@
                 </div>
               </div>
               
-              <p class="listing-type">{{ listing.propertyType }}</p>
+              <p class="listing-type">
+                {{ listing.propertyType }}
+                <span class="rental-tag" :class="listing.rentalType">
+                  {{ listing.rentalType === 'anual' ? 'Anual' : 'Temp.' }}
+                </span>
+              </p>
               <p class="listing-location">📍 {{ listing.location.city }}</p>
               
               <div class="listing-capacity">
@@ -203,7 +217,7 @@
               <div class="listing-footer">
                 <div class="listing-price">
                   <span class="price-amount">${{ listing.pricing.basePrice }}</span>
-                  <span class="price-period">/ noche</span>
+                  <span class="price-period">{{ listing.rentalType === 'anual' ? '/ mes' : '/ noche' }}</span>
                 </div>
                 <span class="view-details">Ver Detalles →</span>
               </div>
@@ -380,6 +394,28 @@ onMounted(() => {
   color: var(--gray-600);
   font-size: 0.875rem;
   margin-bottom: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.rental-tag {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.rental-tag.temporario {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.rental-tag.anual {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .listing-location {
