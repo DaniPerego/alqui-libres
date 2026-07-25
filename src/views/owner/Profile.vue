@@ -448,6 +448,7 @@ const loadRentals = () => {
 }
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { uploadProfileImage } from '@/services/storage'
 
 const authStore = useAuthStore()
 
@@ -509,22 +510,25 @@ const triggerFileUpload = () => {
   fileInput.value?.click()
 }
 
-const handleFileUpload = (event) => {
+const handleFileUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
 
-  // Validar tamaño (2MB máximo)
   if (file.size > 2 * 1024 * 1024) {
     alert('La imagen es muy grande. Máximo 2MB.')
     return
   }
 
-  // Crear preview
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    profile.value.photoURL = e.target.result
+  const localPreview = URL.createObjectURL(file)
+  profile.value.photoURL = localPreview
+
+  try {
+    const url = await uploadProfileImage(file, authStore.userId)
+    profile.value.photoURL = url
+    URL.revokeObjectURL(localPreview)
+  } catch (err) {
+    console.error('Error al subir foto de perfil:', err)
   }
-  reader.readAsDataURL(file)
 }
 
 const saveProfile = async () => {

@@ -28,6 +28,10 @@
                   ✕
                 </button>
                 <span v-if="index === 0" class="badge-main">Principal</span>
+                <div v-if="imageUploads[index] && imageUploads[index].progress > 0 && imageUploads[index].progress < 100" class="upload-progress">
+                  <div class="progress-bar" :style="{ width: imageUploads[index].progress + '%' }"></div>
+                </div>
+                <span v-if="imageUploads[index] && imageUploads[index].error" class="badge-error">Error</span>
               </div>
             </div>
             
@@ -307,6 +311,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePropertyStore } from '@/stores/property'
 import { useAuthStore } from '@/stores/auth'
+import { uploadPropertyImage, deleteStorageImage } from '@/services/storage'
 
 const route = useRoute()
 const router = useRouter()
@@ -315,6 +320,8 @@ const authStore = useAuthStore()
 
 const isEditing = computed(() => !!route.params.id)
 const loading = ref(false)
+const uploadingImages = ref(false)
+const imageUploads = ref([])
 
 const formData = ref({
   title: '',
@@ -359,67 +366,94 @@ const availableAmenities = [
   'Jardín', 'Balcón', 'Gimnasio', 'Mascotas Permitidas'
 ]
 
-const handleImageUpload = (event) => {
+const handleImageUpload = async (event) => {
   const files = event.target.files
   if (!files || files.length === 0) return
+
+  uploadingImages.value = true
+  const tempId = 'temp-' + Date.now()
   
-  Array.from(files).forEach(file => {
+  const uploadPromises = Array.from(files).map(async (file) => {
     if (file.size > 5 * 1024 * 1024) {
       alert(`La imagen ${file.name} supera los 5MB`)
       return
     }
-    
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      formData.value.images.push(e.target.result)
-      if (formData.value.images.length === 1) {
-        formData.value.mainImage = e.target.result
-      }
+
+    const localPreview = URL.createObjectURL(file)
+    const uploadEntry = { localPreview, progress: 0, error: false }
+    imageUploads.value.push(uploadEntry)
+
+    formData.value.images.push(localPreview)
+    if (formData.value.images.length === 1) {
+      formData.value.mainImage = localPreview
     }
-    reader.readAsDataURL(file)
+
+    try {
+      const url = await uploadPropertyImage(file, authStore.userId, tempId, (progress) => {
+        uploadEntry.progress = progress
+      })
+      const idx = formData.value.images.indexOf(localPreview)
+      if (idx !== -1) formData.value.images[idx] = url
+      if (formData.value.mainImage === localPreview) formData.value.mainImage = url
+      URL.revokeObjectURL(localPreview)
+      uploadEntry.done = true
+    } catch (err) {
+      console.error('Error al subir imagen:', err)
+      uploadEntry.error = true
+    }
   })
-  
+
+  await Promise.all(uploadPromises)
+  uploadingImages.value = false
   event.target.value = ''
 }
 
 const removeImage = (index) => {
+  const removed = formData.value.images[index]
   formData.value.images.splice(index, 1)
   if (index === 0 && formData.value.images.length > 0) {
     formData.value.mainImage = formData.value.images[0]
   } else if (formData.value.images.length === 0) {
     formData.value.mainImage = ''
   }
+  deleteStorageImage(removed)
 }
 
 const handleSubmit = async () => {
+  if (uploadingImages.value) {
+    alert('Esperá a que terminen de subirse las imágenes')
+    return
+  }
   loading.value = true
-  
+
   try {
+    const data = { ...formData.value }
+    if (imageUploads.value.some(u => u.error) && data.images.some(i => i.startsWith('blob:'))) {
+      alert('Algunas imágenes no se subieron correctamente. Revisá e intentá de nuevo.')
+      loading.value = false
+      return
+    }
+
     let result
     if (isEditing.value) {
       result = await propertyStore.updateProperty(
         authStore.userId,
         route.params.id,
-        formData.value
+        data
       )
     } else {
       result = await propertyStore.createProperty(
         authStore.userId,
-        formData.value
+        data
       )
     }
-    
+
     if (result.success) {
-      // Mostrar mensaje de éxito
       const action = isEditing.value ? 'actualizada' : 'creada'
       console.log(`✅ Propiedad ${action} exitosamente`)
-      
-      // Mensaje especial en modo demo
       if (result.message) {
         alert(`✅ ${result.message}\n\nSerás redirigido al listado de propiedades.`)
       }
-      
-      // Redirigir al listado
       router.push('/panel/propiedades')
     } else {
       alert('❌ Error: ' + result.error)
@@ -574,6 +608,30 @@ onMounted(async () => {
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
   font-weight: 600;
+}
+.badge-error {
+  position: absolute;
+  bottom: var(--spacing-sm);
+  right: var(--spacing-sm);
+  background: #dc2626;
+  color: white;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.upload-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gray-200);
+}
+.progress-bar {
+  height: 100%;
+  background: var(--primary-color);
+  transition: width 0.3s ease;
 }
 
 .upload-box {
