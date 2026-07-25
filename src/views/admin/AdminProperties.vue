@@ -189,8 +189,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
+import { useToast } from '@/composables/useToast'
 
 const adminStore = useAdminStore()
+const { show } = useToast()
 
 const searchQuery = ref('')
 const filterStatus = ref('')
@@ -250,22 +252,12 @@ const getOwnerEmail = (ownerId) => {
 
 const approveProperty = async (propertyId) => {
   const result = await adminStore.updatePropertyStatus(propertyId, 'active')
-  if (result.success) {
-    alert(result.message || 'Propiedad aprobada')
-  } else {
-    alert('Error: ' + result.error)
-  }
+  show(result.success ? (result.message || 'Propiedad aprobada') : ('Error: ' + result.error), result.success ? 'success' : 'error')
 }
 
 const rejectProperty = async (propertyId) => {
-  if (!confirm('¿Rechazar esta propiedad?')) return
-  
   const result = await adminStore.updatePropertyStatus(propertyId, 'rejected')
-  if (result.success) {
-    alert(result.message || 'Propiedad rechazada')
-  } else {
-    alert('Error: ' + result.error)
-  }
+  show(result.success ? (result.message || 'Propiedad rechazada') : ('Error: ' + result.error), result.success ? 'success' : 'error')
 }
 
 const viewDetails = (property) => {
@@ -273,14 +265,8 @@ const viewDetails = (property) => {
 }
 
 const deletePropertyConfirm = async (propertyId) => {
-  if (!confirm('⚠️ ¿Eliminar esta propiedad permanentemente?')) return
-  
   const result = await adminStore.deleteProperty(propertyId)
-  if (result.success) {
-    alert(result.message || 'Propiedad eliminada')
-  } else {
-    alert('Error: ' + result.error)
-  }
+  show(result.success ? (result.message || 'Propiedad eliminada') : ('Error: ' + result.error), result.success ? 'success' : 'error')
 }
 
 onMounted(() => {

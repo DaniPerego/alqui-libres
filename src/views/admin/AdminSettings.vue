@@ -94,6 +94,8 @@ const settings = computed({
 
 const saving = ref(false)
 const showToast = ref(false)
+import { useToast } from '@/composables/useToast'
+const { show } = useToast()
 
 const saveSettings = async () => {
   saving.value = true
@@ -102,16 +104,17 @@ const saveSettings = async () => {
     const result = await adminStore.updatePlatformSettings(settings.value)
     
     if (result.success) {
+      show('Configuración guardada correctamente', 'success')
       showToast.value = true
       setTimeout(() => {
         showToast.value = false
       }, 3000)
     } else {
-      alert('Error al guardar: ' + (result.error || 'Error desconocido'))
+      show('Error al guardar: ' + (result.error || 'Error desconocido'), 'error')
     }
   } catch (error) {
     console.error('Error guardando configuración:', error)
-    alert('Error al guardar la configuración')
+    show('Error al guardar la configuración', 'error')
   } finally {
     saving.value = false
   }

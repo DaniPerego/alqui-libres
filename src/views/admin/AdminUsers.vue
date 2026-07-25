@@ -1,7 +1,7 @@
 <template>
   <div class="admin-users">
     <div class="page-header">
-      <h1 class="page-title">Gestión de Usuarios</h1>
+      <h1 class="page-title">Gesti&oacute;n de Usuarios</h1>
       <div class="header-actions">
         <input 
           v-model="searchQuery" 
@@ -13,20 +13,26 @@
           <option value="">Todos los roles</option>
           <option value="owner">Propietarios</option>
           <option value="admin">Administradores</option>
-          <option value="guest">Huéspedes</option>
+          <option value="guest">Hu&eacute;spedes</option>
         </select>
+        <button @click="showCreateModal = true" class="btn-primary">
+          + Nuevo Usuario
+        </button>
       </div>
     </div>
 
     <div class="card">
-      <div class="users-table">
+      <div v-if="!adminStore.users.length" class="empty-state">
+        <p>Cargando usuarios...</p>
+      </div>
+      <div v-else class="users-table">
         <table>
           <thead>
             <tr>
               <th>Usuario</th>
               <th>Email</th>
               <th>Rol</th>
-              <th>Suscripción</th>
+              <th>Suscripci&oacute;n</th>
               <th>Propiedades</th>
               <th>Estado</th>
               <th>Registro</th>
@@ -51,20 +57,31 @@
                   @change="updateRole(user.uid, $event.target.value)"
                   class="role-select"
                 >
-                  <option value="guest">Huésped</option>
+                  <option value="guest">Hu&eacute;sped</option>
                   <option value="owner">Propietario</option>
                   <option value="admin">Admin</option>
                 </select>
               </td>
               <td>
-                <span 
-                  v-if="user.subscription" 
-                  class="plan-badge" 
-                  :class="user.subscription.planId"
-                >
-                  {{ getPlanName(user.subscription.planId) }}
-                </span>
-                <span v-else class="plan-badge">Sin plan</span>
+                <div class="subscription-cell">
+                  <select 
+                    :value="user.subscription?.planId || ''" 
+                    @change="changeUserPlan(user.uid, $event.target.value)"
+                    class="plan-select"
+                  >
+                    <option value="">Sin plan</option>
+                    <option v-for="plan in adminStore.subscriptionPlans" :key="plan.id" :value="plan.id">
+                      {{ plan.name }}
+                    </option>
+                  </select>
+                  <span 
+                    v-if="user.subscription" 
+                    class="sub-status"
+                    :class="user.subscription.status"
+                  >
+                    {{ user.subscription.status === 'active' ? 'Activo' : user.subscription.status }}
+                  </span>
+                </div>
               </td>
               <td class="text-center">{{ user.stats?.properties || 0 }}</td>
               <td>
@@ -96,11 +113,59 @@
           </tbody>
         </table>
 
-        <div v-if="filteredUsers.length === 0" class="empty-state">
-          <p>No se encontraron usuarios</p>
+        <div v-if="filteredUsers.length === 0 && adminStore.users.length" class="empty-state">
+          <p>No se encontraron usuarios con esos filtros</p>
         </div>
       </div>
     </div>
+
+    <!-- Create User Modal -->
+    <teleport to="body">
+      <div v-if="showCreateModal" class="modal-overlay" @click="showCreateModal = false">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h2>Crear Nuevo Usuario</h2>
+            <button @click="showCreateModal = false" class="close-btn">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Nombre completo</label>
+              <input v-model="newUserForm.displayName" type="text" class="form-input" placeholder="Ej: Juan Pérez" />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input v-model="newUserForm.email" type="email" class="form-input" placeholder="ejemplo@correo.com" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Rol</label>
+                <select v-model="newUserForm.role" class="form-input">
+                  <option value="owner">Propietario</option>
+                  <option value="guest">Hu&eacute;sped</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Plan de suscripci&oacute;n</label>
+                <select v-model="newUserForm.planId" class="form-input">
+                  <option value="">Sin plan</option>
+                  <option v-for="plan in adminStore.subscriptionPlans" :key="plan.id" :value="plan.id">
+                    {{ plan.name }} (${{ plan.price.toLocaleString('es-AR') }}/mes)
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div v-if="creating" class="form-info">Creando usuario...</div>
+            <div class="form-actions">
+              <button @click="showCreateModal = false" class="btn-cancel">Cancelar</button>
+              <button @click="createUser" class="btn-primary" :disabled="creating || !newUserForm.email || !newUserForm.displayName">
+                {{ creating ? 'Creando...' : 'Crear Usuario' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
 
     <!-- User Details Modal -->
     <teleport to="body">
@@ -136,13 +201,13 @@
                 <label>Fecha de Registro</label>
                 <p>{{ formatDateTime(selectedUser.createdAt) }}</p>
               </div>
-              <div class="detail-item" v-if="selectedUser.subscription">
-                <label>Plan de Suscripción</label>
-                <p>{{ getPlanName(selectedUser.subscription.planId) }}</p>
+              <div class="detail-item">
+                <label>Plan de Suscripci&oacute;n</label>
+                <p>{{ selectedUser.subscription ? getPlanName(selectedUser.subscription.planId) : 'Sin plan' }}</p>
               </div>
-              <div class="detail-item" v-if="selectedUser.subscription">
-                <label>Estado de Suscripción</label>
-                <p>{{ selectedUser.subscription.status }}</p>
+              <div class="detail-item">
+                <label>Estado de Suscripci&oacute;n</label>
+                <p>{{ selectedUser.subscription?.status || '-' }}</p>
               </div>
               <div class="detail-item">
                 <label>Propiedades Publicadas</label>
@@ -167,30 +232,35 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
+import { useToast } from '@/composables/useToast'
 
 const adminStore = useAdminStore()
+const { show } = useToast()
 
 const searchQuery = ref('')
 const filterRole = ref('')
 const selectedUser = ref(null)
+const showCreateModal = ref(false)
+const creating = ref(false)
+const newUserForm = ref({
+  displayName: '',
+  email: '',
+  role: 'owner',
+  planId: ''
+})
 
 const filteredUsers = computed(() => {
   let users = adminStore.users
-
-  // Filtrar por búsqueda
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const q = searchQuery.value.toLowerCase()
     users = users.filter(u => 
-      u.email?.toLowerCase().includes(query) ||
-      u.displayName?.toLowerCase().includes(query)
+      u.email?.toLowerCase().includes(q) ||
+      u.displayName?.toLowerCase().includes(q)
     )
   }
-
-  // Filtrar por rol
   if (filterRole.value) {
     users = users.filter(u => u.role === filterRole.value)
   }
-
   return users
 })
 
@@ -220,27 +290,34 @@ const formatDateTime = (date) => {
   })
 }
 
-const updateRole = async (userId, newRole) => {
-  if (!confirm(`¿Cambiar rol de usuario a ${newRole}?`)) return
-  
-  const result = await adminStore.updateUserRole(userId, newRole)
+const createUser = async () => {
+  if (!newUserForm.value.email || !newUserForm.value.displayName) return
+  creating.value = true
+  const result = await adminStore.createUser({ ...newUserForm.value })
+  creating.value = false
   if (result.success) {
-    alert(result.message || 'Rol actualizado correctamente')
+    show(result.message || 'Usuario creado correctamente', 'success')
+    showCreateModal.value = false
+    newUserForm.value = { displayName: '', email: '', role: 'owner', planId: '' }
   } else {
-    alert('Error al actualizar rol: ' + result.error)
+    show(result.error || 'Error al crear usuario', 'error')
   }
+}
+
+const updateRole = async (userId, newRole) => {
+  const result = await adminStore.updateUserRole(userId, newRole)
+  show(result.success ? 'Rol actualizado correctamente' : 'Error: ' + result.error, result.success ? 'success' : 'error')
 }
 
 const toggleStatus = async (userId, newStatus) => {
   const action = newStatus ? 'activar' : 'suspender'
-  if (!confirm(`¿Estás seguro de ${action} este usuario?`)) return
-  
   const result = await adminStore.toggleUserStatus(userId, newStatus)
-  if (result.success) {
-    alert(result.message || `Usuario ${action}do correctamente`)
-  } else {
-    alert('Error: ' + result.error)
-  }
+  show(result.success ? `Usuario ${action}do correctamente` : 'Error: ' + result.error, result.success ? 'success' : 'error')
+}
+
+const changeUserPlan = async (userId, planId) => {
+  const result = await adminStore.updateUserSubscription(userId, planId || null, planId ? 'active' : null)
+  show(result.success ? 'Plan de suscripción actualizado' : 'Error: ' + result.error, result.success ? 'success' : 'error')
 }
 
 const viewUserDetails = (user) => {
@@ -291,6 +368,39 @@ onMounted(() => {
   border: 1px solid var(--gray-300);
   border-radius: var(--radius-md);
   font-size: 0.875rem;
+}
+
+.btn-primary {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
 }
 
 .users-table {
@@ -365,28 +475,39 @@ onMounted(() => {
   background: white;
 }
 
-.plan-badge {
+.subscription-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.plan-select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  background: white;
+  max-width: 130px;
+}
+
+.sub-status {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
-.plan-badge.basic {
-  background: #dbeafe;
-  color: #1e40af;
+.sub-status.active {
+  background: #d1fae5;
+  color: #065f46;
 }
 
-.plan-badge.pro {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.plan-badge.enterprise {
-  background: #f3e8ff;
-  color: #6b21a8;
+.sub-status.past_due,
+.sub-status.canceled {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .status-badge {
@@ -516,6 +637,46 @@ onMounted(() => {
   padding: var(--spacing-lg);
 }
 
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: var(--spacing-xs);
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  box-sizing: border-box;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.form-info {
+  padding: var(--spacing-sm);
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -559,6 +720,10 @@ onMounted(() => {
   }
 
   .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
     grid-template-columns: 1fr;
   }
 }

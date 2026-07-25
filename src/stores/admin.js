@@ -283,7 +283,7 @@ export const useAdminStore = defineStore('admin', () => {
   const revenueByPlan = computed(() => {
     const revenue = {}
     subscriptionPlans.value.forEach(plan => {
-      const count = subscriptions.value.filter(s => s.planId === plan.id && s.status === 'active').length
+      const count = users.value.filter(u => u.subscription?.planId === plan.id && u.subscription?.status === 'active').length
       revenue[plan.name] = count * plan.price
     })
     return revenue
@@ -385,10 +385,9 @@ export const useAdminStore = defineStore('admin', () => {
   const fetchAllProperties = async () => {
     if (!db) {
       // Usar datos mock
-      const { mockProperties } = await import('@/data/mockData')
-      properties.value = mockProperties.map(p => ({
+      const { mockProperties, mockPendingProperties } = await import('@/data/mockData')
+      properties.value = [...mockProperties, ...mockPendingProperties].map(p => ({
         ...p,
-        status: p.status || 'active',
         createdAt: p.createdAt || new Date()
       }))
       updateStats()
@@ -545,6 +544,92 @@ export const useAdminStore = defineStore('admin', () => {
   }
 
   /**
+   * Crear un nuevo usuario (propietario) desde el admin
+   */
+  const createUser = async (userData) => {
+    const newUser = {
+      uid: 'user_' + Date.now() + Math.random().toString(36).slice(2, 6),
+      email: userData.email,
+      displayName: userData.displayName,
+      role: userData.role || 'owner',
+      isActive: true,
+      createdAt: new Date(),
+      subscription: userData.planId ? {
+        planId: userData.planId,
+        status: 'active',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+      } : null,
+      stats: {
+        properties: 0,
+        bookings: 0,
+        revenue: 0
+      }
+    }
+
+    if (!db) {
+      users.value.push(newUser)
+      updateStats()
+      return { success: true, user: newUser, message: `Usuario ${userData.displayName} creado (modo demo)` }
+    }
+
+    try {
+      const userRef = doc(db, 'users', newUser.uid)
+      await setDoc(userRef, {
+        ...newUser,
+        createdAt: Timestamp.fromDate(newUser.createdAt),
+        subscription: newUser.subscription ? {
+          ...newUser.subscription,
+          startDate: Timestamp.fromDate(newUser.subscription.startDate),
+          endDate: Timestamp.fromDate(newUser.subscription.endDate)
+        } : null
+      })
+      users.value.push(newUser)
+      updateStats()
+      return { success: true, user: newUser }
+    } catch (err) {
+      return { success: false, error: err.message }
+    }
+  }
+
+  /**
+   * Actualizar suscripción de un usuario
+   */
+  const updateUserSubscription = async (userId, planId, status) => {
+    const user = users.value.find(u => u.uid === userId)
+    if (!user) return { success: false, error: 'Usuario no encontrado' }
+
+    const subscription = {
+      planId: planId || user.subscription?.planId,
+      status: status || user.subscription?.status || 'active',
+      startDate: user.subscription?.startDate || new Date(),
+      endDate: user.subscription?.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    }
+
+    if (!db) {
+      user.subscription = subscription
+      updateStats()
+      return { success: true, message: `Suscripción actualizada (modo demo)` }
+    }
+
+    try {
+      const userRef = doc(db, 'users', userId)
+      await updateDoc(userRef, {
+        subscription: {
+          ...subscription,
+          startDate: Timestamp.fromDate(new Date(subscription.startDate)),
+          endDate: Timestamp.fromDate(new Date(subscription.endDate))
+        }
+      })
+      user.subscription = subscription
+      updateStats()
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message }
+    }
+  }
+
+  /**
    * Actualizar plan de suscripción (precios, features)
    */
   const updateSubscriptionPlan = (planId, updates) => {
@@ -645,6 +730,8 @@ export const useAdminStore = defineStore('admin', () => {
     deleteProperty,
     updateUserRole,
     toggleUserStatus,
+    createUser,
+    updateUserSubscription,
     updateSubscriptionPlan,
     updatePaymentSettings,
     updateStats,

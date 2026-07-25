@@ -174,6 +174,135 @@ export const mockProperties = [
   }
 ]
 
+export const mockPendingProperties = [
+  {
+    id: 'p5',
+    ownerId: 'user456',
+    title: 'Casa Quinta con Piscula y Cancha de Tenis',
+    description: 'Espectacular casa quinta con amplio parque, piscina olímpica y cancha de tenis. Ideal para eventos y reuniones familiares. Capacidad para hasta 20 personas en evento.',
+    propertyType: 'casa',
+    mainImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800'
+    ],
+    pricing: {
+      basePrice: 250,
+      cleaningFee: 80,
+      currency: 'USD'
+    },
+    capacity: {
+      guests: 12,
+      bedrooms: 5,
+      beds: 8,
+      bathrooms: 4
+    },
+    location: {
+      city: 'Pilar',
+      state: 'Buenos Aires',
+      country: 'Argentina',
+      coordinates: { lat: -34.4576, lng: -58.9143 }
+    },
+    amenities: ['WiFi', 'TV', 'Cocina completa', 'Aire Acondicionado', 'Calefacción', 'Piscina', 'Parrilla', 'Estacionamiento', 'Cancha de tenis', 'Jardín', 'Quincho'],
+    localFeatures: {
+      grillType: 'gas',
+      parkingSize: 'grande',
+      nearbyAttractions: ['Nordelta', 'Shopping Pilar'],
+      distanceToCenter: 15.0
+    },
+    rating: 0,
+    reviewCount: 0,
+    isActive: true,
+    status: 'pending',
+    createdAt: new Date('2025-07-20'),
+    updatedAt: new Date('2025-07-20')
+  },
+  {
+    id: 'p6',
+    ownerId: 'user123',
+    title: 'PH Moderno en Palermo Soho',
+    description: 'PH de diseño en Palermo Soho con terraza y parrilla. Recién renovado con materiales de primera calidad. A pasos de los mejores bares y restaurantes.',
+    propertyType: 'apartamento',
+    mainImage: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
+      'https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?w=800'
+    ],
+    pricing: {
+      basePrice: 150,
+      cleaningFee: 35,
+      currency: 'USD'
+    },
+    capacity: {
+      guests: 4,
+      bedrooms: 2,
+      beds: 3,
+      bathrooms: 2
+    },
+    location: {
+      city: 'Buenos Aires',
+      state: 'CABA',
+      country: 'Argentina',
+      coordinates: { lat: -34.5889, lng: -58.4199 }
+    },
+    amenities: ['WiFi', 'TV', 'Cocina completa', 'Aire Acondicionado', 'Lavadora', 'Terraza', 'Parrilla', 'Seguridad'],
+    localFeatures: {
+      grillType: 'carbon',
+      parkingSize: '',
+      nearbyAttractions: ['Plaza Serrano', 'MALBA', 'Jardín Botánico'],
+      distanceToCenter: 2.5
+    },
+    rating: 0,
+    reviewCount: 0,
+    isActive: true,
+    status: 'pending',
+    createdAt: new Date('2025-07-22'),
+    updatedAt: new Date('2025-07-22')
+  },
+  {
+    id: 'p7',
+    ownerId: 'user456',
+    title: 'Departamento Estudiantil',
+    description: 'Departamento pequeño pero funcional, cerca de la universidad. Precio económico para estudiantes. Consultar por estadías mínimas.',
+    propertyType: 'departamento',
+    mainImage: 'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800'
+    ],
+    pricing: {
+      basePrice: 45,
+      cleaningFee: 10,
+      currency: 'USD'
+    },
+    capacity: {
+      guests: 2,
+      bedrooms: 1,
+      beds: 1,
+      bathrooms: 1
+    },
+    location: {
+      city: 'Córdoba',
+      state: 'Córdoba',
+      country: 'Argentina',
+      coordinates: { lat: -31.4201, lng: -64.1888 }
+    },
+    amenities: ['WiFi', 'Cocina básica', 'Calefacción', 'Ventilador'],
+    localFeatures: {
+      grillType: 'sin',
+      parkingSize: '',
+      nearbyAttractions: ['Universidad Nacional de Córdoba', 'Centro'],
+      distanceToCenter: 1.2
+    },
+    rating: 0,
+    reviewCount: 0,
+    isActive: true,
+    status: 'rejected',
+    rejectionReason: 'Fotos de baja calidad. Por favor sube imágenes más claras y con buena iluminación.',
+    createdAt: new Date('2025-07-18'),
+    updatedAt: new Date('2025-07-19')
+  }
+]
+
 export const mockReviews = [
   {
     id: 'r1',

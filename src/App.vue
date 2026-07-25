@@ -6,6 +6,7 @@
       <router-view />
     </main>
     <AppFooter />
+    <ToastContainer />
   </div>
 </template>
 
@@ -15,6 +16,7 @@ import { useAuthStore } from '@/stores/auth'
 import DemoBanner from '@/components/layout/DemoBanner.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import ToastContainer from '@/components/layout/ToastContainer.vue'
 
 const authStore = useAuthStore()
 

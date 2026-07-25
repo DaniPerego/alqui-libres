@@ -182,8 +182,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
+import { useToast } from '@/composables/useToast'
 
 const adminStore = useAdminStore()
+const { show } = useToast()
 
 const recentUsers = computed(() => 
   [...adminStore.users]
@@ -196,7 +198,9 @@ const refreshData = async () => {
 }
 
 const calculatePercentage = (revenue) => {
-  const max = Math.max(...Object.values(adminStore.revenueByPlan))
+  const values = Object.values(adminStore.revenueByPlan)
+  if (!values.length) return 0
+  const max = Math.max(...values)
   return max > 0 ? (revenue / max) * 100 : 0
 }
 
@@ -217,18 +221,12 @@ const formatDate = (date) => {
 
 const approveProperty = async (propertyId) => {
   const result = await adminStore.updatePropertyStatus(propertyId, 'active')
-  if (result.success) {
-    alert(result.message || 'Propiedad aprobada')
-  }
+  show(result.message || 'Propiedad aprobada', 'success')
 }
 
 const rejectProperty = async (propertyId) => {
-  if (!confirm('¿Estás seguro de rechazar esta propiedad?')) return
-  
   const result = await adminStore.updatePropertyStatus(propertyId, 'rejected')
-  if (result.success) {
-    alert(result.message || 'Propiedad rechazada')
-  }
+  show(result.message || 'Propiedad rechazada', 'warning')
 }
 
 onMounted(() => {
