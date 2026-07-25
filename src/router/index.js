@@ -16,6 +16,7 @@ const MyProperties = () => import('@/views/owner/MyProperties.vue')
 const PropertyEditor = () => import('@/views/owner/PropertyEditor.vue')
 const Messages = () => import('@/views/owner/Messages.vue')
 const Reservations = () => import('@/views/owner/Reservations.vue')
+const OwnerReviews = () => import('@/views/owner/Reviews.vue')
 const Profile = () => import('@/views/owner/Profile.vue')
 const Subscription = () => import('@/views/owner/Subscription.vue')
 
@@ -29,6 +30,11 @@ const AdminPlans = () => import('@/views/admin/AdminPlans.vue')
 const TermsConditions = () => import('@/views/legal/TermsConditions.vue')
 const PrivacyPolicy = () => import('@/views/legal/PrivacyPolicy.vue')
 const ContractTemplate = () => import('@/views/legal/ContractTemplate.vue')
+const FAQPage = () => import('@/views/legal/FAQPage.vue')
+const AboutUs = () => import('@/views/legal/AboutUs.vue')
+const HowItWorks = () => import('@/views/legal/HowItWorks.vue')
+const ContactPage = () => import('@/views/legal/ContactPage.vue')
+const CookiesPolicy = () => import('@/views/legal/CookiesPolicy.vue')
 
 const routes = [
   {
@@ -156,6 +162,16 @@ const routes = [
         meta: {
           title: 'Estadísticas e Ingresos | AlquiLibres',
           description: 'Visualiza tus ingresos, ocupación y reportes',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'resenas',
+        name: 'owner-reviews',
+        component: OwnerReviews,
+        meta: {
+          title: 'Reseñas Recibidas | AlquiLibres',
+          description: 'Gestiona las reseñas de tus propiedades',
           requiresAuth: true
         }
       },
@@ -306,6 +322,61 @@ const routes = [
       description: 'Modelo de contrato de alquiler temporario sugerido por AlquiLibres',
       url: 'https://alquilibres.com/contrato',
       keywords: 'contrato, alquiler temporario, modelo, legal'
+    }
+  },
+  {
+    path: '/faq',
+    name: 'faq',
+    component: FAQPage,
+    meta: {
+      title: 'Preguntas Frecuentes | AlquiLibres',
+      description: 'Respuestas a las preguntas más frecuentes sobre AlquiLibres',
+      url: 'https://alquilibres.com/faq',
+      keywords: 'faq, preguntas frecuentes, ayuda, alquiler'
+    }
+  },
+  {
+    path: '/nosotros',
+    name: 'about',
+    component: AboutUs,
+    meta: {
+      title: 'Sobre Nosotros | AlquiLibres',
+      description: 'Conocé la historia, misión y valores de AlquiLibres',
+      url: 'https://alquilibres.com/nosotros',
+      keywords: 'nosotros, equipo, misión, valores, alquilibres'
+    }
+  },
+  {
+    path: '/como-funciona',
+    name: 'how-it-works',
+    component: HowItWorks,
+    meta: {
+      title: '¿Cómo Funciona? | AlquiLibres',
+      description: 'Guía completa para usar AlquiLibres: cómo buscar, reservar y publicar propiedades',
+      url: 'https://alquilibres.com/como-funciona',
+      keywords: 'cómo funciona, guía, tutorial, alquiler, reserva'
+    }
+  },
+  {
+    path: '/contacto',
+    name: 'contact',
+    component: ContactPage,
+    meta: {
+      title: 'Contacto | AlquiLibres',
+      description: 'Comunicate con el equipo de AlquiLibres para consultas y soporte',
+      url: 'https://alquilibres.com/contacto',
+      keywords: 'contacto, soporte, ayuda, email'
+    }
+  },
+  {
+    path: '/cookies',
+    name: 'cookies',
+    component: CookiesPolicy,
+    meta: {
+      title: 'Política de Cookies | AlquiLibres',
+      description: 'Política de cookies de AlquiLibres y cómo gestionarlas',
+      url: 'https://alquilibres.com/cookies',
+      keywords: 'cookies, privacidad, datos, navegación'
     }
   }
 ]

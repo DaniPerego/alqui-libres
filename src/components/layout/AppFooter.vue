@@ -23,18 +23,16 @@
           <h4 class="footer-subtitle">Para Huéspedes</h4>
           <ul class="footer-links">
             <li><router-link to="/buscar">Buscar Alojamiento</router-link></li>
-            <li><a href="#como-funciona">¿Cómo Funciona?</a></li>
-            <li><a href="#confianza">Sistema de Confianza</a></li>
+            <li><router-link to="/como-funciona">¿Cómo Funciona?</router-link></li>
+            <li><router-link to="/faq">Preguntas Frecuentes</router-link></li>
           </ul>
         </div>
         
         <div class="footer-section">
           <h4 class="footer-subtitle">Compañía</h4>
           <ul class="footer-links">
-            <li><a href="#nosotros">Sobre Nosotros</a></li>
-            <li><a href="#blog">Blog</a></li>
-            <li><a href="#prensa">Prensa</a></li>
-            <li><a href="#carreras">Trabaja con Nosotros</a></li>
+            <li><router-link to="/nosotros">Sobre Nosotros</router-link></li>
+            <li><router-link to="/contacto">Contacto</router-link></li>
           </ul>
         </div>
         
@@ -44,16 +42,16 @@
             <li><router-link to="/terminos">Términos y Condiciones</router-link></li>
             <li><router-link to="/privacidad">Política de Privacidad</router-link></li>
             <li><router-link to="/contrato">Modelo de Contrato</router-link></li>
-            <li><a href="#cookies">Política de Cookies</a></li>
+            <li><router-link to="/cookies">Política de Cookies</router-link></li>
           </ul>
         </div>
         
         <div class="footer-section">
           <h4 class="footer-subtitle">Soporte</h4>
           <ul class="footer-links">
-            <li><a href="#ayuda">Centro de Ayuda</a></li>
-            <li><a href="#faq">Preguntas Frecuentes</a></li>
-            <li><a href="#contacto">Contacto</a></li>
+            <li><router-link to="/faq">Centro de Ayuda</router-link></li>
+            <li><router-link to="/faq">Preguntas Frecuentes</router-link></li>
+            <li><router-link to="/contacto">Contacto</router-link></li>
             <li><a href="mailto:soporte@alquilibres.com">soporte@alquilibres.com</a></li>
           </ul>
         </div>

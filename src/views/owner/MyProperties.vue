@@ -31,7 +31,7 @@
         <div class="property-image">
           <img 
             :src="property.images?.[0] || '/placeholder.jpg'" 
-            :alt="property.title"
+            :alt="property.title" loading="lazy"
           />
           <span class="property-status" :class="property.status">
             {{ property.status === 'active' ? 'Activa' : 'Inactiva' }}

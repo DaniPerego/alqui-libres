@@ -27,6 +27,10 @@
             <span class="sidebar-icon">💳</span>
             Mi Suscripción
           </router-link>
+          <router-link to="/panel/resenas" class="sidebar-link">
+            <span class="sidebar-icon">⭐</span>
+            Reseñas
+          </router-link>
           <router-link to="/panel/estadisticas" class="sidebar-link">
             <span class="sidebar-icon">📈</span>
             Estadísticas
@@ -105,13 +109,31 @@
 @media (max-width: 768px) {
   .dashboard {
     grid-template-columns: 1fr;
+    padding: var(--spacing-md);
   }
+  
   .sidebar {
     position: static;
+    margin-bottom: var(--spacing-lg);
   }
+  
   .sidebar-nav {
-    flex-direction: row;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-xs);
+  }
+  
+  .sidebar-link {
+    padding: var(--spacing-sm);
+    font-size: 0.875rem;
+    justify-content: center;
+    text-align: center;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+  
+  .sidebar-icon {
+    font-size: 1.5rem;
   }
 }
 </style>

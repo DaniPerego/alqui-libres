@@ -164,7 +164,7 @@
           :key="property.id"
           class="pending-card"
         >
-          <img :src="property.mainImage" :alt="property.title" class="pending-image" />
+          <img :src="property.mainImage" :alt="property.title" class="pending-image" loading="lazy" />
           <div class="pending-content">
             <h3 class="pending-title">{{ property.title }}</h3>
             <p class="pending-location">📍 {{ property.location.city }}, {{ property.location.state }}</p>

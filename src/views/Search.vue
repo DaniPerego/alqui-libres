@@ -168,7 +168,7 @@
             class="listing-card"
           >
             <div class="listing-image">
-              <img :src="listing.mainImage || '/placeholder.jpg'" :alt="listing.title" />
+              <img :src="listing.mainImage || '/placeholder.jpg'" :alt="listing.title" loading="lazy" />
             </div>
             
             <div class="listing-content">

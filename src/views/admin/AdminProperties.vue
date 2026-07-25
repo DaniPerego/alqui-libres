@@ -39,7 +39,7 @@
         class="property-card"
       >
         <div class="property-image">
-          <img :src="property.mainImage" :alt="property.title" />
+          <img :src="property.mainImage" :alt="property.title" loading="lazy" />
           <div class="property-badges">
             <span class="badge-status" :class="property.status">
               {{ getStatusText(property.status) }}

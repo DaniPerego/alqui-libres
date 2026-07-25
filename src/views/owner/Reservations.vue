@@ -57,7 +57,7 @@
       >
         <div class="reservation-header">
           <div class="property-info">
-            <img :src="reservation.property.image" :alt="reservation.property.title" class="property-thumb">
+            <img :src="reservation.property.image" :alt="reservation.property.title" class="property-thumb" loading="lazy">
             <div>
               <h3 class="property-title">{{ reservation.property.title }}</h3>
               <p class="property-location">📍 {{ reservation.property.location }}</p>

@@ -4,7 +4,7 @@
       <!-- Galería de Imágenes -->
       <div class="image-gallery">
         <div class="main-image">
-          <img :src="currentImage" :alt="property.title" />
+          <img :src="currentImage" :alt="property.title" loading="lazy" />
         </div>
         <div class="thumbnail-grid" v-if="property.images.length > 1">
           <img
@@ -12,6 +12,7 @@
             :key="index"
             :src="image"
             :alt="`${property.title} ${index + 1}`"
+            loading="lazy"
             @click="currentImage = image"
             :class="{ active: currentImage === image }"
           />
@@ -465,9 +466,9 @@
       </Transition>
       
       <!-- Reseñas -->
-      <section class="reviews-section" v-if="reviews.length > 0">
-        <h2 class="section-title">Reseñas de Huéspedes</h2>
-        <div class="reviews-grid">
+      <section class="reviews-section">
+        <h2 class="section-title">Reseñas de Huéspedes <span v-if="reviews.length">({{ reviews.length }})</span></h2>
+        <div class="reviews-grid" v-if="reviews.length">
           <div v-for="review in reviews" :key="review.id" class="review-card">
             <div class="review-header">
               <strong>{{ review.guestName }}</strong>
@@ -477,6 +478,33 @@
             <p class="review-comment">{{ review.comment }}</p>
             <span v-if="review.verified" class="verified-badge">✓ Verificado</span>
           </div>
+        </div>
+        <div v-else class="reviews-empty">
+          <p>Esta propiedad aún no tiene reseñas. Sé el primero en opinar.</p>
+        </div>
+
+        <div v-if="isAuthenticated" class="review-form">
+          <h3>Deja tu reseña</h3>
+          <div class="star-rating">
+            <span
+              v-for="star in 5"
+              :key="star"
+              class="star"
+              :class="{ filled: star <= newRating }"
+              @click="newRating = star"
+            >★</span>
+          </div>
+          <textarea
+            v-model="newComment"
+            placeholder="Compartí tu experiencia..."
+            rows="3"
+          ></textarea>
+          <button @click="submitReview" :disabled="!newRating || !newComment.trim()" class="btn-submit-review">
+            Publicar Reseña
+          </button>
+        </div>
+        <div v-else class="review-login-cta">
+          <p><router-link to="/login">Iniciá sesión</router-link> para dejar una reseña.</p>
         </div>
       </section>
     </div>
@@ -493,6 +521,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSEO, generatePropertySchema } from '@/composables/useSEO'
+import { getPropertyReviews, addReview, getPropertyRating } from '@/services/reviews'
 import DatePicker from 'vue-datepicker-next';
 import 'vue-datepicker-next/index.css';
 
@@ -510,6 +539,8 @@ const bookingDates = ref({
   guests: 2
 })
 const reviews = ref([])
+const newRating = ref(0)
+const newComment = ref('')
 const showReservationModal = ref(false)
 const submittingReservation = ref(false)
 const showToast = ref(false)
@@ -859,6 +890,21 @@ const formatDate = (date) => {
   })
 }
 
+const submitReview = () => {
+  if (!newRating.value || !newComment.value.trim()) return
+  const authStore = useAuthStore()
+  addReview({
+    listingId: property.value.id,
+    guestName: authStore.user?.displayName || authStore.user?.email || 'Usuario',
+    rating: newRating.value,
+    comment: newComment.value.trim(),
+    verified: true
+  })
+  reviews.value = getPropertyReviews(property.value.id)
+  newRating.value = 0
+  newComment.value = ''
+}
+
 // Lifecycle
 onMounted(async () => {
   // TODO: Cargar datos reales desde Firestore
@@ -921,25 +967,13 @@ onMounted(async () => {
   // Agregar Schema.org structured data
   addStructuredData(generatePropertySchema(property.value))
   
-  // Reseñas de ejemplo
-  reviews.value = [
-    {
-      id: '1',
-      guestName: 'María González',
-      rating: 5,
-      comment: 'Excelente lugar, muy limpio y la parrilla es espectacular. El anfitrión fue muy atento.',
-      verified: true,
-      createdAt: new Date('2024-10-15')
-    },
-    {
-      id: '2',
-      guestName: 'Carlos Ramírez',
-      rating: 4,
-      comment: 'Muy buena ubicación y la casa tiene todo lo necesario. La cochera es amplia.',
-      verified: true,
-      createdAt: new Date('2024-09-22')
-    }
-  ]
+  // Reseñas desde el servicio
+  reviews.value = getPropertyReviews(property.value.id)
+  const ratingInfo = getPropertyRating(property.value.id)
+  if (ratingInfo.count > 0) {
+    property.value.rating = ratingInfo.rating
+    property.value.reviewCount = ratingInfo.count
+  }
 })
 </script>
 
@@ -1271,6 +1305,81 @@ onMounted(async () => {
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
   font-weight: 600;
+}
+.reviews-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--gray-500);
+  background: white;
+  border: 1px dashed var(--gray-300);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+}
+.review-form {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+}
+.review-form h3 {
+  color: var(--gray-800);
+  margin-bottom: 0.75rem;
+}
+.star-rating {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+.star {
+  font-size: 1.5rem;
+  color: var(--gray-300);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.star.filled {
+  color: #f59e0b;
+}
+.star:hover {
+  color: #fbbf24;
+}
+.review-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+  box-sizing: border-box;
+}
+.review-form textarea:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  ring: 2px solid var(--primary-200);
+}
+.btn-submit-review {
+  padding: 0.625rem 1.25rem;
+  background: var(--primary-600);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-submit-review:disabled {
+  background: var(--gray-300);
+  cursor: default;
+}
+.review-login-cta {
+  margin-top: 1rem;
+  text-align: center;
+  color: var(--gray-500);
+}
+.review-login-cta a {
+  color: var(--primary-600);
+  font-weight: 500;
 }
 
 /* Contact Section */
