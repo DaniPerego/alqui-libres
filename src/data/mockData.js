@@ -428,6 +428,57 @@ export const mockOwnerUser = {
   subscription: null
 }
 
+export const mockFeaturedProperties = [
+  { ...mockProperties[0], id: 'f1' },
+  { ...mockProperties[2], id: 'f2' },
+  { ...mockProperties[1], id: 'f3' }
+]
+
+// Active annual rental property for homepage showcase
+export const mockAnnualProperty = {
+  id: 'a1',
+  ownerId: 'owner001',
+  title: 'Departamento en Zona Residencial',
+  description: 'Amplio departamento en zona residencial tranquila. Ideal para familias o profesionales que buscan estabilidad. Contrato anual con opción a renovación. Agua y expensas incluidas.',
+  propertyType: 'apartamento',
+  rentalType: 'anual',
+  mainImage: 'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800',
+  images: [
+    'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800',
+    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'
+  ],
+  pricing: {
+    basePrice: 550,
+    cleaningFee: 0,
+    currency: 'USD'
+  },
+  capacity: {
+    guests: 4,
+    bedrooms: 2,
+    beds: 3,
+    bathrooms: 2
+  },
+  location: {
+    city: 'Córdoba',
+    state: 'Córdoba',
+    country: 'Argentina',
+    coordinates: { lat: -31.4161, lng: -64.1855 }
+  },
+  amenities: ['WiFi', 'Cocina completa', 'Calefacción', 'Aire Acondicionado', 'Lavadero', 'Estacionamiento'],
+  localFeatures: {
+    grillType: '',
+    parkingSize: 'mediana',
+    nearbyAttractions: ['Nueva Córdoba', 'Parque Sarmiento'],
+    distanceToCenter: 2.0
+  },
+  rating: 4.5,
+  reviewCount: 12,
+  isActive: true,
+  status: 'active',
+  createdAt: new Date('2024-04-01'),
+  updatedAt: new Date('2024-10-15')
+}
+
 export const mockAdminUser = {
   uid: 'admin001',
   email: 'admin@alquilibres.com',

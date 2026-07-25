@@ -26,6 +26,7 @@ export const useSearchStore = defineStore('search', {
       priceMax: 100000,
       propertyType: '',
       rentalType: '',
+      minBedrooms: 0,
       amenities: [],
       localFeatures: {
         grillType: '',
@@ -112,6 +113,11 @@ export const useSearchStore = defineStore('search', {
 
         // Filtro de tipo de alquiler (temporario / anual)
         if (this.filters.rentalType && listing.rentalType !== this.filters.rentalType) {
+          return false
+        }
+
+        // Filtro de cantidad mínima de dormitorios
+        if (this.filters.minBedrooms > 0 && listing.capacity.bedrooms < this.filters.minBedrooms) {
           return false
         }
         
