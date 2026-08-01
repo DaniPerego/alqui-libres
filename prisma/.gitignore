@@ -1,0 +1,3 @@
+# Prisma local artifacts — never commit real credentials or generated client overrides
+.env
+.server

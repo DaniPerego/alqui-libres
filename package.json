@@ -9,6 +9,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "prisma": "prisma",
+    "seed": "prisma db seed",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:functions": "firebase deploy --only functions",
@@ -23,6 +28,8 @@
   },
   "dependencies": {
     "@mercadopago/sdk-js": "^0.0.3",
+    "@prisma/client": "^6.19.3",
+    "@supabase/supabase-js": "^2.111.0",
     "@vercel/blob": "^2.6.1",
     "@vueuse/core": "^10.7.0",
     "firebase": "^10.7.1",
@@ -33,8 +40,17 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
+    "@vue/test-utils": "^2.4.11",
+    "dotenv": "^16.6.1",
+    "happy-dom": "^15.11.7",
+    "jsdom": "^25.0.1",
+    "prisma": "^6.19.3",
     "terser": "^5.44.1",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "vitest": "^3.2.7"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "engines": {
     "node": ">=18.0.0",
