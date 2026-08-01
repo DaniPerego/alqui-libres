@@ -1,8 +1,13 @@
 // Prisma schema — AlquiLibres data layer (Vercel Postgres)
-// The full data model (10 tables + enums + indexes) is added in the
-// "schema" work unit. This minimal skeleton exists so `prisma generate`
-// can bootstrap the client during infrastructure setup.
 //
+// SDD: backend-vercel-migration — WU1 (data layer)
+// Binding decisions:
+//   D1  users.id = Supabase Auth UID (String @id, no default)
+//   D2  hot fields as columns, flexible/rare fields as Json
+//   D3  settings resource named PlatformSettings (single row 'general')
+//   D8  extra enum PropertyRentalType (temporario/anual); seed normalizes
+//       mockData propertyType values (apartamento->departamento, cabana, loft->otro)
+//   D9  seed upserts by stable mock ids (@default(uuid()) for API-created rows)
 // Docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -12,4 +17,357 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  guest
+  owner
+  admin
+}
+
+enum PropertyStatus {
+  pending
+  active
+  inactive
+  rejected
+}
+
+enum PropertyType {
+  casa
+  departamento
+  cabana
+  habitacion
+  otro
+}
+
+// D8 — accepted deviation: mockData.js carries rentalType values that were
+// not part of the original 9-enum list (VPD-02). Values match mockData
+// as-is: 'temporario' | 'anual'.
+enum PropertyRentalType {
+  temporario
+  anual
+}
+
+enum ReservationStatus {
+  pending
+  confirmed
+  rejected
+  cancelled
+}
+
+enum NotificationType {
+  reservation
+  message
+  payment
+  property
+  system
+}
+
+enum NotificationPriority {
+  low
+  normal
+  high
+}
+
+enum SubscriptionStatus {
+  active
+  cancelled
+  expired
+  pending
+}
+
+enum PaymentStatus {
+  pending
+  approved
+  rejected
+  cancelled
+  refunded
+}
+
+enum PaymentMethod {
+  mercadopago
+  stripe
+  manual
+}
+
+// ---------- Models ----------
+
+model User {
+  id           String   @id // Supabase Auth UID (D1)
+  email        String   @unique
+  displayName  String
+  photoURL     String?
+  role         Role     @default(guest)
+  isActive     Boolean  @default(true)
+  emailVerified Boolean @default(false)
+  city         String?
+  bio          String?
+  // Flexible profile fields (D2)
+  contactoPrincipal  Json?
+  contactoSecundario Json?
+  redesSociales      Json?
+  // {planId, status, startedAt, expiresAt, autoRenew, lastPaymentDate}
+  subscription       Json?
+  // {properties, bookings, revenue}
+  stats              Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  properties         Property[]      @relation("OwnerProperties")
+  reservationsAsOwner Reservation[]  @relation("ReservationOwner")
+  reservationsAsGuest Reservation[]  @relation("ReservationGuest")
+  messagesAsOwner    Message[]       @relation("MessagesOwner")
+  messagesAsGuest    Message[]       @relation("MessagesGuest")
+  reviewsReceived    Review[]        @relation("ReviewOwner")
+  reviewsAsGuest     Review[]        @relation("ReviewGuest")
+  subscriptions      Subscription[]
+  payments           Payment[]
+  notifications      Notification[]
+
+  @@index([role])
+  @@index([isActive, createdAt(sort: Desc)])
+}
+
+model Property {
+  id           String   @id @default(uuid())
+  ownerId      String
+  ownerName    String
+  ownerEmail   String
+  title        String
+  description  String
+  propertyType PropertyType
+  rentalType   PropertyRentalType @default(temporario) // D8
+  mainImage    String?
+  images       String[]
+  locationCity String
+  locationState String
+  locationCountry String @default("Argentina")
+  locationPostalCode String?
+  locationCoordinates Json? // {lat, lng}
+  capacityGuests Int
+  capacityBedrooms Int
+  capacityBeds Int
+  capacityBathrooms Int
+  localFeatures Json?
+  amenities    String[]
+  pricingBasePrice Float
+  pricingCleaningFee Float @default(0)
+  pricingCurrency String @default("ARS")
+  pricingWeeklyDiscount Float?
+  pricingMonthlyDiscount Float?
+  availability Json?
+  houseRules   Json?
+  rating       Float @default(0)
+  reviewCount  Int @default(0)
+  viewCount    Int @default(0)
+  bookingCount Int @default(0)
+  status       PropertyStatus @default(pending)
+  isActive     Boolean @default(false)
+  featured     Boolean @default(false)
+  reviewedAt   DateTime?
+  reviewedBy   String?
+  rejectionReason String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  owner        User @relation("OwnerProperties", fields: [ownerId], references: [id])
+  reservations Reservation[]
+  reviews      Review[]
+  messages     Message[]
+
+  @@index([ownerId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([isActive, createdAt(sort: Desc)])
+  @@index([locationCity, propertyType, pricingBasePrice])
+  @@index([status, locationCity])
+  @@index([featured, isActive])
+}
+
+model Reservation {
+  id        String @id @default(uuid())
+  propertyId String
+  ownerId   String
+  guestId   String
+  property  Json // snapshot {id,title,city,image}
+  guestName String
+  guestEmail String
+  guestPhone String?
+  ownerName String
+  ownerEmail String
+  ownerPhone String?
+  checkIn   DateTime
+  checkOut  DateTime
+  nights    Int
+  guests    Int
+  basePrice Float
+  cleaningFee Float @default(0)
+  total     Float
+  message   String?
+  status    ReservationStatus @default(pending)
+  confirmedAt DateTime?
+  rejectedAt DateTime?
+  rejectionReason String?
+  cancelledAt DateTime?
+  cancelledBy Role? // 'owner' | 'guest'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  propertyRef Property @relation(fields: [propertyId], references: [id])
+  owner User @relation("ReservationOwner", fields: [ownerId], references: [id])
+  guest User @relation("ReservationGuest", fields: [guestId], references: [id])
+
+  @@index([ownerId, status, createdAt(sort: Desc)])
+  @@index([guestId, createdAt(sort: Desc)])
+  @@index([propertyId, status, checkIn])
+}
+
+model Message {
+  id       String @id @default(uuid())
+  ownerId  String
+  guestId  String
+  propertyId String
+  propertyTitle String?
+  guestName String
+  guestEmail String
+  message  String
+  checkIn  DateTime?
+  checkOut DateTime?
+  guests   Int?
+  status   String @default("unread") // unread | read | replied (small domain)
+  read     Boolean @default(false)
+  readAt   DateTime?
+  repliedAt DateTime?
+  createdAt DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id])
+  owner User @relation("MessagesOwner", fields: [ownerId], references: [id])
+  guest User @relation("MessagesGuest", fields: [guestId], references: [id])
+
+  @@index([ownerId, read, createdAt(sort: Desc)])
+  @@index([guestId, createdAt(sort: Desc)])
+}
+
+model Review {
+  id        String @id @default(uuid())
+  propertyId String
+  ownerId   String
+  guestId   String
+  reservationId String? // denormalized ref (no FK by design; VPD-03 lists Property/User-Review only)
+  guestName String
+  rating    Int // 1..5
+  comment   String?
+  ratings   Json? // {cleanliness, communication, location, value}
+  ownerResponse String?
+  ownerRespondedAt DateTime?
+  verified  Boolean @default(false)
+  visible   Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id])
+  owner User @relation("ReviewOwner", fields: [ownerId], references: [id])
+  guest User @relation("ReviewGuest", fields: [guestId], references: [id])
+
+  @@index([propertyId, visible, createdAt(sort: Desc)])
+  @@index([guestId, createdAt(sort: Desc)])
+  @@index([ownerId, createdAt(sort: Desc)])
+}
+
+model Subscription {
+  id        String @id @default(uuid())
+  userId    String
+  userEmail String
+  planId    String
+  planName  String
+  planPrice Float
+  status    SubscriptionStatus @default(pending)
+  startedAt DateTime @default(now())
+  expiresAt DateTime?
+  cancelledAt DateTime?
+  autoRenew Boolean @default(true)
+  paymentMethod PaymentMethod?
+  lastPaymentDate DateTime?
+  nextPaymentDate DateTime?
+  preferenceId String?
+  paymentId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@index([status, expiresAt])
+}
+
+model SubscriptionPlan {
+  id        String @id // basic | pro | enterprise (stable seed ids, D9)
+  name      String
+  price     Float
+  currency  String @default("ARS")
+  interval  String @default("month")
+  features  String[]
+  maxProperties Int // -1 = unlimited
+  isActive  Boolean @default(true)
+  recommended Boolean @default(false)
+  order     Int @default(0)
+}
+
+model PlatformSettings {
+  id       String @id // single row: 'general' (D3)
+  platformName String
+  contactEmail String
+  supportPhone String
+  commissionRate Float @default(0)
+  emailNotifications Boolean @default(true)
+  whatsappNotifications Boolean @default(true)
+  requireEmailVerification Boolean @default(false)
+  moderateProperties Boolean @default(false)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+model Payment {
+  id        String @id @default(uuid())
+  userId    String
+  userEmail String
+  subscriptionId String?
+  planId    String
+  planName  String?
+  amount    Float
+  currency  String @default("ARS")
+  paymentMethod PaymentMethod
+  preferenceId String?
+  paymentId String?
+  externalReference String?
+  status    PaymentStatus @default(pending)
+  statusDetail String?
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model Notification {
+  id        String @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json? // {propertyId, reservationId, messageId, actionUrl}
+  read      Boolean @default(false)
+  readAt    DateTime?
+  priority  NotificationPriority @default(normal)
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, read, createdAt(sort: Desc)])
+  @@index([userId, type, createdAt(sort: Desc)])
 }
