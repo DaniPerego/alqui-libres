@@ -14,19 +14,43 @@ export function escapeLike(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
 }
 
+// Builds the WHERE clause for the raw search. Structured filters (city,
+// propertyType, rentalType, minGuests) are combined with AND against the
+// escaped ILIKE pattern. `Prisma.join` keeps the parameter placeholders
+// numbered by Prisma itself.
+function buildSearchWhere(q, isActive, filters = {}) {
+  const pattern = `%${escapeLike(q)}%`
+  const parts = [
+    Prisma.sql`(title ILIKE '%' || ${pattern} || '%' ESCAPE '\\'
+       OR "locationCity" ILIKE '%' || ${pattern} || '%' ESCAPE '\\')`,
+    Prisma.sql`"isActive" = ${isActive}`,
+  ]
+  if (filters.city) parts.push(Prisma.sql`"locationCity" = ${filters.city}`)
+  if (filters.propertyType) parts.push(Prisma.sql`"propertyType" = ${filters.propertyType}`)
+  if (filters.rentalType) parts.push(Prisma.sql`"rentalType" = ${filters.rentalType}`)
+  if (filters.minGuests) parts.push(Prisma.sql`"capacityGuests" >= ${filters.minGuests}`)
+  return Prisma.join(parts, ' AND ')
+}
+
 // Raw ILIKE search over title/locationCity with an is_active filter.
 // `prisma` is injected so tests can assert on the generated SQL/params
 // without a database (phase 7 covers the live integration case).
 // Column/table names follow the Prisma schema (no @@map): "Property",
 // "locationCity", "isActive", "createdAt".
-export function searchProperties(prisma, { q, limit = 20, offset = 0, isActive = true } = {}) {
-  const pattern = `%${escapeLike(q)}%`
+export function searchProperties(prisma, { q, limit = 20, offset = 0, isActive = true, filters = {} } = {}) {
   return prisma.$queryRaw(
     Prisma.sql`SELECT * FROM "Property"
-      WHERE (title ILIKE '%' || ${pattern} || '%' ESCAPE '\\'
-             OR "locationCity" ILIKE '%' || ${pattern} || '%' ESCAPE '\\')
-        AND "isActive" = ${isActive}
+      WHERE ${buildSearchWhere(q, isActive, filters)}
       ORDER BY "createdAt" DESC
       LIMIT ${limit} OFFSET ${offset}`
+  )
+}
+
+// Count for the same raw search (used to build pagination meta). `::int`
+// keeps Prisma from returning a BigInt for COUNT(*).
+export function countSearchProperties(prisma, { q, isActive = true, filters = {} } = {}) {
+  return prisma.$queryRaw(
+    Prisma.sql`SELECT COUNT(*)::int AS count FROM "Property"
+      WHERE ${buildSearchWhere(q, isActive, filters)}`
   )
 }

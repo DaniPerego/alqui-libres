@@ -66,3 +66,44 @@ export function parsePagination(query = {}) {
 export function buildMeta({ page, limit, total }) {
   return { page, limit, total, totalPages: Math.ceil(total / limit) }
 }
+
+// Wraps a handler so any unhandled error becomes a JSON error response
+// (design error contract). Handlers that write their own error response and
+// return early (requireAuth/requireRole failures) are not affected.
+export function asyncRoute(handler) {
+  return async (req, res) => {
+    try {
+      await handler(req, res)
+    } catch (err) {
+      sendError(res, err)
+    }
+  }
+}
+
+// Reads the request body as JSON. Vercel's Node runtime auto-parses
+// application/json into req.body; when absent (tests, raw proxies) the
+// request stream is buffered. Malformed JSON -> 400 VALIDATION (API-01 edge).
+export async function readJsonBody(req) {
+  if (req.body !== undefined && req.body !== null) {
+    if (typeof req.body === 'string') {
+      try {
+        return JSON.parse(req.body)
+      } catch {
+        throw new HttpError('VALIDATION', 'Invalid JSON body', 400)
+      }
+    }
+    return req.body
+  }
+  if (typeof req[Symbol.asyncIterator] === 'function') {
+    const chunks = []
+    for await (const chunk of req) chunks.push(chunk)
+    const raw = Buffer.concat(chunks).toString('utf8')
+    if (!raw) return {}
+    try {
+      return JSON.parse(raw)
+    } catch {
+      throw new HttpError('VALIDATION', 'Invalid JSON body', 400)
+    }
+  }
+  return {}
+}
