@@ -13,10 +13,30 @@ const firebaseConfig = {
 }
 
 // Verificar si Firebase está configurado
-const isFirebaseConfigured = firebaseConfig.apiKey && 
-                             firebaseConfig.apiKey !== 'tu_api_key_aqui' &&
-                             firebaseConfig.projectId &&
-                             firebaseConfig.projectId !== 'tu_project_id_aqui'
+// Cualquier valor placeholder (ejemplos de .env.example) cuenta como "no configurado"
+const PLACEHOLDER_PATTERNS = [
+  'tu_api_key',
+  'your_api_key',
+  'tu-proyecto',
+  'your_project',
+  'tu_proyecto',
+  '123456789',
+  'abc123',
+  'tu_clave',
+  'your_sender',
+  'your_app'
+]
+
+function isPlaceholder(value) {
+  return !value ||
+    PLACEHOLDER_PATTERNS.some(pattern => String(value).includes(pattern))
+}
+
+const isFirebaseConfigured =
+  !isPlaceholder(firebaseConfig.apiKey) &&
+  !isPlaceholder(firebaseConfig.projectId) &&
+  !isPlaceholder(firebaseConfig.authDomain) &&
+  !isPlaceholder(firebaseConfig.appId)
 
 let app = null
 let auth = null

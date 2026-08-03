@@ -1,122 +1,175 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // === USUARIOS ===
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // El rol de admin vive en el propio doc del usuario (users/{uid}.role).
+    // Para que esto funcione, el usuario admin debe tener su doc creado
+    // (por ejemplo users/XXXXX con { role: 'admin' }).
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ============================================================
+    // USUARIOS (gestión de perfiles + panel admin)
+    // ============================================================
     match /users/{userId} {
-      // Los usuarios pueden leer y escribir solo sus propios datos
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      // Perfil público puede ser leído por todos
-      match /profile/{document=**} {
-        allow read: if true;
-      }
+      // El usuario gestiona su propio perfil; el admin gestiona todos
+      allow read, write: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
     }
-    
-    // === PROPIEDADES ===
+
+    // ============================================================
+    // PROPIEDADES (colección de moderación del panel admin)
+    // Nota: las propiedades de los propietarios viven en
+    // artifacts/{appId}/users/{uid}/properties (ver abajo).
+    // ============================================================
     match /properties/{propertyId} {
-      // Cualquiera puede leer propiedades activas
-      allow read: if true;
-      
-      // Solo el propietario puede crear/modificar sus propiedades
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && 
-                              request.auth.uid == resource.data.ownerId;
-      
-      // Validación de campos requeridos
-      allow write: if request.resource.data.keys().hasAll([
-        'title', 'description', 'propertyType', 'pricePerNight', 
-        'capacity', 'location', 'ownerId'
-      ]);
+      allow read: if isAdmin();
+      allow write: if isAdmin();
     }
-    
-    // === RESERVAS ===
+
+    // ============================================================
+    // RESERVAS
+    // ============================================================
     match /reservations/{reservationId} {
-      // Los usuarios autenticados pueden leer reservas donde son propietario o huésped
-      allow read: if request.auth != null && (
-        request.auth.uid == resource.data.ownerId ||
-        request.auth.uid == resource.data.guestId
+      // Owner y guest leen sus propias reservas; admin lee todas
+      allow read: if isAdmin() || (
+        isSignedIn() && (
+          request.auth.uid == resource.data.ownerId ||
+          request.auth.uid == resource.data.guestId
+        )
       );
-      
-      // Los huéspedes pueden crear reservas
-      allow create: if request.auth != null && 
+
+      // Los huéspedes crean reservas
+      allow create: if isSignedIn() &&
                        request.resource.data.guestId == request.auth.uid &&
                        request.resource.data.keys().hasAll([
                          'propertyId', 'ownerId', 'guestId', 'checkIn', 'checkOut',
                          'guests', 'total', 'status'
                        ]);
-      
-      // El propietario puede actualizar el estado de la reserva
-      allow update: if request.auth != null && 
-                       request.auth.uid == resource.data.ownerId &&
-                       request.resource.data.keys().hasAll(['status', 'updatedAt']);
-      
-      // Solo el propietario puede eliminar reservas (soft delete preferido)
-      allow delete: if request.auth != null && 
-                       request.auth.uid == resource.data.ownerId;
+
+      // El propietario actualiza el estado; el admin también
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        request.auth.uid == resource.data.ownerId &&
+        request.resource.data.keys().hasAll(['status', 'updatedAt'])
+      );
+
+      // Solo el propietario o el admin eliminan (soft delete preferido)
+      allow delete: if isAdmin() || (
+        isSignedIn() && request.auth.uid == resource.data.ownerId
+      );
     }
-    
-    // === MENSAJES ===
-    match /messages/{messageId} {
-      // Cualquiera autenticado puede crear mensajes
-      allow create: if request.auth != null;
-      
-      // Solo el propietario puede leer mensajes dirigidos a él
-      allow read: if request.auth != null && 
-                     request.auth.uid == resource.data.ownerId;
-      
-      // Solo el propietario puede marcar como leído
-      allow update: if request.auth != null && 
-                       request.auth.uid == resource.data.ownerId;
-    }
-    
-    // === RESEÑAS ===
-    match /reviews/{reviewId} {
-      // Cualquiera puede leer reseñas
-      allow read: if true;
-      
-      // Solo usuarios autenticados pueden crear reseñas
-      allow create: if request.auth != null;
-      
-      // Solo el autor puede editar su reseña
-      allow update, delete: if request.auth != null && 
-                               request.auth.uid == resource.data.authorId;
-    }
-    
-    // === SUSCRIPCIONES ===
+
+    // ============================================================
+    // SUSCRIPCIONES Y PAGOS (top-level, administrados por backend)
+    // ============================================================
     match /subscriptions/{userId} {
-      // Solo el usuario puede leer su propia suscripción
-      allow read: if request.auth != null && request.auth.uid == userId;
-      
-      // Solo el sistema (Functions) puede escribir suscripciones
-      // Los usuarios no pueden modificar directamente
+      // Solo el usuario lee su propia suscripción; admin también
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      // Solo el sistema (Functions) escribe
       allow write: if false;
     }
-    
-    // === PAGOS ===
+
     match /payments/{paymentId} {
-      // Solo el usuario puede ver sus propios pagos
-      allow read: if request.auth != null && 
-                     request.auth.uid == resource.data.userId;
-      
-      // Solo Functions pueden crear pagos
+      // Solo el usuario ve sus propios pagos; admin también
+      allow read: if isAdmin() || (
+        isSignedIn() && request.auth.uid == resource.data.userId
+      );
+      // Solo Functions crean pagos
       allow write: if false;
     }
-    
-    // === NOTIFICACIONES ===
+
+    // ============================================================
+    // NOTIFICACIONES
+    // ============================================================
     match /notifications/{notificationId} {
-      // Solo el destinatario puede leer sus notificaciones
-      allow read: if request.auth != null && 
-                     request.auth.uid == resource.data.userId;
-      
+      allow read: if isAdmin() || (
+        isSignedIn() && request.auth.uid == resource.data.userId
+      );
+
       // El usuario puede marcar como leída
-      allow update: if request.auth != null && 
+      allow update: if isSignedIn() &&
                        request.auth.uid == resource.data.userId &&
                        request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['read', 'readAt']);
-      
-      // Solo Functions pueden crear notificaciones
+
+      // Solo Functions crean notificaciones
       allow create: if false;
+    }
+
+    // ============================================================
+    // PLANES DE SUSCRIPCIÓN (precios públicos, edición solo admin)
+    // ============================================================
+    match /subscriptionPlans/{planId} {
+      // Los planes se muestran en checkout y suscripción a cualquier visitante
+      allow read: if true;
+      // Solo el admin crea/edita planes
+      allow write: if isAdmin();
+    }
+
+    // ============================================================
+    // CONFIGURACIÓN DE PLATAFORMA (solo admin)
+    // ============================================================
+    match /platformSettings/{docId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ============================================================
+    // DATOS PRIVADOS DE PROPIETARIOS (paths artifacts/...)
+    // ============================================================
+
+    // Propiedades privadas: solo el dueño o el admin
+    match /artifacts/{appId}/users/{userId}/properties/{propertyId} {
+      allow read, write: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+    }
+
+    // Mensajes: el dueño lee/gestiona; cualquier autenticado puede dejar uno
+    match /artifacts/{appId}/users/{userId}/messages/{messageId} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow create: if isSignedIn() &&
+                      request.resource.data.guestId == request.auth.uid;
+      allow update, delete: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+    }
+
+    // Suscripción privada del propietario: lectura del dueño, escritura del backend
+    match /artifacts/{appId}/users/{userId}/subscription {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow write: if isAdmin();
+    }
+
+    // ============================================================
+    // DATOS PÚBLICOS (motor de búsqueda)
+    // ============================================================
+
+    // Listings públicos: cualquiera lee; el dueño o el admin gestionan
+    match /artifacts/{appId}/public/data/listings/{listingId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isAdmin() || (
+        isSignedIn() && resource.data.ownerId == request.auth.uid
+      );
+    }
+
+    // Reviews públicas: cualquiera lee; autenticados crean; autor o admin gestionan
+    match /artifacts/{appId}/public/data/reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin() || (
+        isSignedIn() && (
+          request.auth.uid == resource.data.guestId ||
+          request.auth.uid == resource.data.authorId
+        )
+      );
     }
   }
 }

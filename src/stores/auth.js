@@ -7,7 +7,8 @@ import {
   updateProfile,
   sendPasswordResetEmail
 } from 'firebase/auth'
-import { auth } from '@/config/firebase'
+import { setDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore'
+import { auth, db } from '@/config/firebase'
 import { mockGuestUser, mockOwnerUser, mockAdminUser } from '@/data/mockData'
 
 const MOCK_CREDENTIALS_KEY = 'mockCredentials'
@@ -56,8 +57,22 @@ export const useAuthStore = defineStore('auth', {
       }
 
       return new Promise((resolve) => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          this.user = user
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+          if (user && db) {
+            try {
+              const userSnap = await getDoc(doc(db, 'users', user.uid))
+              if (userSnap.exists()) {
+                this.user = { ...user, ...userSnap.data() }
+              } else {
+                this.user = user
+              }
+            } catch (e) {
+              console.warn('⚠️ No se pudo cargar el doc del usuario:', e.message)
+              this.user = user
+            }
+          } else {
+            this.user = user
+          }
           this.initialized = true
           unsubscribe()
           resolve(user)
@@ -119,6 +134,20 @@ export const useAuthStore = defineStore('auth', {
 
         const userCredential = await signInWithEmailAndPassword(auth, email, password)
         this.user = userCredential.user
+
+        // Cargar el doc del usuario (rol, suscripción) desde Firestore.
+        // En modo demo el rol viene en los datos mock; en modo real vive en users/{uid}.
+        if (db) {
+          try {
+            const userSnap = await getDoc(doc(db, 'users', userCredential.user.uid))
+            if (userSnap.exists()) {
+              this.user = { ...userCredential.user, ...userSnap.data() }
+            }
+          } catch (e) {
+            console.warn('⚠️ No se pudo cargar el doc del usuario:', e.message)
+          }
+        }
+
         return { success: true }
       } catch (error) {
         this.error = this.getErrorMessage(error.code || error.message)
@@ -207,6 +236,21 @@ export const useAuthStore = defineStore('auth', {
           await updateProfile(userCredential.user, { displayName })
         }
         this.user = userCredential.user
+
+        // Crear el doc del usuario en Firestore con su rol.
+        // Las reglas de seguridad leen users/{uid}.role para detectar admin.
+        if (db) {
+          await setDoc(doc(db, 'users', userCredential.user.uid), {
+            uid: userCredential.user.uid,
+            email,
+            displayName: displayName || email.split('@')[0],
+            role: 'owner', // El registro público crea propietarios
+            isActive: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          }, { merge: true })
+        }
+
         return { success: true }
       } catch (error) {
         this.error = this.getErrorMessage(error.code)
