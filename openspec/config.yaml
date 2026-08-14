@@ -1,0 +1,40 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Vue 3 (Composition API) + Vite 5 + Pinia + Vue Router 4
+  Backend: Vercel Serverless Functions (api/) + Prisma ORM (Supabase/PostgreSQL)
+  Auth: Firebase Auth | Storage: Firebase Storage + Vercel Blob
+  Payments: MercadoPago SDK | Notifications: Firebase Cloud Functions (SendGrid, Twilio)
+  Deployment: Dual — Firebase Hosting + Vercel | Node >=18 | ES Modules
+  Testing: Vitest 3.2.7, @vue/test-utils, jsdom/happy-dom
+  Architecture: SPA with lazy-loaded routes, Pinia stores, serverless API layer
+  Language: JavaScript (no TypeScript)
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Note dual-deploy impact (Firebase + Vercel) when changing hosting or functions
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows (especially API ↔ Prisma ↔ Supabase)
+    - Document architecture decisions with rationale
+    - Note Firebase ↔ Vercel boundary when touching both layers
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Reference existing file paths from src/ or api/ when relevant
+  apply:
+    guidelines:
+      - Follow existing code patterns (JS, Composition API, Pinia stores)
+      - Keep functions/ separate from api/ (Firebase vs Vercel)
+      - Maintain Prisma schema consistency across migrations
+    tdd: true
+    test_command: "vitest run"
+  verify:
+    test_command: "vitest run"
+    build_command: "vite build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
