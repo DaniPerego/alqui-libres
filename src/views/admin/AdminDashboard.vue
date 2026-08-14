@@ -180,7 +180,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
 import { useToast } from '@/composables/useToast'
 
@@ -231,6 +231,11 @@ const rejectProperty = async (propertyId) => {
 
 onMounted(() => {
   adminStore.loadAllData()
+  adminStore.startPolling(30000)
+})
+
+onUnmounted(() => {
+  adminStore.stopPolling()
 })
 </script>
 

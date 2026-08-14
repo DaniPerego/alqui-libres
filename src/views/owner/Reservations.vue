@@ -198,12 +198,16 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { getOwnerReservations } from '@/services/reservations'
+import { isSupabaseConfigured } from '@/config/supabase'
+import {
+  getOwnerReservations,
+  confirmReservation as confirmReservationSvc,
+  rejectReservation as rejectReservationSvc,
+  cancelReservation as cancelReservationSvc
+} from '@/services/reservations'
 
 const authStore = useAuthStore()
-const apiUrl = import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || 
-               'https://us-central1-alqui-libres.cloudfunctions.net'
-const hasFunctions = !!import.meta.env.VITE_FIREBASE_FUNCTIONS_URL
+const isDemo = !isSupabaseConfigured()
 
 const filterStatus = ref('all')
 const reservations = ref([])
@@ -296,40 +300,21 @@ const cancelReservation = async (reservation) => {
   if (!confirm('¿Estás seguro de cancelar esta reserva confirmada?')) {
     return
   }
-  
+
   processing.value = true
-  
+
   try {
-    // Modo demo: sin Functions configuradas
-    if (!hasFunctions) {
-      reservation.status = 'cancelled'
-      saveReservations()
-      showNotification('Reserva cancelada (modo demo)', 'warning')
-      await loadReservations()
-      return
+    const result = await cancelReservationSvc(reservation.id, 'owner')
+
+    if (!result.success) {
+      throw new Error(result.error || 'Error al cancelar la reserva')
     }
 
-    const response = await fetch(`${apiUrl}/cancelReservation`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        reservationId: reservation.id,
-        userId: authStore.user?.uid,
-        userType: 'owner'
-      })
-    })
-    
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Error al cancelar la reserva')
-    }
-    
-    reservation.status = 'cancelled'
-    showNotification('Reserva cancelada', 'warning')
-    
-    // Recargar reservas
+    showNotification(
+      isDemo ? 'Reserva cancelada (modo demo)' : 'Reserva cancelada',
+      'warning'
+    )
+
     await loadReservations()
   } catch (error) {
     console.error('❌ Error cancelando reserva:', error)
@@ -341,64 +326,32 @@ const cancelReservation = async (reservation) => {
 
 const executeAction = async () => {
   processing.value = true
-  
+
   try {
-    const endpoint = modalAction.value === 'confirm' ? 'confirmReservation' : 'rejectReservation'
-    const payload = {
-      reservationId: selectedReservation.value.id,
-      ownerId: authStore.user?.uid
-    }
-    
-    if (modalAction.value === 'reject') {
-      payload.reason = rejectionReason.value
-    }
-    
-    // Modo demo: sin Functions configuradas
-    if (!hasFunctions) {
-      if (modalAction.value === 'confirm') {
-        selectedReservation.value.status = 'confirmed'
-        showNotification('✅ Reserva confirmada (modo demo)', 'success')
-      } else {
-        selectedReservation.value.status = 'rejected'
-        selectedReservation.value.rejectionReason = rejectionReason.value
-        showNotification('Reserva rechazada (modo demo)', 'info')
-      }
-      saveReservations()
-      await loadReservations()
-      showConfirmModal.value = false
-      return
+    const isConfirm = modalAction.value === 'confirm'
+    const result = isConfirm
+      ? await confirmReservationSvc(selectedReservation.value.id)
+      : await rejectReservationSvc(selectedReservation.value.id, rejectionReason.value)
+
+    if (!result.success) {
+      throw new Error(result.error || 'Error al procesar la reserva')
     }
 
-    // Llamar a Firebase Function
-    const response = await fetch(`${apiUrl}/${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
-    
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Error al procesar la reserva')
-    }
-    
-    const result = await response.json()
-    console.log('✅ Reserva procesada:', result)
-    
-    // Actualizar estado local
-    if (modalAction.value === 'confirm') {
-      selectedReservation.value.status = 'confirmed'
-      showNotification('✅ Reserva confirmada! Se notificó al huésped por email y WhatsApp', 'success')
+    if (isConfirm) {
+      showNotification(
+        isDemo
+          ? '✅ Reserva confirmada (modo demo)'
+          : '✅ Reserva confirmada! Se notificó al huésped por email y WhatsApp',
+        'success'
+      )
     } else {
-      selectedReservation.value.status = 'rejected'
-      selectedReservation.value.rejectionReason = rejectionReason.value
-      showNotification('Reserva rechazada. Se notificó al huésped', 'info')
+      showNotification(
+        isDemo ? 'Reserva rechazada (modo demo)' : 'Reserva rechazada. Se notificó al huésped',
+        'info'
+      )
     }
-    
-    // Recargar reservas
+
     await loadReservations()
-    
     showConfirmModal.value = false
   } catch (error) {
     console.error('❌ Error procesando reserva:', error)
@@ -428,96 +381,99 @@ const saveReservations = () => {
   }
 }
 
+function seedDemoReservations() {
+  localStorage.setItem('reservations', JSON.stringify([
+    {
+      id: '1',
+      status: 'pending',
+      ownerId: authStore.user?.uid,
+      propertyId: '1',
+      property: {
+        id: '1',
+        title: 'Casa con Parrilla y Pileta',
+        location: 'Villa Carlos Paz, Córdoba',
+        image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=200&h=200&fit=crop'
+      },
+      guest: {
+        name: 'María González',
+        email: 'maria.gonzalez@email.com',
+        phone: '+54 351 555-1234'
+      },
+      checkIn: '2025-11-20',
+      checkOut: '2025-11-25',
+      nights: 5,
+      guests: 4,
+      totalPrice: 750,
+      message: 'Hola! Estamos interesados en tu propiedad para un fin de semana largo con amigos. ¿Está disponible?',
+      createdAt: Date.now() - 2 * 60 * 60 * 1000
+    },
+    {
+      id: '2',
+      status: 'confirmed',
+      ownerId: authStore.user?.uid,
+      propertyId: '2',
+      property: {
+        id: '2',
+        title: 'Departamento Céntrico',
+        location: 'Córdoba Capital',
+        image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=200&h=200&fit=crop'
+      },
+      guest: {
+        name: 'Juan Pérez',
+        email: 'juan.perez@email.com',
+        phone: '+54 351 555-5678'
+      },
+      checkIn: '2025-11-15',
+      checkOut: '2025-11-18',
+      nights: 3,
+      guests: 2,
+      totalPrice: 450,
+      message: 'Viajamos por trabajo. Necesitamos un lugar tranquilo y bien ubicado.',
+      createdAt: Date.now() - 24 * 60 * 60 * 1000
+    },
+    {
+      id: '3',
+      status: 'pending',
+      ownerId: authStore.user?.uid,
+      propertyId: '3',
+      property: {
+        id: '3',
+        title: 'Cabaña en las Sierras',
+        location: 'La Cumbre, Córdoba',
+        image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=200&h=200&fit=crop'
+      },
+      guest: {
+        name: 'Carolina Ruiz',
+        email: 'caro.ruiz@email.com',
+        phone: '+54 351 555-9012'
+      },
+      checkIn: '2025-12-01',
+      checkOut: '2025-12-05',
+      nights: 4,
+      guests: 6,
+      totalPrice: 960,
+      message: 'Queremos pasar unos días en familia. ¿La cabaña tiene todo lo necesario para cocinar?',
+      createdAt: Date.now() - 5 * 60 * 60 * 1000
+    }
+  ]))
+}
+
 const loadReservations = async () => {
   try {
-    // Intentar cargar desde Firestore
+    if (isDemo && !localStorage.getItem('reservations')) {
+      seedDemoReservations()
+    }
+
     if (authStore.user?.uid) {
-      console.log('📥 Cargando reservas desde Firestore...')
-      reservations.value = await getOwnerReservations(authStore.user.uid)
+      reservations.value = await getOwnerReservations(authStore.user.uid, filterStatus.value)
       console.log('✅ Reservas cargadas:', reservations.value.length)
       return
     }
   } catch (error) {
-    console.warn('⚠️ Error cargando desde Firestore, usando localStorage:', error)
+    console.warn('⚠️ Error cargando reservas:', error)
   }
-  
-  // Fallback: Cargar desde localStorage (modo demo)
-  const saved = localStorage.getItem('reservations')
-  
-  if (saved) {
-    reservations.value = JSON.parse(saved)
-  } else {
-    // Datos de ejemplo para demo
-    reservations.value = [
-      {
-        id: '1',
-        status: 'pending',
-        property: {
-          id: '1',
-          title: 'Casa con Parrilla y Pileta',
-          location: 'Villa Carlos Paz, Córdoba',
-          image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=200&h=200&fit=crop'
-        },
-        guest: {
-          name: 'María González',
-          email: 'maria.gonzalez@email.com',
-          phone: '+54 351 555-1234'
-        },
-        checkIn: '2025-11-20',
-        checkOut: '2025-11-25',
-        nights: 5,
-        guests: 4,
-        totalPrice: 750,
-        message: 'Hola! Estamos interesados en tu propiedad para un fin de semana largo con amigos. ¿Está disponible?',
-        createdAt: Date.now() - 2 * 60 * 60 * 1000
-      },
-      {
-        id: '2',
-        status: 'confirmed',
-        property: {
-          id: '2',
-          title: 'Departamento Céntrico',
-          location: 'Córdoba Capital',
-          image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=200&h=200&fit=crop'
-        },
-        guest: {
-          name: 'Juan Pérez',
-          email: 'juan.perez@email.com',
-          phone: '+54 351 555-5678'
-        },
-        checkIn: '2025-11-15',
-        checkOut: '2025-11-18',
-        nights: 3,
-        guests: 2,
-        totalPrice: 450,
-        message: 'Viajamos por trabajo. Necesitamos un lugar tranquilo y bien ubicado.',
-        createdAt: Date.now() - 24 * 60 * 60 * 1000
-      },
-      {
-        id: '3',
-        status: 'pending',
-        property: {
-          id: '3',
-          title: 'Cabaña en las Sierras',
-          location: 'La Cumbre, Córdoba',
-          image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=200&h=200&fit=crop'
-        },
-        guest: {
-          name: 'Carolina Ruiz',
-          email: 'caro.ruiz@email.com',
-          phone: '+54 351 555-9012'
-        },
-        checkIn: '2025-12-01',
-        checkOut: '2025-12-05',
-        nights: 4,
-        guests: 6,
-        totalPrice: 960,
-        message: 'Queremos pasar unos días en familia. ¿La cabaña tiene todo lo necesario para cocinar?',
-        createdAt: Date.now() - 5 * 60 * 60 * 1000
-      }
-    ]
-    saveReservations()
-  }
+
+  reservations.value = []
 }
 
 onMounted(() => {

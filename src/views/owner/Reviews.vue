@@ -76,10 +76,10 @@ function submitReply(reviewId) {
 }
 
 onMounted(async () => {
-  await propertyStore.fetchProperties()
+  await propertyStore.fetchUserProperties(authStore.userId)
   const ownerProps = propertyStore.properties.filter(p => p.ownerId === authStore.userId)
   const propIds = ownerProps.map(p => p.id)
-  allReviews.value = getOwnerReviews(propIds)
+  allReviews.value = await getOwnerReviews(propIds)
 })
 </script>
 

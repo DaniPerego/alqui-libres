@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard">
-    <template v-if="$auth?.user?.role !== 'guest'">
+    <template v-if="authStore.user?.role !== 'guest'">
       <aside class="sidebar">
         <nav class="sidebar-nav">
           <router-link to="/panel" class="sidebar-link" exact>
@@ -48,6 +48,12 @@
     </template>
   </div>
 </template>
+
+<script setup>
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+</script>
 
 <style scoped>
 .dashboard {

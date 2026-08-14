@@ -6,7 +6,7 @@
         <strong>Modo de Prueba:</strong> 
         Usando datos de ejemplo. 
         <span class="demo-credentials">
-          <strong>Propietario:</strong> <code>demo@alquilibres.com</code> / <code>demo123</code>
+          <strong>Propietario:</strong> <code>usuario@alquilibres.com</code> / <code>user123</code>
           <span class="separator">|</span>
           <strong>Admin:</strong> <code>admin@alquilibres.com</code> / <code>admin123</code>
         </span>

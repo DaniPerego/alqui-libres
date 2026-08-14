@@ -424,9 +424,14 @@
 </template>
 
 <script setup>
-// Simulación de alquileres para el huésped
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { uploadProfileImage } from '@/services/storage'
 import { mockMessages } from '@/data/mockData'
 
+const authStore = useAuthStore()
+
+// Simulación de alquileres para el huésped
 const rentals = ref([])
 
 const loadRentals = () => {
@@ -446,11 +451,6 @@ const loadRentals = () => {
     rentals.value = []
   }
 }
-import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { uploadProfileImage } from '@/services/storage'
-
-const authStore = useAuthStore()
 
 const activeTab = ref('personal')
 const saving = ref(false)

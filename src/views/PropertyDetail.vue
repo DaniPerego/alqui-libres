@@ -523,6 +523,13 @@
     </div>
   </div>
   
+  <div v-else-if="notFound" class="not-found-container">
+    <h2>Propiedad no encontrada</h2>
+    <p>La propiedad que buscás no existe o fue eliminada.</p>
+    <router-link to="/buscar" class="btn btn-primary">
+      Ver otras propiedades
+    </router-link>
+  </div>
   <div v-else class="loading-container">
     <div class="spinner"></div>
     <p>Cargando propiedad...</p>
@@ -533,18 +540,23 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePropertyStore } from '@/stores/property'
 import { useSEO, generatePropertySchema } from '@/composables/useSEO'
 import { getPropertyReviews, addReview, getPropertyRating } from '@/services/reviews'
+import { createReservation } from '@/services/reservations'
+import { isSupabaseConfigured } from '@/config/supabase'
 import DatePicker from 'vue-datepicker-next';
 import 'vue-datepicker-next/index.css';
 
 const route = useRoute()
 const authStore = useAuthStore()
+const propertyStore = usePropertyStore()
 const { updateMetaTags, addStructuredData } = useSEO()
 
 // Estado
 const property = ref(null)
 const currentImage = ref('')
+const notFound = ref(false)
 const ownerProfile = ref(null)
 const bookingDates = ref({
   checkIn: '',
@@ -567,10 +579,6 @@ const reservationForm = ref({
   phone: '',
   message: ''
 })
-
-// Backend Functions (si no está definida, operamos en modo demo)
-const apiUrl = import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || 'https://us-central1-alqui-libres.cloudfunctions.net'
-const hasFunctions = !!import.meta.env.VITE_FIREBASE_FUNCTIONS_URL
 
 // Computed
 const isAuthenticated = computed(() => authStore.isAuthenticated)
@@ -702,13 +710,30 @@ const getWhatsAppLink = (phone, propertyTitle) => {
 }
 
 const loadOwnerProfile = (ownerId) => {
-  // TODO: Cargar desde Firestore en producción
-  // Por ahora cargamos desde localStorage
+  if (isSupabaseConfigured()) {
+    // Real mode: build the owner profile from the property fields returned by the API.
+    ownerProfile.value = {
+      displayName: property.value.ownerName || 'Propietario',
+      email: property.value.ownerEmail || '',
+      photoURL: property.value.ownerPhotoURL || '',
+      city: property.value.location?.city || '',
+      bio: '',
+      contactoPrincipal: {
+        telefono: property.value.ownerPhone || '',
+        whatsapp: property.value.ownerPhone || '',
+        email: property.value.ownerEmail || ''
+      },
+      contactoSecundario: { enabled: false },
+      redesSociales: {}
+    }
+    return
+  }
+
+  // Demo mode: try localStorage first, then fall back to a mock profile.
   const saved = localStorage.getItem(`profile_${ownerId}`)
   if (saved) {
     ownerProfile.value = JSON.parse(saved)
   } else {
-    // Perfil de ejemplo para demo
     ownerProfile.value = {
       displayName: 'Juan Pérez',
       email: 'demo@alquilibres.com',
@@ -768,104 +793,47 @@ const openReservationModal = () => {
 
 const submitReservation = async () => {
   submittingReservation.value = true
-  
+
   try {
-    // Preparar datos para enviar a la API
     const reservationData = {
-      // IDs
       propertyId: property.value.id,
       ownerId: property.value.ownerId,
       guestId: authStore.user?.uid || 'guest-' + Date.now(),
-      
-      // Datos de la propiedad
       property: {
+        id: property.value.id,
         title: property.value.title,
         city: property.value.location?.city || '',
         image: property.value.images?.[0] || ''
       },
-      
-      // Datos del huésped
       guestName: reservationForm.value.name,
       guestEmail: reservationForm.value.email,
       guestPhone: reservationForm.value.phone,
-      
-      // Datos del propietario (para notificaciones)
       ownerName: ownerProfile.value?.displayName || '',
       ownerEmail: ownerProfile.value?.contactoPrincipal?.email || ownerProfile.value?.email || '',
       ownerPhone: ownerProfile.value?.contactoPrincipal?.whatsapp || ownerProfile.value?.contactoPrincipal?.telefono || '',
-      
-      // Fechas y detalles
       checkIn: reservationForm.value.checkIn,
       checkOut: reservationForm.value.checkOut,
       nights: reservationNights.value,
       guests: parseInt(reservationForm.value.guests),
-      
-      // Precio
       basePrice: property.value.pricing?.basePrice ?? 0,
       cleaningFee: property.value.pricing?.cleaningFee || 0,
       total: reservationTotal.value,
-      
-      // Mensaje opcional
       message: reservationForm.value.message || ''
     }
-    
-    // Si no hay Functions configuradas, guardar en localStorage (modo demo)
-    if (!hasFunctions) {
-      const existing = JSON.parse(localStorage.getItem('reservations') || '[]')
-      const demoReservation = {
-        id: 'demo-' + Date.now(),
-        status: 'pending',
-        property: {
-          id: property.value.id,
-          title: property.value.title,
-          location: `${property.value.location?.city || ''}, ${property.value.location?.state || ''}`.trim(),
-          image: property.value.images?.[0] || ''
-        },
-        guest: {
-          name: reservationForm.value.name,
-          email: reservationForm.value.email,
-          phone: reservationForm.value.phone
-        },
-        checkIn: reservationForm.value.checkIn,
-        checkOut: reservationForm.value.checkOut,
-        nights: reservationNights.value,
-        guests: parseInt(reservationForm.value.guests),
-        totalPrice: reservationTotal.value,
-        message: reservationForm.value.message || '',
-        createdAt: Date.now()
-      }
-      existing.unshift(demoReservation)
-      localStorage.setItem('reservations', JSON.stringify(existing))
-    } else {
-      // Enviar a Firebase Functions
-      const response = await fetch(`${apiUrl}/createReservation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(reservationData)
-      })
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Error al crear la reserva')
-      }
-      
-      const result = await response.json()
-      console.log('✅ Reserva creada:', result)
+
+    const result = await createReservation(reservationData)
+
+    if (!result.success) {
+      throw new Error(result.error || 'Error al crear la reserva')
     }
-    
-    // Cerrar modal
+
     showReservationModal.value = false
-    
-    // Mostrar confirmación
     toastMessage.value = '✅ ¡Solicitud enviada! El propietario recibirá tu consulta por email y WhatsApp'
     showToast.value = true
     setTimeout(() => {
       showToast.value = false
     }, 5000)
-    
-    // Limpiar formulario
+
     reservationForm.value = {
       checkIn: '',
       checkOut: '',
@@ -875,11 +843,8 @@ const submitReservation = async () => {
       phone: '',
       message: ''
     }
-    
   } catch (error) {
     console.error('❌ Error enviando reserva:', error)
-    
-    // Mostrar error específico
     toastMessage.value = '❌ ' + (error.message || 'Error al enviar la solicitud. Por favor intenta nuevamente.')
     showToast.value = true
     setTimeout(() => {
@@ -907,70 +872,36 @@ const formatDate = (date) => {
   })
 }
 
-const submitReview = () => {
+const submitReview = async () => {
   if (!newRating.value || !newComment.value.trim()) return
-  const authStore = useAuthStore()
-  addReview({
-    listingId: property.value.id,
+  await addReview({
+    propertyId: property.value.id,
     guestName: authStore.user?.displayName || authStore.user?.email || 'Usuario',
     rating: newRating.value,
     comment: newComment.value.trim(),
     verified: true
   })
-  reviews.value = getPropertyReviews(property.value.id)
+  reviews.value = await getPropertyReviews(property.value.id)
   newRating.value = 0
   newComment.value = ''
 }
 
 // Lifecycle
 onMounted(async () => {
-  // TODO: Cargar datos reales desde Firestore
-  // Datos de ejemplo por ahora
-  property.value = {
-    id: route.params.id,
-    ownerId: 'user123',
-    title: 'Hermosa Casa con Parrilla y Vista al Lago',
-    description: 'Disfruta de una estadía inolvidable en esta espaciosa casa con parrilla de carbón, cochera para 2 autos, y a solo 5 minutos del centro. Perfecta para familias y grupos de amigos que buscan relajarse en un entorno natural sin alejarse de las comodidades urbanas.',
-    propertyType: 'casa',
-    images: [
-      'https://images.unsplash.com/photo-1568605114967-8130f3a36994',
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9',
-      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c'
-    ],
-    pricing: {
-      basePrice: 120,
-      cleaningFee: 30,
-      currency: 'USD'
-    },
-    capacity: {
-      guests: 6,
-      bedrooms: 3,
-      beds: 4,
-      bathrooms: 2
-    },
-    location: {
-      city: 'Villa Carlos Paz',
-      state: 'Córdoba',
-      country: 'Argentina'
-    },
-    amenities: [
-      'WiFi', 'TV', 'Cocina completa', 'Aire Acondicionado',
-      'Calefacción', 'Parrilla', 'Estacionamiento', 'Jardín'
-    ],
-    localFeatures: {
-      grillType: 'carbon',
-      parkingSize: 'mediana',
-      distanceToCenter: 3.5
-    },
-    rating: 4.8,
-    reviewCount: 24
+  const propertyId = route.params.id
+  const result = await propertyStore.fetchProperty(undefined, propertyId)
+
+  if (!result.success) {
+    notFound.value = true
+    return
   }
-  
+
+  property.value = result.data
   currentImage.value = property.value.images[0]
-  
+
   // Cargar perfil del propietario
   loadOwnerProfile(property.value.ownerId || 'user123')
-  
+
   // Actualizar meta tags SEO para esta propiedad
   updateMetaTags({
     title: `${property.value.title} | AlquiLibres`,
@@ -980,12 +911,12 @@ onMounted(async () => {
     keywords: `${property.value.propertyType}, ${property.value.location.city}, alquiler ${property.value.rentalType || 'temporario'}, ${property.value.amenities.join(', ')}`,
     type: 'product'
   })
-  
+
   // Agregar Schema.org structured data
   addStructuredData(generatePropertySchema(property.value))
-  
+
   // Reseñas desde el servicio
-  reviews.value = getPropertyReviews(property.value.id)
+  reviews.value = await getPropertyReviews(property.value.id)
   const ratingInfo = getPropertyRating(property.value.id)
   if (ratingInfo.count > 0) {
     property.value.rating = ratingInfo.rating
