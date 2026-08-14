@@ -18,7 +18,12 @@ const mocks = vi.hoisted(() => {
       updateMany: vi.fn(), deleteMany: vi.fn(),
     }
   }
-  return { delegates, createClient: vi.fn(), createUser: vi.fn(), $queryRaw: vi.fn() }
+  // $transaction(fn) runs fn against the mocked delegates so handlers that
+  // operate inside a Prisma transaction hit the same vi.fn delegates.
+  const $transaction = vi.fn(async (fn) => (
+    typeof fn === 'function' ? fn(delegates) : undefined
+  ))
+  return { delegates, createClient: vi.fn(), createUser: vi.fn(), $queryRaw: vi.fn(), $transaction }
 })
 
 vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.createClient }))
@@ -30,6 +35,7 @@ vi.mock('@prisma/client', async () => {
       constructor() {
         Object.assign(this, mocks.delegates)
         this.$queryRaw = mocks.$queryRaw
+        this.$transaction = mocks.$transaction
       }
     },
   }
@@ -276,6 +282,105 @@ describe('PATCH /api/subscriptions/[id]', () => {
     const res = mockRes()
     await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: {} }, res)
     expect(res.status).toHaveBeenCalledWith(400)
+  })
+
+  it('plan_change sin planId -> 400 VALIDATION', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'active', planId: 'pro' })
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change' } }, res)
+    expect(res.status).toHaveBeenCalledWith(400)
+    expect(res.json).toHaveBeenCalledWith({ error: expect.objectContaining({ code: 'VALIDATION' }) })
+  })
+
+  it('plan_change mismo plan -> 409', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'active', planId: 'pro' })
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'pro' } }, res)
+    expect(res.status).toHaveBeenCalledWith(409)
+    expect(res.json).toHaveBeenCalledWith({ error: expect.objectContaining({ code: 'CONFLICT' }) })
+  })
+
+  it('plan_change plan inexistente -> 404', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'active', planId: 'pro' })
+    mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue(null)
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'ghost' } }, res)
+    expect(res.status).toHaveBeenCalledWith(404)
+    expect(mocks.delegates.subscription.update).not.toHaveBeenCalled()
+  })
+
+  it('plan_change plan inactivo -> 404', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'active', planId: 'pro' })
+    mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue({ id: 'old', name: 'Plan Retirado', price: 1, isActive: false })
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'old' } }, res)
+    expect(res.status).toHaveBeenCalledWith(404)
+    expect(mocks.delegates.subscription.update).not.toHaveBeenCalled()
+  })
+
+  it('plan_change sub cancelada -> 409', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'cancelled', planId: 'pro' })
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'basic' } }, res)
+    expect(res.status).toHaveBeenCalledWith(409)
+    expect(mocks.delegates.subscription.update).not.toHaveBeenCalled()
+  })
+
+  it('plan_change sub ajena -> 404 (no enumera)', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's-other', userId: 'other-user', status: 'active', planId: 'pro' })
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's-other' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'basic' } }, res)
+    expect(res.status).toHaveBeenCalledWith(404)
+    expect(mocks.delegates.subscription.update).not.toHaveBeenCalled()
+  })
+
+  it('plan_change con plan valido -> 200 pending + plan nuevo + preferenceId null + payment pending', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.subscription.findUnique.mockResolvedValue({
+      id: 's1', userId: 'owner-1', userEmail: 'user@test.com', status: 'active', planId: 'pro', planPrice: 19999,
+    })
+    mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue({ id: 'basic', name: 'Plan Básico', price: 9999, currency: 'ARS', isActive: true })
+    mocks.delegates.subscription.update.mockImplementation(async ({ data }) => ({ id: 's1', ...data }))
+    mocks.delegates.payment.create.mockImplementation(async ({ data }) => ({ id: 'p-new', ...data }))
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'basic' } }, res)
+
+    expect(res.status).toHaveBeenCalledWith(200)
+    // La sub quedó pending sobre el plan nuevo, con preferenceId limpiado.
+    expect(mocks.delegates.subscription.update).toHaveBeenCalledWith({
+      where: { id: 's1' },
+      data: {
+        planId: 'basic',
+        planName: 'Plan Básico',
+        planPrice: 9999,
+        status: 'pending',
+        preferenceId: null,
+      },
+    })
+    // Se creó un Payment pending nuevo para este intento.
+    expect(mocks.delegates.payment.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'owner-1',
+        userEmail: 'user@test.com',
+        subscriptionId: 's1',
+        planId: 'basic',
+        planName: 'Plan Básico',
+        amount: 9999,
+        currency: 'ARS',
+        paymentMethod: 'mercadopago',
+        status: 'pending',
+        externalReference: 's1',
+      },
+    })
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      id: 's1', planId: 'basic', planName: 'Plan Básico', planPrice: 9999, status: 'pending', preferenceId: null,
+    }))
   })
 })
 

@@ -84,6 +84,7 @@ Chain strategy: feature-branch-chain
 - [ ] 6.1 Create `api/mercadopago/preference.js`: authenticated endpoint, create MercadoPago preference with plan details, return `init_point` (~65 lines)
 - [ ] 6.2 Create `api/mercadopago/webhook.js`: handle IPN notifications, update subscription status, create invoice record (~65 lines)
 - [ ] 6.3 Update `src/config/mercadopago.js`: export public key from env, detect missing keys for demo mode (~10 lines)
+- [x] 6.4 Extend `api-handlers/subscriptions/[id].js` with the `plan_change` transition (active|pending -> pending on the new plan, clears `preferenceId`, creates a new pending Payment; the MercadoPago preference is created later by the checkout flow), migrate `paymentStore.changePlan` and the `Subscription.vue` redirect to checkout, and document the transition in the payment-api spec (~120 lines)
 
 ## Key Learnings
 

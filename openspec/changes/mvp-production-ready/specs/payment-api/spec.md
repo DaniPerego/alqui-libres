@@ -65,6 +65,24 @@ The system MUST PATCH `/api/subscriptions/{id}` for plan changes and status tran
 - THEN the status becomes `cancelled`
 - AND `autoRenew` becomes false
 
+#### Scenario: Change plan
+
+- GIVEN an active or pending subscription and a different active plan
+- WHEN `changePlan(newPlanId)` runs with API available
+- THEN the store PATCHes `/api/subscriptions/{id}` with `{ status: 'plan_change', planId }`
+- AND the subscription becomes `pending` on the new plan
+- AND `preferenceId` is cleared (the previous preference must not be reused)
+- AND a new `pending` Payment row is created for the attempt
+- AND the frontend redirects to the checkout, where `createPreference` builds the new MercadoPago preference and reuses the pending subscription
+
+#### Scenario: Change plan validations
+
+- GIVEN `planId` is missing
+- THEN the PATCH returns `400 VALIDATION`
+- AND changing to the current plan returns `409 CONFLICT`
+- AND an unknown or inactive plan returns `404 NOT_FOUND`
+- AND changing a cancelled subscription returns `409 CONFLICT`
+
 ### Requirement: Fetch invoices
 
 The system MUST retrieve payment invoices from `/api/payments/invoices`.
@@ -84,4 +102,5 @@ The system MUST use mock preferences and localStorage subscriptions when Mercado
 - Payment store tests mock preference and subscription endpoints.
 - Production redirect uses `init_point`; development uses `sandbox_init_point` or simulation.
 - Cancel and reactivate update status and `autoRenew`.
+- Plan change resets the subscription to `pending` on the new plan, clears `preferenceId`, and records a new pending payment.
 - Missing `VITE_MP_PUBLIC_KEY` triggers demo mode.

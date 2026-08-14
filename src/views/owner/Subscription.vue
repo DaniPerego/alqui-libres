@@ -154,10 +154,14 @@ const handleSelectPlan = async (planId) => {
   try {
     // Si ya tiene suscripción, cambiar directamente
     if (paymentStore.currentSubscription && paymentStore.currentSubscription.status === 'active') {
-      if (confirm('¿Confirmas el cambio de plan? Se aplicará de inmediato.')) {
-        await paymentStore.changePlan(planId)
-        alert('Plan cambiado exitosamente')
+      if (confirm('¿Confirmas el cambio de plan? Se aplicará al pagar.')) {
+        const result = await paymentStore.changePlan(planId)
         showPlansModal.value = false
+        // El pago activa el cambio: la sub queda pending y el checkout crea la
+        // nueva preferencia de MercadoPago que la reactiva.
+        if (result?.success) {
+          router.push({ name: 'checkout', query: { plan: planId } })
+        }
       }
     } else {
       // Si no tiene suscripción, ir al checkout

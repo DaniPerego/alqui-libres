@@ -113,6 +113,22 @@ export const usePaymentStore = defineStore('payment', () => {
     }
   }
 
+  // Maps an api.js error contract onto a user-facing message for changePlan.
+  function mapChangePlanError(apiError) {
+    switch (apiError?.code) {
+      case 'CONFLICT':
+        return apiError?.message === 'Subscription is already on this plan'
+          ? 'Ya estás suscripto a este plan'
+          : 'No se puede cambiar la suscripción en este estado'
+      case 'NOT_FOUND':
+        return 'Plan no encontrado'
+      case 'UNAUTHORIZED':
+        return 'Sesión expirada. Iniciá sesión de nuevo.'
+      default:
+        return apiError?.message || 'Error al cambiar de plan'
+    }
+  }
+
   // Demo-mode mock preference (kept only when the API is unavailable).
   function buildMockPreference(plan) {
     return {
@@ -275,8 +291,29 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      // TODO: backend plan-change transition (PATCH /api/subscriptions/{id}
-      // with planId) is not implemented yet — keep the local demo fallback.
+      // Demo subscriptions carry a `sub_` id and must never be PATCHed to the
+      // backend. Only real rows (uuid) go through the API.
+      const realId = currentSubscription.value.id && !currentSubscription.value.id.startsWith('sub_')
+        ? currentSubscription.value.id
+        : null
+
+      if (isApiAvailable() && realId) {
+        const result = await apiPatch(`/subscriptions/${realId}`, {
+          status: 'plan_change',
+          planId: newPlanId,
+        })
+        if (!result.success) {
+          throw new Error(mapChangePlanError(result.error))
+        }
+        // The subscription is now pending on the new plan; a fresh MercadoPago
+        // payment (single-payment model) is required to reactivate it, so the
+        // frontend redirects to the checkout. No local activation here.
+        currentSubscription.value = normalizeSubscription(result.data)
+        syncAuthSubscription(result.data)
+        return { success: true, message: 'Plan cambiado. Completá el pago para activarlo.' }
+      }
+
+      // Demo fallback (no API, or a local `sub_` row): update the plan locally.
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       currentSubscription.value.planId = newPlanId
@@ -285,10 +322,10 @@ export const usePaymentStore = defineStore('payment', () => {
         authStore.user.subscription.planId = newPlanId
       }
 
-      return { success: true, message: 'Plan actualizado correctamente' }
+      return { success: true, message: 'Plan cambiado. Completá el pago para activarlo.' }
     } catch (err) {
       console.error('Error changing plan:', err)
-      error.value = 'Error al cambiar de plan'
+      error.value = err.message || 'Error al cambiar de plan'
       throw err
     } finally {
       loading.value = false

@@ -115,6 +115,20 @@ describe('payment store (demo mode)', () => {
     expect(store.currentSubscription.planId).toBe('basic')
     expect(useAuthStore().user.subscription.status).toBe('active')
   })
+
+  it('changePlan en demo actualiza local sin llamar a la API', async () => {
+    loginDemoUser()
+    const store = usePaymentStore()
+    await store.fetchCurrentSubscription()
+
+    const result = await store.changePlan('basic')
+
+    expect(mocks.apiPatch).not.toHaveBeenCalled()
+    expect(result.success).toBe(true)
+    expect(result.message).toContain('Completá el pago')
+    expect(store.currentSubscription.planId).toBe('basic')
+    expect(useAuthStore().user.subscription.planId).toBe('basic')
+  })
 })
 
 describe('payment store (Supabase mode)', () => {
@@ -228,6 +242,72 @@ describe('payment store (Supabase mode)', () => {
     expect(result.success).toBe(true)
     expect(store.currentSubscription.status).toBe('cancelled')
     expect(store.currentSubscription.autoRenew).toBe(false)
+  })
+
+  it('changePlan PATCHea /subscriptions/{id} con plan_change y deja la sub pending', async () => {
+    mocks.apiGet.mockResolvedValueOnce({ success: true, data: { data: API_SUBSCRIPTION } })
+    mocks.apiPatch.mockResolvedValueOnce({
+      success: true,
+      data: {
+        id: 'uuid-sub-1', planId: 'basic', planName: 'Plan Básico', status: 'pending',
+        preferenceId: null, autoRenew: true
+      }
+    })
+    const store = usePaymentStore()
+    await store.fetchCurrentSubscription()
+
+    const result = await store.changePlan('basic')
+
+    expect(mocks.apiPatch).toHaveBeenCalledWith('/subscriptions/uuid-sub-1', {
+      status: 'plan_change',
+      planId: 'basic'
+    })
+    expect(result.success).toBe(true)
+    // El mensaje deja claro que hay que pagar de nuevo para activar el plan.
+    expect(result.message).toContain('Completá el pago')
+    expect(store.currentSubscription.planId).toBe('basic')
+    expect(store.currentSubscription.status).toBe('pending')
+    // auth store se mantiene en sync.
+    expect(useAuthStore().user.subscription.planId).toBe('basic')
+    expect(useAuthStore().user.subscription.status).toBe('pending')
+  })
+
+  it('changePlan 409 mismo plan -> mensaje claro', async () => {
+    mocks.apiGet.mockResolvedValueOnce({ success: true, data: { data: API_SUBSCRIPTION } })
+    mocks.apiPatch.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'CONFLICT', message: 'Subscription is already on this plan' }
+    })
+    const store = usePaymentStore()
+    await store.fetchCurrentSubscription()
+
+    await expect(store.changePlan('pro')).rejects.toThrow('Ya estás suscripto a este plan')
+  })
+
+  it('changePlan 404 plan inexistente -> Plan no encontrado', async () => {
+    mocks.apiGet.mockResolvedValueOnce({ success: true, data: { data: API_SUBSCRIPTION } })
+    mocks.apiPatch.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'NOT_FOUND', message: 'Subscription plan not found' }
+    })
+    const store = usePaymentStore()
+    await store.fetchCurrentSubscription()
+
+    await expect(store.changePlan('ghost')).rejects.toThrow('Plan no encontrado')
+  })
+
+  it('changePlan con sub demo (sub_) no PATCHea, solo fallback local', async () => {
+    loginDemoUser()
+    const store = usePaymentStore()
+    // API disponible pero la sub local lleva id demo: nunca se envía PATCH.
+    await store.fetchCurrentSubscription()
+
+    const result = await store.changePlan('basic')
+
+    expect(mocks.apiPatch).not.toHaveBeenCalled()
+    expect(result.success).toBe(true)
+    expect(store.currentSubscription.planId).toBe('basic')
+    expect(useAuthStore().user.subscription.planId).toBe('basic')
   })
 
   it('fetchInvoices mapea pagos del backend a invoices', async () => {
