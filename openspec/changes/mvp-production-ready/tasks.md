@@ -55,13 +55,13 @@ Chain strategy: feature-branch-chain
 - [x] 4.4 Migrate `src/services/reservations.js`: replace Firestore with `api.*` calls to `/api/reservations`; keep localStorage fallback (~50 lines changed)
 - [x] 4.5 Update `src/views/PropertyDetail.vue`: use API-backed `fetchProperty`; show owner profile from API (or mock in demo) (~30 lines changed)
 - [x] 4.6 Update related views (`Search.vue`, `owner/Reservations.vue`, `owner/Reviews.vue`): use updated search/reservations/reviews services (~40 lines changed)
-- [ ] 4.7 Update `src/views/owner/Dashboard.vue`: use `authStore` instead of `$auth` (~5 lines)
-- [ ] 4.8 Update `src/views/owner/Reviews.vue`: use `propertyStore.fetchUserProperties(authStore.userId)` (~5 lines)
-- [ ] 4.9 Update `src/views/owner/Subscription.vue`: wire real subscription status and checkout (~30 lines)
-- [ ] 4.10 Update `src/views/owner/Checkout.vue`: trigger API preference creation (~20 lines)
-- [ ] 4.11 Update `src/views/owner/PaymentResult.vue`: poll subscription/payment status (~30 lines)
-- [ ] 4.12 Remove Firebase Auth from `src/main.js`: remove hardcoded demo credentials (~5 lines)
-- [ ] 4.13 Update `src/router/index.js`: remove Firebase Auth assumptions in guards (~10 lines)
+- [x] 4.7 Update `src/views/owner/Dashboard.vue`: use `authStore` instead of `$auth` (~5 lines)
+- [x] 4.8 Update `src/views/owner/Reviews.vue`: use `propertyStore.fetchUserProperties(authStore.userId)` (~5 lines)
+- [x] 4.9 Update `src/views/owner/Subscription.vue`: wire real subscription status and checkout (~30 lines)
+- [x] 4.10 Update `src/views/owner/Checkout.vue`: trigger API preference creation (~20 lines)
+- [x] 4.11 Update `src/views/owner/PaymentResult.vue`: poll subscription/payment status (~30 lines)
+- [x] 4.12 Remove Firebase Auth from `src/main.js`: remove hardcoded demo credentials (~5 lines)
+- [x] 4.13 Update `src/router/index.js`: remove Firebase Auth assumptions in guards (~10 lines)
 
 ## Phase 5: Admin Store Migration
 
@@ -70,20 +70,20 @@ Chain strategy: feature-branch-chain
 
 ## Phase 6: Frontend Tests
 
-- [ ] 6.1 Update `vitest.config.js`: remove `passWithNoTests`, add `@vitest/coverage-v8` reporter (~10 lines changed)
-- [ ] 6.2 Create `tests/unit/services/api.test.js`: mock `global.fetch`, test header injection, error normalization, demo bypass (~60 lines)
-- [ ] 6.3 Create `tests/unit/stores/auth.test.js`: mock Supabase client, test login/logout/register/session-restore/demo-fallback (~80 lines)
-- [ ] 6.4 Create `tests/unit/stores/property.test.js`: mock API responses, test CRUD actions and demo fallback (~70 lines)
-- [ ] 6.5 Create `tests/unit/stores/search.test.js`: test filter application, `clearFilters` resets `minBedrooms`, client-side amenity filter (~50 lines)
+- [x] 6.1 Update `vitest.config.js`: remove `passWithNoTests`, add `@vitest/coverage-v8` reporter (~10 lines changed)
+- [x] 6.2 Create `tests/unit/services/api.test.js`: mock `global.fetch`, test header injection, error normalization, demo bypass (~60 lines)
+- [x] 6.3 Create `tests/unit/stores/auth.test.js`: mock Supabase client, test login/logout/register/session-restore/demo-fallback (~80 lines)
+- [x] 6.4 Create `tests/unit/stores/property.test.js`: mock API responses, test CRUD actions and demo fallback (~70 lines)
+- [x] 6.5 Create `tests/unit/stores/search.test.js`: test filter application, `clearFilters` resets `minBedrooms`, client-side amenity filter (~50 lines)
 - [x] 6.6 Create `tests/unit/stores/admin.test.js`: mock admin endpoints, test user/subscription/property/settings CRUD (~280 lines)
-- [ ] 6.7 Create `tests/unit/stores/payment.test.js`: mock subscription/payment endpoints, test checkout and cancel flows (~50 lines)
-- [ ] 6.8 Create `tests/unit/views/PropertyDetail.test.js`: mount with Pinia + mocked router, assert title/price render (~40 lines)
+- [x] 6.7 Create `tests/unit/stores/payment.test.js`: mock subscription/payment endpoints, test checkout and cancel flows (~50 lines)
+- [x] 6.8 Create `tests/unit/views/PropertyDetail.test.js`: mount with Pinia + mocked router, assert title/price render (~40 lines)
 
 ## Phase 7: MercadoPago Integration
 
-- [ ] 6.1 Create `api/mercadopago/preference.js`: authenticated endpoint, create MercadoPago preference with plan details, return `init_point` (~65 lines)
-- [ ] 6.2 Create `api/mercadopago/webhook.js`: handle IPN notifications, update subscription status, create invoice record (~65 lines)
-- [ ] 6.3 Update `src/config/mercadopago.js`: export public key from env, detect missing keys for demo mode (~10 lines)
+- [x] 6.1 Create `api/mercadopago/preference.js`: authenticated endpoint, create MercadoPago preference with plan details, return `init_point` (~65 lines)
+- [x] 6.2 Create `api/mercadopago/webhook.js`: handle IPN notifications, update subscription status, create invoice record (~65 lines)
+- [x] 6.3 Update `src/config/mercadopago.js`: export public key from env, detect missing keys for demo mode (~10 lines)
 - [x] 6.4 Extend `api-handlers/subscriptions/[id].js` with the `plan_change` transition (active|pending -> pending on the new plan, clears `preferenceId`, creates a new pending Payment; the MercadoPago preference is created later by the checkout flow), migrate `paymentStore.changePlan` and the `Subscription.vue` redirect to checkout, and document the transition in the payment-api spec (~120 lines)
 
 ## Key Learnings

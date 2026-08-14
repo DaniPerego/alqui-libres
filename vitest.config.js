@@ -17,8 +17,11 @@ export default defineConfig({
     environmentMatchGlobs: [['src/stores/**', 'jsdom']],
     setupFiles: ['tests/setup.js'],
     include: ['tests/**/*.test.js'],
-    // Keep `npm run test` green on work-unit commits that land before the
-    // first test file exists (WU1 infra/schema commits).
-    passWithNoTests: true
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      include: ['src/**/*.{js,vue}', 'api-handlers/**/*.js'],
+      exclude: ['src/main.js', 'src/router/**', 'src/assets/**', '**/*.test.js']
+    }
   }
 })
