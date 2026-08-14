@@ -127,9 +127,12 @@ const selectedPlan = computed(() => {
   if (!planId.value) return null
   return adminStore.subscriptionPlans.find(p => p.id === planId.value)
 })
+// MP is configured for the checkout when a public key exists. The access
+// token is server-only (process.env.MP_ACCESS_TOKEN) and never reaches the
+// browser bundle, so it cannot gate the client checkout.
 const mpConfigured = computed(() => {
   const settings = adminStore.paymentSettings
-  return settings && settings.publicKey && settings.accessToken
+  return settings && settings.publicKey
 })
 const isAdmin = computed(() => authStore.user?.role === 'admin')
 

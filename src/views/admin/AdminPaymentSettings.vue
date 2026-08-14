@@ -94,33 +94,17 @@
             </p>
           </div>
 
-          <!-- Access Token -->
+          <!-- Access Token (server-side only) -->
           <div class="form-group">
-            <label for="accessToken" class="form-label">
+            <label for="accessTokenInfo" class="form-label">
               Access Token
-              <span class="required">*</span>
-              <span class="label-hint">(Comienza con APP_USR-...)</span>
+              <span class="label-hint">(Configurado en el servidor)</span>
             </label>
-            <div class="input-with-icon">
-              <input 
-                id="accessToken"
-                :type="showAccessToken ? 'text' : 'password'"
-                v-model="settingsData.accessToken"
-                class="form-input"
-                placeholder="APP_USR-xxxxxxxxxxxx-xxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx"
-                required
-              >
-              <button 
-                type="button" 
-                class="toggle-visibility"
-                @click="showAccessToken = !showAccessToken"
-              >
-                {{ showAccessToken ? '👁️' : '👁️‍🗨️' }}
-              </button>
+            <div class="info-box">
+              El Access Token se configura como variable de entorno del servidor
+              (MP_ACCESS_TOKEN) y NUNCA se guarda en el navegador. El frontend
+              solo necesita la Public Key para el checkout.
             </div>
-            <p class="help-text">
-              Se usa en el backend para crear preferencias y procesar pagos (mantener secreto)
-            </p>
           </div>
 
           <!-- Webhook URL -->
@@ -269,14 +253,12 @@ import { useAdminStore } from '@/stores/admin'
 
 const adminStore = useAdminStore()
 
-const showAccessToken = ref(false)
 const saving = ref(false)
 const testing = ref(false)
 
 const settingsData = ref({
   mode: 'sandbox',
   publicKey: '',
-  accessToken: '',
   webhookUrl: '',
   notificationEmail: '',
   statementDescriptor: 'ALQUILIBRES',
@@ -285,12 +267,11 @@ const settingsData = ref({
 })
 
 const isConfigured = computed(() => {
-  return settingsData.value.publicKey && settingsData.value.accessToken
+  return settingsData.value.publicKey
 })
 
 const isFormValid = computed(() => {
-  return settingsData.value.publicKey.length > 0 && 
-         settingsData.value.accessToken.length > 0
+  return settingsData.value.publicKey.length > 0
 })
 
 const formatDate = (date) => {
@@ -306,7 +287,7 @@ const formatDate = (date) => {
 
 const handleTest = async () => {
   if (!isFormValid.value) {
-    alert('⚠️ Completa Public Key y Access Token para probar')
+    alert('⚠️ Completa la Public Key para probar')
     return
   }
 
@@ -318,8 +299,7 @@ const handleTest = async () => {
     // TODO: En producción, hacer una petición real al backend
     // para validar las credenciales con MercadoPago
     
-    const isValid = settingsData.value.publicKey.startsWith('APP_USR') && 
-                    settingsData.value.accessToken.startsWith('APP_USR')
+    const isValid = settingsData.value.publicKey.startsWith('APP_USR')
     
     if (isValid) {
       alert('✓ Credenciales válidas. Conexión exitosa con MercadoPago')

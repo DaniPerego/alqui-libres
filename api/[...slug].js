@@ -21,6 +21,8 @@ import { sendError } from '../api-handlers/lib/http.js'
 
 import messagesHandler from '../api-handlers/messages.js'
 import messagesIdHandler from '../api-handlers/messages/[id].js'
+import mercadopagoPreferenceHandler from '../api-handlers/mercadopago/preference.js'
+import mercadopagoWebhookHandler from '../api-handlers/mercadopago/webhook.js'
 import notificationsHandler from '../api-handlers/notifications.js'
 import notificationsIdHandler from '../api-handlers/notifications/[id].js'
 import paymentsHandler from '../api-handlers/payments.js'
@@ -61,6 +63,8 @@ const STATIC_ROUTES = [
   { segments: ['upload'], handler: uploadHandler },
   { segments: ['users'], handler: usersHandler },
   // 2 segments — static sub-routes (must stay before /:id matches).
+  { segments: ['mercadopago', 'preference'], handler: mercadopagoPreferenceHandler },
+  { segments: ['mercadopago', 'webhook'], handler: mercadopagoWebhookHandler },
   { segments: ['properties', 'mine'], handler: propertiesMineHandler },
   { segments: ['subscriptions', 'mine'], handler: subscriptionsMineHandler },
   { segments: ['upload', 'delete'], handler: uploadDeleteHandler },

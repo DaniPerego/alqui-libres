@@ -11,12 +11,21 @@ describe('mercadopago config', () => {
 
   it('reads the public key from VITE_MP_PUBLIC_KEY', async () => {
     vi.stubEnv('VITE_MP_PUBLIC_KEY', 'pk_test_abc123')
-    vi.stubEnv('VITE_MP_ACCESS_TOKEN', 'access_test_xyz')
 
     const { MP_CONFIG } = await import('@/config/mercadopago.js')
 
     expect(MP_CONFIG.publicKey).toBe('pk_test_abc123')
-    expect(MP_CONFIG.accessToken).toBe('access_test_xyz')
+  })
+
+  it('never exposes the access token (server-only, MP_ACCESS_TOKEN)', async () => {
+    vi.stubEnv('VITE_MP_PUBLIC_KEY', 'pk_test_abc123')
+    // A malicious/legacy VITE var must not surface in the config.
+    vi.stubEnv('VITE_MP_ACCESS_TOKEN', 'APP_TEST_TOKEN')
+
+    const { MP_CONFIG } = await import('@/config/mercadopago.js')
+
+    expect(MP_CONFIG.accessToken).toBeUndefined()
+    expect(JSON.stringify(MP_CONFIG)).not.toContain('APP_TEST_TOKEN')
   })
 
   it('falls back to demo mode when the public key is missing', async () => {
