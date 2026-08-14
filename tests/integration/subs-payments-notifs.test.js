@@ -35,11 +35,11 @@ vi.mock('@prisma/client', async () => {
   }
 })
 
-import subscriptionsHandler from '../../api/subscriptions.js'
-import subscriptionsMineHandler from '../../api/subscriptions/mine.js'
-import paymentsHandler from '../../api/payments.js'
-import notificationsHandler from '../../api/notifications.js'
-import notificationIdHandler from '../../api/notifications/[id].js'
+import subscriptionsHandler from '../../api-handlers/subscriptions.js'
+import subscriptionsMineHandler from '../../api-handlers/subscriptions/mine.js'
+import paymentsHandler from '../../api-handlers/payments.js'
+import notificationsHandler from '../../api-handlers/notifications.js'
+import notificationIdHandler from '../../api-handlers/notifications/[id].js'
 
 let getUserResult
 

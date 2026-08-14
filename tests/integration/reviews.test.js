@@ -33,7 +33,7 @@ vi.mock('@prisma/client', async () => {
   }
 })
 
-import reviewsHandler from '../../api/reviews.js'
+import reviewsHandler from '../../api-handlers/reviews.js'
 
 let getUserResult
 

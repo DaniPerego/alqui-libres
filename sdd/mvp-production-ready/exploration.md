@@ -74,7 +74,7 @@ Prisma schema uses flat columns:
 pricingBasePrice, capacityGuests, locationCity, locationState
 ```
 
-The API endpoints already handle this transformation (`parsePropertyBody` in `api/properties.js`).
+The API endpoints already handle this transformation (`parsePropertyBody` in `api-handlers/properties.js`).
 
 ---
 

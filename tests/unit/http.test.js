@@ -3,7 +3,7 @@
 // RED unit tests for api/lib/http.js — error contract codes and
 // parsePagination defaults/cap/non-numeric (API-01 / D4).
 import { describe, it, expect, vi } from 'vitest'
-import { HttpError, ERROR_CODES, sendError, parsePagination, buildMeta } from '../../api/lib/http.js'
+import { HttpError, ERROR_CODES, sendError, parsePagination, buildMeta } from '../../api-handlers/lib/http.js'
 
 describe('parsePagination (D4 offset pagination)', () => {
   it('sin query -> page 1, limit 20', () => {

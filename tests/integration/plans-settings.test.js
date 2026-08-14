@@ -35,9 +35,9 @@ vi.mock('@prisma/client', async () => {
   }
 })
 
-import plansHandler from '../../api/plans.js'
-import planIdHandler from '../../api/plans/[id].js'
-import settingsHandler from '../../api/platform-settings.js'
+import plansHandler from '../../api-handlers/plans.js'
+import planIdHandler from '../../api-handlers/plans/[id].js'
+import settingsHandler from '../../api-handlers/platform-settings.js'
 
 let getUserResult
 

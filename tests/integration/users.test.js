@@ -35,9 +35,9 @@ vi.mock('@prisma/client', async () => {
   }
 })
 
-import usersHandler from '../../api/users.js'
-import usersMeHandler from '../../api/users/me.js'
-import usersIdHandler from '../../api/users/[id].js'
+import usersHandler from '../../api-handlers/users.js'
+import usersMeHandler from '../../api-handlers/users/me.js'
+import usersIdHandler from '../../api-handlers/users/[id].js'
 
 // Shared state so findUnique can answer both the auth lookup (currentUser)
 // and target lookups (targets) without one mockResolvedValue overriding the

@@ -23,7 +23,7 @@ vi.mock('@prisma/client', () => ({
   },
 }))
 
-import { requireAuth, requireRole, extractBearer } from '../../api/lib/auth.js'
+import { requireAuth, requireRole, extractBearer } from '../../api-handlers/lib/auth.js'
 
 let getUserResult
 

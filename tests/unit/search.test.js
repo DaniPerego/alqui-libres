@@ -3,7 +3,7 @@
 // RED unit tests for api/lib/search.js — escapeLike (API-03 / D5) and the
 // generated $queryRaw SQL/params (wildcards escaped, literal "100%" match).
 import { describe, it, expect } from 'vitest'
-import { escapeLike, searchProperties } from '../../api/lib/search.js'
+import { escapeLike, searchProperties } from '../../api-handlers/lib/search.js'
 
 describe('escapeLike (API-03 wildcards)', () => {
   it('escapa % -> \\%', () => {

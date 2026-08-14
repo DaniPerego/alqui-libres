@@ -14,7 +14,7 @@ vi.mock('@prisma/client', async () => {
   return { ...actual, PrismaClient: class {} }
 })
 
-import { resolveTransition, RESERVATION_TRANSITIONS } from '../../api/reservations/[id]/status.js'
+import { resolveTransition, RESERVATION_TRANSITIONS } from '../../api-handlers/reservations/[id]/status.js'
 
 describe('reservation transition map (API-04)', () => {
   it('transicion invalida -> INVALID (handler responde 409)', () => {

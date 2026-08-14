@@ -37,9 +37,9 @@ vi.mock('@prisma/client', async () => {
   }
 })
 
-import propertiesHandler from '../../api/properties.js'
-import propertyDetailHandler from '../../api/properties/[id].js'
-import propertyMineHandler from '../../api/properties/mine.js'
+import propertiesHandler from '../../api-handlers/properties.js'
+import propertyDetailHandler from '../../api-handlers/properties/[id].js'
+import propertyMineHandler from '../../api-handlers/properties/mine.js'
 
 let getUserResult
 

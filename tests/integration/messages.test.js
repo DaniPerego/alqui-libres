@@ -34,8 +34,8 @@ vi.mock('@prisma/client', async () => {
   }
 })
 
-import messagesHandler from '../../api/messages.js'
-import messageIdHandler from '../../api/messages/[id].js'
+import messagesHandler from '../../api-handlers/messages.js'
+import messageIdHandler from '../../api-handlers/messages/[id].js'
 
 let getUserResult
 

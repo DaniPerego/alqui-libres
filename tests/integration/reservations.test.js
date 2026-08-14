@@ -35,9 +35,9 @@ vi.mock('@prisma/client', async () => {
   }
 })
 
-import reservationsHandler from '../../api/reservations.js'
-import reservationDetailHandler from '../../api/reservations/[id].js'
-import reservationStatusHandler from '../../api/reservations/[id]/status.js'
+import reservationsHandler from '../../api-handlers/reservations.js'
+import reservationDetailHandler from '../../api-handlers/reservations/[id].js'
+import reservationStatusHandler from '../../api-handlers/reservations/[id]/status.js'
 
 let getUserResult
 
