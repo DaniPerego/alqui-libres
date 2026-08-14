@@ -147,9 +147,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePaymentStore } from '@/stores/payment'
+import { isApiAvailable } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -157,6 +158,18 @@ const paymentStore = usePaymentStore()
 
 const status = ref(route.query.status || 'pending')
 const checking = ref(false)
+
+const POLL_INTERVAL_MS = 5000
+const MAX_POLL_ATTEMPTS = 12
+let pollTimer = null
+let pollAttempts = 0
+
+const stopPolling = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
 
 const formatPrice = (price) => {
   return price?.toLocaleString('es-AR') || '0'
@@ -172,11 +185,13 @@ const formatDate = (dateString) => {
 }
 
 const checkPaymentStatus = async () => {
+  if (checking.value) return
   checking.value = true
   try {
     await paymentStore.fetchCurrentSubscription()
     if (paymentStore.hasActiveSubscription) {
       status.value = 'success'
+      stopPolling()
     }
   } catch (error) {
     console.error('Error checking payment:', error)
@@ -185,10 +200,26 @@ const checkPaymentStatus = async () => {
   }
 }
 
+// Polls the real backend every 5s (max 12 attempts) until the subscription
+// becomes active. Only meaningful when the API is available; in demo mode the
+// manual "Verificar estado" button keeps the existing behavior.
+const startPolling = () => {
+  if (!isApiAvailable()) return
+  stopPolling()
+  pollAttempts = 0
+  pollTimer = setInterval(async () => {
+    pollAttempts += 1
+    await checkPaymentStatus()
+    if (status.value !== 'pending' || pollAttempts >= MAX_POLL_ATTEMPTS) {
+      stopPolling()
+    }
+  }, POLL_INTERVAL_MS)
+}
+
 onMounted(async () => {
   // Recargar datos de suscripción
   await paymentStore.fetchCurrentSubscription()
-  
+
   // Si el pago fue exitoso, actualizar localStorage
   if (status.value === 'success') {
     const mockUserData = localStorage.getItem('mockUser')
@@ -199,6 +230,14 @@ onMounted(async () => {
       }
     }
   }
+
+  if (status.value === 'pending') {
+    startPolling()
+  }
+})
+
+onUnmounted(() => {
+  stopPolling()
 })
 </script>
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
 import { useAdminStore } from './admin'
+import { apiGet, apiPost, apiPatch, isApiAvailable } from '@/services/api'
 
 export const usePaymentStore = defineStore('payment', () => {
   const authStore = useAuthStore()
@@ -14,12 +15,13 @@ export const usePaymentStore = defineStore('payment', () => {
   const paymentMethods = ref([])
   const invoices = ref([])
 
-  // MercadoPago config (mock - en producción usar variables de entorno)
+  // MercadoPago client public key (VITE_ only; the access token stays on the
+  // server and is never bundled).
   const mercadopagoPublicKey = ref(import.meta.env.VITE_MP_PUBLIC_KEY || 'TEST-your-public-key')
-  
+
   // Computed
   const hasActiveSubscription = computed(() => {
-    return currentSubscription.value && 
+    return currentSubscription.value &&
            currentSubscription.value.status === 'active' &&
            new Date(currentSubscription.value.expiresAt) > new Date()
   })
@@ -39,36 +41,135 @@ export const usePaymentStore = defineStore('payment', () => {
     return Math.ceil(diff / (1000 * 60 * 60 * 24))
   })
 
+  // Normalizes a backend subscription row (Prisma shape) onto the store shape.
+  function normalizeSubscription(sub) {
+    if (!sub) return null
+    return {
+      id: sub.id,
+      userId: sub.userId,
+      planId: sub.planId,
+      planName: sub.planName,
+      status: sub.status,
+      startedAt: sub.startedAt,
+      expiresAt: sub.expiresAt,
+      autoRenew: sub.autoRenew,
+      paymentMethod: sub.paymentMethod || 'mercadopago',
+      lastPaymentDate: sub.lastPaymentDate || null
+    }
+  }
+
+  // Builds the demo subscription from the mock user (demo mode fallback).
+  function demoSubscription() {
+    const u = authStore.user
+    if (!u?.subscription) return null
+    return {
+      id: 'sub_' + (u.uid || u.id),
+      userId: u.uid || u.id,
+      planId: u.subscription.planId,
+      status: u.subscription.status,
+      startedAt: u.subscription.startedAt,
+      expiresAt: u.subscription.expiresAt,
+      autoRenew: u.subscription.autoRenew || true,
+      paymentMethod: 'mercadopago',
+      lastPaymentDate: u.subscription.lastPaymentDate || new Date().toISOString()
+    }
+  }
+
+  // Keeps the auth-store subscription in sync with the backend source of truth.
+  function syncAuthSubscription(sub) {
+    if (!authStore.user) return
+    authStore.user.subscription = sub
+      ? {
+          planId: sub.planId,
+          status: sub.status,
+          startedAt: sub.startedAt,
+          expiresAt: sub.expiresAt,
+          autoRenew: sub.autoRenew,
+          lastPaymentDate: sub.lastPaymentDate
+        }
+      : null
+  }
+
+  // Maps backend payment status onto the invoice status used by the UI.
+  function mapInvoiceStatus(status) {
+    if (status === 'approved') return 'paid'
+    if (status === 'pending') return 'pending'
+    return 'failed'
+  }
+
+  // Maps an api.js error contract onto a user-facing message for createPreference.
+  function mapPreferenceError(apiError) {
+    switch (apiError?.code) {
+      case 'CONFLICT':
+        return 'Ya tenés una suscripción activa para este plan'
+      case 'SERVICE_UNAVAILABLE':
+        return 'MercadoPago no está configurado en el servidor'
+      case 'UNAUTHORIZED':
+        return 'Sesión expirada. Iniciá sesión de nuevo.'
+      case 'NOT_FOUND':
+        return 'Plan no encontrado'
+      default:
+        return apiError?.message || 'Error al crear la preferencia de pago'
+    }
+  }
+
+  // Demo-mode mock preference (kept only when the API is unavailable).
+  function buildMockPreference(plan) {
+    return {
+      id: 'pref_' + Date.now(),
+      init_point: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=mock_' + plan.id,
+      sandbox_init_point: 'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=mock_' + plan.id,
+      items: [{
+        title: `Suscripción ${plan.name} - AlquiLibres`,
+        description: plan.features.join(', '),
+        quantity: 1,
+        unit_price: plan.price,
+        currency_id: 'ARS'
+      }],
+      back_urls: {
+        success: window.location.origin + '/panel/payment-result?status=success',
+        failure: window.location.origin + '/panel/payment-result?status=failure',
+        pending: window.location.origin + '/panel/payment-result?status=pending'
+      },
+      auto_return: 'approved',
+      statement_descriptor: 'ALQUILIBRES',
+      external_reference: `${authStore.user?.uid || 'demo'}_${plan.id}_${Date.now()}`
+    }
+  }
+
   // Actions
   const fetchCurrentSubscription = async () => {
     loading.value = true
     error.value = null
 
     try {
-      // TODO: En producción, fetch desde Firestore
-      // const subscriptionDoc = await getDoc(doc(db, 'subscriptions', authStore.user.uid))
-      
-      // Mock data para desarrollo
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      if (authStore.user?.subscription) {
-        currentSubscription.value = {
-          id: 'sub_' + authStore.user.uid,
-          userId: authStore.user.uid,
-          planId: authStore.user.subscription.planId,
-          status: authStore.user.subscription.status,
-          startedAt: authStore.user.subscription.startedAt,
-          expiresAt: authStore.user.subscription.expiresAt,
-          autoRenew: authStore.user.subscription.autoRenew || true,
-          paymentMethod: 'mercadopago',
-          lastPaymentDate: authStore.user.subscription.lastPaymentDate || new Date().toISOString()
+      if (isApiAvailable()) {
+        const result = await apiGet('/subscriptions/mine')
+        if (result.success) {
+          const sub = result.data?.data || null
+          currentSubscription.value = normalizeSubscription(sub)
+          syncAuthSubscription(sub)
+          return { success: true, data: currentSubscription.value, error: null }
         }
-      } else {
-        currentSubscription.value = null
+        // API error: keep the UI alive with the demo subscription, but surface
+        // the real error so callers can distinguish demo from failure.
+        currentSubscription.value = demoSubscription()
+        return { success: false, data: currentSubscription.value, error: result.error }
       }
+
+      // Demo mode: read the subscription attached to the mock user.
+      await new Promise(resolve => setTimeout(resolve, 500))
+      currentSubscription.value = demoSubscription()
+      return { success: true, data: currentSubscription.value, error: null }
     } catch (err) {
       console.error('Error fetching subscription:', err)
       error.value = 'Error al cargar suscripción'
+      currentSubscription.value = demoSubscription()
+      return {
+        success: false,
+        data: currentSubscription.value,
+        error: { code: 'UNKNOWN', message: err.message }
+      }
     } finally {
       loading.value = false
     }
@@ -79,46 +180,27 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      const plan = adminStore.subscriptionPlans.find(p => p.id === planId)
-      if (!plan) throw new Error('Plan no encontrado')
-
-      // TODO: En producción, crear preferencia real en backend
-      // const response = await fetch('/api/mercadopago/create-preference', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ planId, userId: authStore.user.uid })
-      // })
-      // const data = await response.json()
-      
-      // Mock preference para desarrollo
-      await new Promise(resolve => setTimeout(resolve, 800))
-      
-      const mockPreference = {
-        id: 'pref_' + Date.now(),
-        init_point: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=mock_' + planId,
-        sandbox_init_point: 'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=mock_' + planId,
-        items: [{
-          title: `Suscripción ${plan.name} - AlquiLibres`,
-          description: plan.features.join(', '),
-          quantity: 1,
-          unit_price: plan.price,
-          currency_id: 'ARS'
-        }],
-        back_urls: {
-          success: window.location.origin + '/panel/payment-result?status=success',
-          failure: window.location.origin + '/panel/payment-result?status=failure',
-          pending: window.location.origin + '/panel/payment-result?status=pending'
-        },
-        auto_return: 'approved',
-        statement_descriptor: 'ALQUILIBRES',
-        external_reference: `${authStore.user.uid}_${planId}_${Date.now()}`
+      if (isApiAvailable()) {
+        const result = await apiPost('/mercadopago/preference', { planId })
+        if (!result.success) {
+          throw new Error(mapPreferenceError(result.error))
+        }
+        return {
+          id: result.data?.id,
+          init_point: result.data?.init_point,
+          sandbox_init_point: result.data?.sandbox_init_point,
+          external_reference: result.data?.external_reference
+        }
       }
 
-      return mockPreference
-
+      // Demo fallback (no API): build a local mock preference.
+      const plan = adminStore.subscriptionPlans.find(p => p.id === planId)
+      if (!plan) throw new Error('Plan no encontrado')
+      await new Promise(resolve => setTimeout(resolve, 800))
+      return buildMockPreference(plan)
     } catch (err) {
       console.error('Error creating preference:', err)
-      error.value = 'Error al crear preferencia de pago'
+      error.value = err.message || 'Error al crear preferencia de pago'
       throw err
     } finally {
       loading.value = false
@@ -130,41 +212,39 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      const preference = await createPreference(planId)
-      
-      // Redirigir a MercadoPago checkout
-      // En desarrollo usamos sandbox, en producción usar init_point
-      const checkoutUrl = import.meta.env.PROD 
-        ? preference.init_point 
-        : preference.sandbox_init_point
-
-      // Simular pago exitoso en desarrollo (sin redirección real)
-      if (import.meta.env.DEV) {
-        await simulatePaymentSuccess(planId)
-        return { success: true, message: 'Suscripción activada (modo desarrollo)' }
+      if (isApiAvailable()) {
+        const preference = await createPreference(planId)
+        // Production uses the live checkout; development uses the sandbox URL
+        // (the server already sets back_urls, so no origin is needed here).
+        const checkoutUrl = import.meta.env.PROD
+          ? preference.init_point
+          : (preference.sandbox_init_point || preference.init_point)
+        window.location.href = checkoutUrl
+        return { success: true, message: 'Redirigiendo a MercadoPago...' }
       }
 
-      // En producción, redirigir a MercadoPago
-      window.location.href = checkoutUrl
-
+      // Demo mode (no credentials): simulate a successful payment.
+      await simulatePaymentSuccess(planId)
+      return { success: true, message: 'Suscripción activada (modo desarrollo)' }
     } catch (err) {
       console.error('Error subscribing:', err)
-      error.value = 'Error al procesar suscripción'
+      error.value = err.message || 'Error al procesar suscripción'
       throw err
     } finally {
       loading.value = false
     }
   }
 
+  // Demo/dev-only: simulates a successful payment locally. Real payments are
+  // processed by the MercadoPago webhook and confirmed by PaymentResult via
+  // /api/payments/status polling.
   const simulatePaymentSuccess = async (planId) => {
-    // Simular procesamiento de pago
     await new Promise(resolve => setTimeout(resolve, 1500))
 
     const startDate = new Date()
     const expiryDate = new Date()
     expiryDate.setMonth(expiryDate.getMonth() + 1)
 
-    // Actualizar suscripción del usuario en authStore
     if (authStore.user) {
       authStore.user.subscription = {
         planId,
@@ -176,8 +256,14 @@ export const usePaymentStore = defineStore('payment', () => {
       }
     }
 
-    // Actualizar currentSubscription
-    await fetchCurrentSubscription()
+    // When the API is available the local simulation is kept as-is (a real
+    // subscription only appears after the webhook fires); otherwise refresh
+    // from the demo user.
+    if (isApiAvailable()) {
+      currentSubscription.value = demoSubscription()
+    } else {
+      await fetchCurrentSubscription()
+    }
   }
 
   const changePlan = async (newPlanId) => {
@@ -189,17 +275,17 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      // TODO: En producción, actualizar en backend
+      // TODO: backend plan-change transition (PATCH /api/subscriptions/{id}
+      // with planId) is not implemented yet — keep the local demo fallback.
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       currentSubscription.value.planId = newPlanId
-      
+
       if (authStore.user?.subscription) {
         authStore.user.subscription.planId = newPlanId
       }
 
       return { success: true, message: 'Plan actualizado correctamente' }
-
     } catch (err) {
       console.error('Error changing plan:', err)
       error.value = 'Error al cambiar de plan'
@@ -214,8 +300,17 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      // TODO: En producción, cancelar en backend y MercadoPago
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Demo subscriptions carry a `sub_` id and must never be PATCHed to the
+      // backend. Only real rows (uuid) go through the API.
+      const realId = currentSubscription.value?.id && !currentSubscription.value.id.startsWith('sub_')
+        ? currentSubscription.value.id
+        : null
+      if (isApiAvailable() && realId) {
+        const result = await apiPatch(`/subscriptions/${realId}`, { status: 'cancelled' })
+        if (!result.success) {
+          throw new Error(result.error?.message || 'Error al cancelar suscripción')
+        }
+      }
 
       if (currentSubscription.value) {
         currentSubscription.value.status = 'cancelled'
@@ -228,10 +323,9 @@ export const usePaymentStore = defineStore('payment', () => {
       }
 
       return { success: true, message: 'Suscripción cancelada. Tendrás acceso hasta la fecha de vencimiento.' }
-
     } catch (err) {
       console.error('Error cancelling subscription:', err)
-      error.value = 'Error al cancelar suscripción'
+      error.value = err.message || 'Error al cancelar suscripción'
       throw err
     } finally {
       loading.value = false
@@ -243,6 +337,8 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
+      // TODO: backend reactivation (PATCH /api/subscriptions/{id} with
+      // status active) is not implemented yet — keep the local demo fallback.
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       if (currentSubscription.value) {
@@ -256,7 +352,6 @@ export const usePaymentStore = defineStore('payment', () => {
       }
 
       return { success: true, message: 'Suscripción reactivada correctamente' }
-
     } catch (err) {
       console.error('Error reactivating subscription:', err)
       error.value = 'Error al reactivar suscripción'
@@ -271,10 +366,25 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      // TODO: Fetch real desde backend
-      await new Promise(resolve => setTimeout(resolve, 500))
+      if (isApiAvailable()) {
+        const result = await apiGet('/payments')
+        if (!result.success) {
+          throw new Error(result.error?.message || 'Error al cargar facturas')
+        }
+        const payments = result.data?.data || []
+        invoices.value = payments.map(p => ({
+          id: p.id,
+          date: p.createdAt,
+          amount: p.amount,
+          status: mapInvoiceStatus(p.status),
+          planName: p.planName,
+          pdfUrl: '#'
+        }))
+        return { success: true, data: invoices.value, error: null }
+      }
 
-      // Mock invoices
+      // Demo fallback.
+      await new Promise(resolve => setTimeout(resolve, 500))
       invoices.value = [
         {
           id: 'inv_001',
@@ -285,10 +395,11 @@ export const usePaymentStore = defineStore('payment', () => {
           pdfUrl: '#'
         }
       ]
-
+      return { success: true, data: invoices.value, error: null }
     } catch (err) {
       console.error('Error fetching invoices:', err)
       error.value = 'Error al cargar facturas'
+      return { success: false, data: invoices.value, error: { code: 'UNKNOWN', message: err.message } }
     } finally {
       loading.value = false
     }
@@ -299,7 +410,8 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      // TODO: Tokenizar con MercadoPago y guardar en backend
+      // TODO: tokenize with MercadoPago and store the method on the backend.
+      // Kept as a local demo fallback for this batch.
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       const newMethod = {
@@ -315,7 +427,6 @@ export const usePaymentStore = defineStore('payment', () => {
       paymentMethods.value.push(newMethod)
 
       return { success: true, message: 'Método de pago agregado' }
-
     } catch (err) {
       console.error('Error adding payment method:', err)
       error.value = 'Error al agregar método de pago'
@@ -333,12 +444,12 @@ export const usePaymentStore = defineStore('payment', () => {
     paymentMethods,
     invoices,
     mercadopagoPublicKey,
-    
+
     // Computed
     hasActiveSubscription,
     currentPlan,
     daysUntilRenewal,
-    
+
     // Actions
     fetchCurrentSubscription,
     createPreference,

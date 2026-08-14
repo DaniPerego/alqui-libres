@@ -66,8 +66,19 @@ describe('HttpError + sendError (error contract)', () => {
       NOT_FOUND: 'NOT_FOUND',
       METHOD: 'METHOD',
       CONFLICT: 'CONFLICT',
+      SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
       INTERNAL: 'INTERNAL',
     })
+  })
+
+  it('SERVICE_UNAVAILABLE -> 503', () => {
+    expect(new HttpError('SERVICE_UNAVAILABLE', 'x').status).toBe(503)
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    sendError(res, new HttpError('SERVICE_UNAVAILABLE', 'detalle'))
+    expect(res.status).toHaveBeenCalledWith(503)
+    expect(res.json).toHaveBeenCalledWith({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Internal server error' } })
+    consoleSpy.mockRestore()
   })
 })
 

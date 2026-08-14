@@ -144,13 +144,16 @@ describe('POST /api/mercadopago/preference', () => {
     expect(mocks.mp.preferenceCreate).not.toHaveBeenCalled()
   })
 
-  it('falta MP_ACCESS_TOKEN -> 503', async () => {
+  it('falta MP_ACCESS_TOKEN -> 503 SERVICE_UNAVAILABLE', async () => {
     authAs()
     mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue(PLAN)
     delete process.env.MP_ACCESS_TOKEN
     const res = mockRes()
     await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: AUTH_HEADERS }, res)
     expect(res.status).toHaveBeenCalledWith(503)
+    expect(res.json).toHaveBeenCalledWith({
+      error: expect.objectContaining({ code: 'SERVICE_UNAVAILABLE' }),
+    })
     expect(mocks.mp.preferenceCreate).not.toHaveBeenCalled()
   })
 

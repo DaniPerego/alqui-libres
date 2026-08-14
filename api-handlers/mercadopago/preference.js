@@ -101,10 +101,11 @@ export default asyncRoute(async (req, res) => {
       notificationUrl: `${baseUrl}/api/mercadopago/webhook`,
     })
   } catch (err) {
-    // Server credentials missing -> clear 503 (the frontend already has a
-    // demo-mode fallback for this case).
+    // Server credentials missing -> clear 503 SERVICE_UNAVAILABLE (the
+    // frontend maps this to a user-facing message and keeps its demo-mode
+    // fallback for the unconfigured case).
     if (err.code === 'MP_CONFIG_MISSING') {
-      throw new HttpError('INTERNAL', 'MercadoPago server credentials are not configured', 503)
+      throw new HttpError('SERVICE_UNAVAILABLE', 'MercadoPago server credentials are not configured', 503)
     }
     throw err
   }

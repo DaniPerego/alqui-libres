@@ -37,7 +37,9 @@ vi.mock('@prisma/client', async () => {
 
 import subscriptionsHandler from '../../api-handlers/subscriptions.js'
 import subscriptionsMineHandler from '../../api-handlers/subscriptions/mine.js'
+import subscriptionsIdHandler from '../../api-handlers/subscriptions/[id].js'
 import paymentsHandler from '../../api-handlers/payments.js'
+import paymentsStatusHandler from '../../api-handlers/payments/status.js'
 import notificationsHandler from '../../api-handlers/notifications.js'
 import notificationIdHandler from '../../api-handlers/notifications/[id].js'
 
@@ -157,6 +159,123 @@ describe('GET /api/payments', () => {
     expect(mocks.delegates.payment.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { userId: 'uid-1', status: 'approved' },
     }))
+  })
+})
+
+describe('GET /api/payments/status', () => {
+  it('anon -> 401', async () => {
+    const res = mockRes()
+    await paymentsStatusHandler({ query: {}, method: 'GET' }, res)
+    expect(res.status).toHaveBeenCalledWith(401)
+  })
+
+  it('user -> 200 con subscription/payment/status derivado', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.subscription.findFirst.mockResolvedValue({ id: 's1', status: 'active' })
+    mocks.delegates.payment.findFirst.mockResolvedValue({ id: 'p1', status: 'approved' })
+    const res = mockRes()
+    await paymentsStatusHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(mocks.delegates.subscription.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: { userId: 'owner-1', status: { in: ['active', 'pending'] } },
+    }))
+    expect(res.json).toHaveBeenCalledWith({
+      data: {
+        subscription: { id: 's1', status: 'active' },
+        payment: { id: 'p1', status: 'approved' },
+        status: 'active',
+      },
+    })
+  })
+
+  it('subscription pending -> status pending', async () => {
+    authAs()
+    mocks.delegates.subscription.findFirst.mockResolvedValue({ id: 's2', status: 'pending' })
+    mocks.delegates.payment.findFirst.mockResolvedValue(null)
+    const res = mockRes()
+    await paymentsStatusHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(res.json).toHaveBeenCalledWith({
+      data: { subscription: { id: 's2', status: 'pending' }, payment: null, status: 'pending' },
+    })
+  })
+
+  it('sin subscription -> 200 con status none', async () => {
+    authAs()
+    mocks.delegates.subscription.findFirst.mockResolvedValue(null)
+    mocks.delegates.payment.findFirst.mockResolvedValue(null)
+    const res = mockRes()
+    await paymentsStatusHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(res.json).toHaveBeenCalledWith({
+      data: { subscription: null, payment: null, status: 'none' },
+    })
+  })
+})
+
+describe('PATCH /api/subscriptions/[id]', () => {
+  it('anon -> 401', async () => {
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH' }, res)
+    expect(res.status).toHaveBeenCalledWith(401)
+  })
+
+  it('sin id -> 400 VALIDATION', async () => {
+    authAs()
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: {}, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'cancelled' } }, res)
+    expect(res.status).toHaveBeenCalledWith(400)
+  })
+
+  it('suscripcion ajena -> 404 (no enumera)', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's-other', userId: 'other-user' })
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's-other' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'cancelled' } }, res)
+    expect(res.status).toHaveBeenCalledWith(404)
+    expect(mocks.delegates.subscription.update).not.toHaveBeenCalled()
+  })
+
+  it('owner cancela su suscripcion activa -> 200 cancelled + autoRenew false', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'active', autoRenew: true })
+    mocks.delegates.subscription.update.mockImplementation(async ({ data }) => ({ id: 's1', ...data }))
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'cancelled' } }, res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(mocks.delegates.subscription.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 's1' },
+      data: expect.objectContaining({
+        status: 'cancelled',
+        autoRenew: false,
+        cancelledAt: expect.any(Date),
+      }),
+    }))
+  })
+
+  it('ya cancelada -> 409', async () => {
+    authAs()
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'uid-1', status: 'cancelled' })
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'cancelled' } }, res)
+    expect(res.status).toHaveBeenCalledWith(409)
+  })
+
+  it('transicion no soportada -> 400', async () => {
+    authAs()
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'uid-1', status: 'active' })
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'active' } }, res)
+    expect(res.status).toHaveBeenCalledWith(400)
+    expect(res.json).toHaveBeenCalledWith({ error: expect.objectContaining({ code: 'VALIDATION' }) })
+  })
+
+  it('falta status -> 400', async () => {
+    authAs()
+    mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'uid-1', status: 'active' })
+    const res = mockRes()
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: {} }, res)
+    expect(res.status).toHaveBeenCalledWith(400)
   })
 })
 

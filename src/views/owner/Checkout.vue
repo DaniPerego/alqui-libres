@@ -201,6 +201,10 @@ const initCardPaymentBrick = async () => {
         onSubmit: async (formData) => {
           loading.value = true
           try {
+            // Demo-only flow: the Card Payment Brick requires server-side
+            // tokenization which is out of scope. In production the payment
+            // is processed by the MercadoPago webhook and the PaymentResult
+            // polling (/api/payments/status) confirms the final state.
             if (isDev.value) await new Promise(resolve => setTimeout(resolve, 2000))
             await paymentStore.simulatePaymentSuccess(selectedPlan.value.id)
             router.push('/panel/payment-result?status=success')

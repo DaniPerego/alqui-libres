@@ -26,6 +26,7 @@ import mercadopagoWebhookHandler from '../api-handlers/mercadopago/webhook.js'
 import notificationsHandler from '../api-handlers/notifications.js'
 import notificationsIdHandler from '../api-handlers/notifications/[id].js'
 import paymentsHandler from '../api-handlers/payments.js'
+import paymentsStatusHandler from '../api-handlers/payments/status.js'
 import plansHandler from '../api-handlers/plans.js'
 import plansIdHandler from '../api-handlers/plans/[id].js'
 import platformSettingsHandler from '../api-handlers/platform-settings.js'
@@ -37,6 +38,7 @@ import reservationsIdHandler from '../api-handlers/reservations/[id].js'
 import reservationsIdStatusHandler from '../api-handlers/reservations/[id]/status.js'
 import reviewsHandler from '../api-handlers/reviews.js'
 import subscriptionsHandler from '../api-handlers/subscriptions.js'
+import subscriptionsIdHandler from '../api-handlers/subscriptions/[id].js'
 import subscriptionsMineHandler from '../api-handlers/subscriptions/mine.js'
 import uploadHandler from '../api-handlers/upload.js'
 import uploadDeleteHandler from '../api-handlers/upload/delete.js'
@@ -65,6 +67,7 @@ const STATIC_ROUTES = [
   // 2 segments — static sub-routes (must stay before /:id matches).
   { segments: ['mercadopago', 'preference'], handler: mercadopagoPreferenceHandler },
   { segments: ['mercadopago', 'webhook'], handler: mercadopagoWebhookHandler },
+  { segments: ['payments', 'status'], handler: paymentsStatusHandler },
   { segments: ['properties', 'mine'], handler: propertiesMineHandler },
   { segments: ['subscriptions', 'mine'], handler: subscriptionsMineHandler },
   { segments: ['upload', 'delete'], handler: uploadDeleteHandler },
@@ -82,6 +85,7 @@ const DYNAMIC_ROUTES = [
   { segments: ['plans', ':id'], handler: plansIdHandler },
   { segments: ['properties', ':id'], handler: propertiesIdHandler },
   { segments: ['reservations', ':id'], handler: reservationsIdHandler },
+  { segments: ['subscriptions', ':id'], handler: subscriptionsIdHandler },
   { segments: ['users', ':id'], handler: usersIdHandler },
 ]
 

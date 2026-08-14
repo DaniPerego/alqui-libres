@@ -13,6 +13,9 @@ export const ERROR_CODES = {
   NOT_FOUND: 'NOT_FOUND',
   METHOD: 'METHOD',
   CONFLICT: 'CONFLICT',
+  // 503 — the backend explicitly signals a dependency is not configured
+  // (e.g. MercadoPago access token missing), distinct from a generic 500.
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   INTERNAL: 'INTERNAL',
 }
 
@@ -23,6 +26,7 @@ const STATUS_BY_CODE = {
   NOT_FOUND: 404,
   METHOD: 405,
   CONFLICT: 409,
+  SERVICE_UNAVAILABLE: 503,
   INTERNAL: 500,
 }
 
