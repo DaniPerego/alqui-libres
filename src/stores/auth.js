@@ -1,14 +1,6 @@
 import { defineStore } from 'pinia'
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-  sendPasswordResetEmail
-} from 'firebase/auth'
-import { setDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore'
-import { auth, db } from '@/config/firebase'
+import { supabase, isSupabaseConfigured } from '@/config/supabase'
+import { apiGet, apiPost, apiPatch } from '@/services/api'
 import { mockGuestUser, mockOwnerUser, mockAdminUser } from '@/data/mockData'
 
 const MOCK_CREDENTIALS_KEY = 'mockCredentials'
@@ -24,30 +16,68 @@ function saveMockCredentials(creds) {
   localStorage.setItem(MOCK_CREDENTIALS_KEY, JSON.stringify(creds))
 }
 
+/**
+ * Merges a Supabase Auth user with platform profile fields so that existing
+ * views keep the same shape they had with Firebase (uid, email, displayName,
+ * role, subscription, emailVerified, etc.).
+ */
+function normalizeUser(supabaseUser, profile = null) {
+  const id = supabaseUser?.id || profile?.id || profile?.uid
+  return {
+    // Backward-compatible identifier used by views and stores.
+    uid: id,
+    // Also expose `id` for newer code that expects the API shape.
+    id,
+    email: supabaseUser?.email || profile?.email,
+    displayName:
+      profile?.displayName ||
+      supabaseUser?.user_metadata?.displayName ||
+      supabaseUser?.email?.split('@')[0] ||
+      '',
+    emailVerified: !!(
+      supabaseUser?.email_confirmed_at ||
+      supabaseUser?.confirmed_at ||
+      profile?.emailVerified
+    ),
+    role: profile?.role || 'owner',
+    subscription: profile?.subscription || null,
+    ...profile
+  }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     initialized: false,
     loading: false,
     error: null,
-    mustChangePassword: false
+    mustChangePassword: false,
+    sessionToken: null
   }),
-  
+
   getters: {
     isAuthenticated: (state) => !!state.user,
     userId: (state) => state.user?.uid,
     userEmail: (state) => state.user?.email,
     userName: (state) => state.user?.displayName
   },
-  
+
   actions: {
+    getSessionToken() {
+      return this.sessionToken
+    },
+
     async checkAuth() {
-      if (!auth) {
+      if (!isSupabaseConfigured() || !supabase) {
         const mockUserData = localStorage.getItem('mockUser')
         if (mockUserData) {
-          this.user = JSON.parse(mockUserData)
+          try {
+            this.user = JSON.parse(mockUserData)
+          } catch {
+            this.user = null
+          }
           const creds = getMockCredentials()
-          const entry = creds[this.user.email]
+          const entry = creds[this.user?.email]
           if (entry?.mustChangePassword) {
             this.mustChangePassword = true
           }
@@ -56,46 +86,52 @@ export const useAuthStore = defineStore('auth', {
         return this.user
       }
 
-      return new Promise((resolve) => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-          if (user && db) {
-            try {
-              const userSnap = await getDoc(doc(db, 'users', user.uid))
-              if (userSnap.exists()) {
-                this.user = { ...user, ...userSnap.data() }
-              } else {
-                this.user = user
-              }
-            } catch (e) {
-              console.warn('⚠️ No se pudo cargar el doc del usuario:', e.message)
-              this.user = user
-            }
-          } else {
-            this.user = user
-          }
-          this.initialized = true
-          unsubscribe()
-          resolve(user)
-        })
-      })
+      this.loading = true
+      try {
+        const { data, error } = await supabase.auth.getSession()
+        if (error) throw error
+
+        if (data?.session) {
+          this.sessionToken = data.session.access_token
+          const profile = await this.fetchProfile()
+          this.user = normalizeUser(data.session.user, profile)
+        } else {
+          this.user = null
+          this.sessionToken = null
+        }
+      } catch (error) {
+        console.warn('⚠️ No se pudo restaurar la sesión:', error.message)
+        this.user = null
+        this.sessionToken = null
+      } finally {
+        this.loading = false
+        this.initialized = true
+      }
+
+      return this.user
     },
-    
+
+    async fetchProfile() {
+      const result = await apiGet('/users/me')
+      return result.success ? result.data : null
+    },
+
     async login(email, password) {
       this.loading = true
       this.error = null
       this.mustChangePassword = false
-      
+
       try {
-        if (!auth) {
+        if (!isSupabaseConfigured() || !supabase) {
           await new Promise(resolve => setTimeout(resolve, 500))
 
           // Check dynamic mock credentials first
           const creds = getMockCredentials()
           const entry = creds[email]
           if (entry && entry.password === password) {
-            const { mockUsersCredentials: _, ...rest } = creds
             const userData = {
               uid: entry.uid,
+              id: entry.uid,
               email,
               displayName: entry.displayName || email.split('@')[0],
               emailVerified: true,
@@ -132,25 +168,17 @@ export const useAuthStore = defineStore('auth', {
           }
         }
 
-        const userCredential = await signInWithEmailAndPassword(auth, email, password)
-        this.user = userCredential.user
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw error
 
-        // Cargar el doc del usuario (rol, suscripción) desde Firestore.
-        // En modo demo el rol viene en los datos mock; en modo real vive en users/{uid}.
-        if (db) {
-          try {
-            const userSnap = await getDoc(doc(db, 'users', userCredential.user.uid))
-            if (userSnap.exists()) {
-              this.user = { ...userCredential.user, ...userSnap.data() }
-            }
-          } catch (e) {
-            console.warn('⚠️ No se pudo cargar el doc del usuario:', e.message)
-          }
-        }
+        this.sessionToken = data.session?.access_token || null
+        const supabaseUser = data.user || data.session?.user
+        const profile = await this.fetchProfile()
+        this.user = normalizeUser(supabaseUser, profile)
 
         return { success: true }
       } catch (error) {
-        this.error = this.getErrorMessage(error.code || error.message)
+        this.error = this.getErrorMessage(error.message || error.code)
         return { success: false, error: this.error }
       } finally {
         this.loading = false
@@ -160,7 +188,7 @@ export const useAuthStore = defineStore('auth', {
     async changePassword(newPassword) {
       this.loading = true
       try {
-        if (!auth) {
+        if (!isSupabaseConfigured() || !supabase) {
           const userData = this.user
           if (!userData) throw new Error('No hay usuario autenticado')
 
@@ -174,12 +202,12 @@ export const useAuthStore = defineStore('auth', {
           return { success: true }
         }
 
-        const user = auth.currentUser
-        if (!user) throw new Error('No hay usuario autenticado')
-        await user.updatePassword(newPassword)
+        const { error } = await supabase.auth.updateUser({ password: newPassword })
+        if (error) throw error
+        this.mustChangePassword = false
         return { success: true }
       } catch (error) {
-        this.error = this.getErrorMessage(error.code || error.message)
+        this.error = this.getErrorMessage(error.message || error.code)
         return { success: false, error: this.error }
       } finally {
         this.loading = false
@@ -187,7 +215,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async resetPassword(email) {
-      if (!auth) {
+      if (!isSupabaseConfigured() || !supabase) {
         const creds = getMockCredentials()
         const entry = creds[email]
         if (entry) {
@@ -199,10 +227,13 @@ export const useAuthStore = defineStore('auth', {
       }
 
       try {
-        await sendPasswordResetEmail(auth, email)
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/cambiar-contrasena`
+        })
+        if (error) throw error
         return { success: true, message: 'Email de restablecimiento enviado' }
       } catch (error) {
-        return { success: false, error: this.getErrorMessage(error.code) }
+        return { success: false, error: this.getErrorMessage(error.message || error.code) }
       }
     },
 
@@ -229,76 +260,110 @@ export const useAuthStore = defineStore('auth', {
     async register(email, password, displayName) {
       this.loading = true
       this.error = null
-      
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-        if (displayName) {
-          await updateProfile(userCredential.user, { displayName })
-        }
-        this.user = userCredential.user
 
-        // Crear el doc del usuario en Firestore con su rol.
-        // Las reglas de seguridad leen users/{uid}.role para detectar admin.
-        if (db) {
-          await setDoc(doc(db, 'users', userCredential.user.uid), {
-            uid: userCredential.user.uid,
+      try {
+        if (!isSupabaseConfigured() || !supabase) {
+          // Demo registration: store credentials and authenticate immediately
+          const uid = `demo-${Date.now()}`
+          this.saveMockCredentials(email, password, displayName || email.split('@')[0], 'owner', uid, null)
+
+          const userData = {
+            uid,
+            id: uid,
             email,
             displayName: displayName || email.split('@')[0],
-            role: 'owner', // El registro público crea propietarios
-            isActive: true,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          }, { merge: true })
+            emailVerified: true,
+            role: 'owner',
+            subscription: null,
+            stats: { properties: 0, bookings: 0, revenue: 0 }
+          }
+          this.user = userData
+          localStorage.setItem('mockUser', JSON.stringify(userData))
+          return { success: true }
         }
 
+        const { data, error } = await supabase.auth.signUp({ email, password })
+        if (error) throw error
+
+        const supabaseUser = data.user
+        const platformUser = {
+          id: supabaseUser.id,
+          email,
+          displayName: displayName || email.split('@')[0],
+          role: 'owner'
+        }
+
+        const createResult = await apiPost('/users', platformUser)
+        if (!createResult.success) {
+          // Continue anyway; the auth user exists and the backend may create
+          // the profile on first login.
+          console.warn('⚠️ No se pudo crear el perfil de plataforma:', createResult.error?.message)
+        }
+
+        this.user = normalizeUser(supabaseUser, platformUser)
         return { success: true }
       } catch (error) {
-        this.error = this.getErrorMessage(error.code)
+        this.error = this.getErrorMessage(error.message || error.code)
         return { success: false, error: this.error }
       } finally {
         this.loading = false
       }
     },
-    
+
     async updateProfile(profileData) {
       this.loading = true
       try {
-        if (!auth) {
+        if (!isSupabaseConfigured() || !supabase) {
           this.user = { ...this.user, ...profileData }
           localStorage.setItem('mockUser', JSON.stringify(this.user))
           return { success: true }
         }
-        await updateProfile(auth.currentUser, profileData)
-        this.user = { ...this.user, ...profileData }
+
+        const { error } = await supabase.auth.updateUser({
+          data: profileData
+        })
+        if (error) throw error
+
+        const result = await apiPatch('/users/me', profileData)
+        if (result.success) {
+          this.user = { ...this.user, ...result.data }
+        } else {
+          this.user = { ...this.user, ...profileData }
+        }
         return { success: true }
       } catch (error) {
-        this.error = this.getErrorMessage(error.code)
+        this.error = this.getErrorMessage(error.message || error.code)
         return { success: false, error: this.error }
       } finally {
         this.loading = false
       }
     },
-    
+
     async logout() {
       this.loading = true
       try {
-        if (!auth) {
+        if (!isSupabaseConfigured() || !supabase) {
           localStorage.removeItem('mockUser')
           this.user = null
+          this.sessionToken = null
           this.mustChangePassword = false
           return { success: true }
         }
-        await signOut(auth)
+
+        const { error } = await supabase.auth.signOut()
+        if (error) throw error
+
         this.user = null
+        this.sessionToken = null
         return { success: true }
       } catch (error) {
-        this.error = this.getErrorMessage(error.code)
+        this.error = this.getErrorMessage(error.message || error.code)
         return { success: false, error: this.error }
       } finally {
         this.loading = false
       }
     },
-    
+
     getErrorMessage(code) {
       const messages = {
         'auth/email-already-in-use': 'Este correo electrónico ya está registrado',
@@ -309,7 +374,10 @@ export const useAuthStore = defineStore('auth', {
         'auth/user-not-found': 'Usuario no encontrado',
         'auth/wrong-password': 'Contraseña incorrecta',
         'auth/invalid-credential': 'Credenciales inválidas',
-        'auth/too-many-requests': 'Demasiados intentos. Intente más tarde'
+        'auth/too-many-requests': 'Demasiados intentos. Intente más tarde',
+        'auth/session-missing': 'No hay sesión activa',
+        'Modo Demo: Email o contraseña incorrectos': 'Modo Demo: Email o contraseña incorrectos',
+        'Invalid login credentials': 'Credenciales inválidas'
       }
       return messages[code] || 'Ocurrió un error. Intente nuevamente'
     }
