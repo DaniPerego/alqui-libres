@@ -19,6 +19,7 @@
 // the query string is preserved untouched.
 import { sendError } from '../api-handlers/lib/http.js'
 
+import authHandler from '../api-handlers/auth.js'
 import messagesHandler from '../api-handlers/messages.js'
 import messagesIdHandler from '../api-handlers/messages/[id].js'
 import mercadopagoPreferenceHandler from '../api-handlers/mercadopago/preference.js'
@@ -53,6 +54,7 @@ export const config = { runtime: 'nodejs' }
 // fixed segment (mine/me/delete) can never be captured by a :id route.
 const STATIC_ROUTES = [
   // 1 segment — collection endpoints.
+  { segments: ['auth'], handler: authHandler },
   { segments: ['messages'], handler: messagesHandler },
   { segments: ['notifications'], handler: notificationsHandler },
   { segments: ['payments'], handler: paymentsHandler },

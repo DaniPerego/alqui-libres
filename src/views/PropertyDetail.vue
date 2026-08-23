@@ -544,7 +544,7 @@ import { usePropertyStore } from '@/stores/property'
 import { useSEO, generatePropertySchema } from '@/composables/useSEO'
 import { getPropertyReviews, addReview, getPropertyRating } from '@/services/reviews'
 import { createReservation } from '@/services/reservations'
-import { isSupabaseConfigured } from '@/config/supabase'
+// isSupabaseConfigured removed — auth is now native JWT
 import DatePicker from 'vue-datepicker-next';
 import 'vue-datepicker-next/index.css';
 
@@ -710,26 +710,24 @@ const getWhatsAppLink = (phone, propertyTitle) => {
 }
 
 const loadOwnerProfile = (ownerId) => {
-  if (isSupabaseConfigured()) {
-    // Real mode: build the owner profile from the property fields returned by the API.
-    ownerProfile.value = {
-      displayName: property.value.ownerName || 'Propietario',
-      email: property.value.ownerEmail || '',
-      photoURL: property.value.ownerPhotoURL || '',
-      city: property.value.location?.city || '',
-      bio: '',
-      contactoPrincipal: {
-        telefono: property.value.ownerPhone || '',
-        whatsapp: property.value.ownerPhone || '',
-        email: property.value.ownerEmail || ''
-      },
-      contactoSecundario: { enabled: false },
-      redesSociales: {}
-    }
-    return
+  // Build the owner profile from the property fields returned by the API.
+  ownerProfile.value = {
+    displayName: property.value.ownerName || 'Propietario',
+    email: property.value.ownerEmail || '',
+    photoURL: property.value.ownerPhotoURL || '',
+    city: property.value.location?.city || '',
+    bio: '',
+    contactoPrincipal: {
+      telefono: property.value.ownerPhone || '',
+      whatsapp: property.value.ownerPhone || '',
+      email: property.value.ownerEmail || ''
+    },
+    contactoSecundario: { enabled: false },
+    redesSociales: {}
   }
+  return
 
-  // Demo mode: try localStorage first, then fall back to a mock profile.
+  // Demo fallback (unused): try localStorage first, then fall back to a mock profile.
   const saved = localStorage.getItem(`profile_${ownerId}`)
   if (saved) {
     ownerProfile.value = JSON.parse(saved)

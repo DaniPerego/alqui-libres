@@ -2,7 +2,7 @@
 //
 // SDD: backend-vercel-migration — WU1 (data layer)
 // Binding decisions:
-//   D1  users.id = Supabase Auth UID (String @id, no default)
+// D1  users.id = UUID (String @id, no default)
 //   D2  hot fields as columns, flexible/rare fields as Json
 //   D3  settings resource named PlatformSettings (single row 'general')
 //   D8  extra enum PropertyRentalType (temporario/anual); seed normalizes
@@ -95,8 +95,9 @@ enum PaymentMethod {
 // ---------- Models ----------
 
 model User {
-  id           String   @id // Supabase Auth UID (D1)
+  id           String   @id // UUID (D1)
   email        String   @unique
+  password     String   // bcrypt hashed password (native auth)
   displayName  String
   photoURL     String?
   role         Role     @default(guest)

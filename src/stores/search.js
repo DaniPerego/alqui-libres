@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { isSupabaseConfigured } from '@/config/supabase'
 import { apiGet } from '@/services/api'
 import { mockProperties } from '@/data/mockData'
 
@@ -74,14 +73,6 @@ export const useSearchStore = defineStore('search', {
       this.error = null
 
       try {
-        if (!isSupabaseConfigured()) {
-          console.log('🧪 Usando datos de prueba (mock data)')
-          await new Promise(resolve => setTimeout(resolve, 500))
-          this.listings = mockProperties
-          this.applyClientFilters()
-          return { success: true, data: this.filteredListings }
-        }
-
         const params = {}
         if (this.filters.city) params.city = this.filters.city
         if (this.filters.q) params.q = this.filters.q
@@ -101,7 +92,7 @@ export const useSearchStore = defineStore('search', {
         this.applyClientFilters()
         return { success: true, data: this.filteredListings }
       } catch (error) {
-        console.warn('⚠️ Error en API, usando datos de prueba:', error.message)
+        console.warn('⚠️ Error en API:', error.message)
         this.listings = mockProperties
         this.applyClientFilters()
         return { success: true, data: this.filteredListings }

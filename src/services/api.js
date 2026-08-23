@@ -1,29 +1,17 @@
 import { useAuthStore } from '@/stores/auth'
-import { isSupabaseConfigured } from '@/config/supabase'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
-/**
- * Resolves the current Supabase access token from the auth store.
- * Returns null when no session is available or the store is not ready.
- */
+const TOKEN_KEY = 'alqui_libres_token'
+
 function getAuthToken() {
   try {
-    const authStore = useAuthStore()
-    return (
-      authStore?.sessionToken ||
-      authStore?.token ||
-      authStore?.getSessionToken?.() ||
-      null
-    )
-  } catch (error) {
+    return localStorage.getItem(TOKEN_KEY) || null
+  } catch {
     return null
   }
 }
 
-/**
- * Maps HTTP status codes to the backend error contract defined in api/lib/http.js.
- */
 function statusToCode(status) {
   if (status === 400 || status === 422) return 'VALIDATION'
   if (status === 401) return 'UNAUTHORIZED'
@@ -126,9 +114,6 @@ export async function apiDelete(path, options) {
   return request('DELETE', path, null, options)
 }
 
-/**
- * Returns true when the API backend is available (Supabase is configured).
- */
 export function isApiAvailable() {
-  return isSupabaseConfigured()
+  return true
 }

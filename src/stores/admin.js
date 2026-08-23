@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { isSupabaseConfigured } from '@/config/supabase'
 import { useAuthStore } from '@/stores/auth'
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from '@/services/api'
 
@@ -266,11 +265,6 @@ export const useAdminStore = defineStore('admin', () => {
 
   // Plans initialization (API-backed with localStorage fallback)
   const initPlans = async () => {
-    if (!isSupabaseConfigured()) {
-      subscriptionPlans.value = loadPlansFromStorage()
-      return { success: true }
-    }
-
     try {
       const result = await apiGet('/plans')
       if (!result.success) {
@@ -279,7 +273,6 @@ export const useAdminStore = defineStore('admin', () => {
 
       let plans = result.data?.data || []
 
-      // Seed defaults if catalog is empty
       if (plans.length === 0) {
         await Promise.all(defaultPlans.map(p => apiPatch(`/plans/${p.id}`, p)))
         plans = [...defaultPlans]
@@ -299,14 +292,6 @@ export const useAdminStore = defineStore('admin', () => {
 
   // Platform settings initialization
   const initPlatformSettings = async () => {
-    if (!isSupabaseConfigured()) {
-      const stored = localStorage.getItem('platformSettings')
-      if (stored) {
-        platformSettings.value = { ...platformSettings.value, ...JSON.parse(stored) }
-      }
-      return { success: true }
-    }
-
     try {
       const result = await apiGet('/platform-settings')
       if (!result.success) {
@@ -327,12 +312,6 @@ export const useAdminStore = defineStore('admin', () => {
   }
 
   const updatePlatformSettings = async (updates) => {
-    if (!isSupabaseConfigured()) {
-      platformSettings.value = { ...platformSettings.value, ...updates }
-      localStorage.setItem('platformSettings', JSON.stringify(platformSettings.value))
-      return { success: true }
-    }
-
     try {
       const result = await apiPatch('/platform-settings', updates)
       if (!result.success) {
@@ -350,11 +329,6 @@ export const useAdminStore = defineStore('admin', () => {
 
   // Subscriptions
   const initSubscriptions = async () => {
-    if (!isSupabaseConfigured()) {
-      subscriptions.value = []
-      return { success: true }
-    }
-
     try {
       const result = await apiGet('/subscriptions')
       if (!result.success) {
@@ -375,86 +349,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Cargar todos los usuarios
    */
   const fetchUsers = async () => {
-    if (!isSupabaseConfigured()) {
-      // Modo demo: cargar usuarios guardados + hardcoded
-      const hardcoded = [
-        {
-          uid: 'user123',
-          email: 'demo@alquilubres.com',
-          displayName: 'Usuario Demo',
-          createdAt: new Date('2024-01-15'),
-          isActive: true,
-          role: 'owner',
-          subscription: {
-            planId: 'pro',
-            status: 'active',
-            startDate: new Date('2024-01-15'),
-            endDate: new Date('2025-01-15')
-          },
-          stats: {
-            properties: 4,
-            bookings: 47,
-            revenue: 12450
-          }
-        },
-        {
-          uid: 'user456',
-          email: 'propietario2@example.com',
-          displayName: 'María González',
-          createdAt: new Date('2024-03-10'),
-          isActive: true,
-          role: 'owner',
-          subscription: {
-            planId: 'basic',
-            status: 'active',
-            startDate: new Date('2024-03-10'),
-            endDate: new Date('2025-03-10')
-          },
-          stats: {
-            properties: 1,
-            bookings: 12,
-            revenue: 3200
-          }
-        },
-        {
-          uid: 'user789',
-          email: 'carlos.admin@alquilubres.com',
-          displayName: 'Carlos Admin',
-          createdAt: new Date('2024-01-01'),
-          isActive: true,
-          role: 'admin',
-          subscription: null,
-          stats: {
-            properties: 0,
-            bookings: 0,
-            revenue: 0
-          }
-        }
-      ]
-
-      const stored = localStorage.getItem('mockAdminUsers')
-      const customUsers = stored ? JSON.parse(stored) : []
-
-      // Merge: custom users override hardcoded by uid
-      const merged = [...hardcoded]
-      for (const cu of customUsers) {
-        const idx = merged.findIndex(u => u.uid === cu.uid)
-        cu.createdAt = new Date(cu.createdAt)
-        if (cu.subscription) {
-          cu.subscription.startDate = cu.subscription.startDate ? new Date(cu.subscription.startDate) : new Date()
-          cu.subscription.endDate = cu.subscription.endDate ? new Date(cu.subscription.endDate) : new Date()
-        }
-        if (idx >= 0) {
-          merged[idx] = cu
-        } else {
-          merged.push(cu)
-        }
-      }
-      users.value = merged
-      updateStats()
-      return { success: true }
-    }
-
     loading.value = true
     error.value = null
 
@@ -480,17 +374,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Cargar todas las propiedades
    */
   const fetchAllProperties = async () => {
-    if (!isSupabaseConfigured()) {
-      // Usar datos mock
-      const { mockProperties, mockPendingProperties } = await import('@/data/mockData')
-      properties.value = [...mockProperties, ...mockPendingProperties].map(p => ({
-        ...p,
-        createdAt: p.createdAt || new Date()
-      }))
-      updateStats()
-      return { success: true }
-    }
-
     loading.value = true
     error.value = null
 
@@ -516,17 +399,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Actualizar estado de una propiedad (aprobar/rechazar)
    */
   const updatePropertyStatus = async (propertyId, status) => {
-    if (!isSupabaseConfigured()) {
-      // Modo demo
-      const property = properties.value.find(p => p.id === propertyId)
-      if (property) {
-        property.status = status
-        property.isActive = status === 'active'
-        property.reviewedAt = new Date()
-      }
-      return { success: true, message: `Propiedad ${status === 'active' ? 'aprobada' : 'rechazada'} (modo demo)` }
-    }
-
     try {
       const result = await apiPatch(`/properties/${propertyId}`, {
         status,
@@ -536,7 +408,6 @@ export const useAdminStore = defineStore('admin', () => {
         throw new Error(result.error?.message || 'Error updating property')
       }
 
-      // Actualizar en estado local
       const property = properties.value.find(p => p.id === propertyId)
       if (property) {
         property.status = status
@@ -555,23 +426,12 @@ export const useAdminStore = defineStore('admin', () => {
    * Eliminar una propiedad
    */
   const deleteProperty = async (propertyId) => {
-    if (!isSupabaseConfigured()) {
-      // Modo demo
-      const index = properties.value.findIndex(p => p.id === propertyId)
-      if (index !== -1) {
-        properties.value.splice(index, 1)
-      }
-      updateStats()
-      return { success: true, message: 'Propiedad eliminada (modo demo)' }
-    }
-
     try {
       const result = await apiDelete(`/properties/${propertyId}`)
       if (!result.success) {
         throw new Error(result.error?.message || 'Error deleting property')
       }
 
-      // Actualizar estado local
       const index = properties.value.findIndex(p => p.id === propertyId)
       if (index !== -1) {
         properties.value.splice(index, 1)
@@ -589,16 +449,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Actualizar rol de usuario
    */
   const updateUserRole = async (userId, role) => {
-    if (!isSupabaseConfigured()) {
-      // Modo demo
-      const user = users.value.find(u => u.uid === userId)
-      if (user) {
-        user.role = role
-      }
-      saveCustomUsers()
-      return { success: true, message: `Usuario actualizado a ${role} (modo demo)` }
-    }
-
     try {
       const result = await apiPatch(`/users/${userId}`, { role })
       if (!result.success) {
@@ -621,16 +471,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Suspender/activar usuario
    */
   const toggleUserStatus = async (userId, isActive) => {
-    if (!isSupabaseConfigured()) {
-      // Modo demo
-      const user = users.value.find(u => u.uid === userId)
-      if (user) {
-        user.isActive = isActive
-      }
-      saveCustomUsers()
-      return { success: true, message: `Usuario ${isActive ? 'activado' : 'suspendido'} (modo demo)` }
-    }
-
     try {
       const result = await apiPatch(`/users/${userId}`, { isActive })
       if (!result.success) {
@@ -653,16 +493,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Eliminar un usuario
    */
   const deleteUser = async (userId) => {
-    if (!isSupabaseConfigured()) {
-      const index = users.value.findIndex(u => u.uid === userId)
-      if (index !== -1) {
-        users.value.splice(index, 1)
-      }
-      saveCustomUsers()
-      updateStats()
-      return { success: true, message: 'Usuario eliminado (modo demo)' }
-    }
-
     try {
       const result = await apiDelete(`/users/${userId}`)
       if (!result.success) {
@@ -707,15 +537,6 @@ export const useAdminStore = defineStore('admin', () => {
       }
     }
 
-    if (!isSupabaseConfigured()) {
-      const authStore = useAuthStore()
-      authStore.saveMockCredentials(newUser.email, password, newUser.displayName, newUser.role, newUser.uid, newUser.subscription)
-      users.value.push(newUser)
-      saveCustomUsers()
-      updateStats()
-      return { success: true, user: newUser, password, message: `Usuario ${userData.displayName} creado. Contraseña temporal: ${password}` }
-    }
-
     try {
       const result = await apiPost('/users', {
         email: newUser.email,
@@ -730,7 +551,6 @@ export const useAdminStore = defineStore('admin', () => {
 
       const created = normalizeUser(result.data?.user)
 
-      // Apply plan subscription if provided
       if (userData.planId && created) {
         const subscription = {
           planId: userData.planId,
@@ -768,13 +588,6 @@ export const useAdminStore = defineStore('admin', () => {
       endDate: user.subscription?.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
     }
 
-    if (!isSupabaseConfigured()) {
-      user.subscription = subscription
-      saveCustomUsers()
-      updateStats()
-      return { success: true, message: `Suscripción actualizada (modo demo)` }
-    }
-
     try {
       const result = await apiPatch(`/users/${userId}`, { subscription })
       if (!result.success) {
@@ -795,13 +608,6 @@ export const useAdminStore = defineStore('admin', () => {
   const updateUser = async (userId, data) => {
     const user = users.value.find(u => u.uid === userId || u.id === userId)
     if (!user) return { success: false, error: 'Usuario no encontrado' }
-
-    if (!isSupabaseConfigured()) {
-      if (data.displayName !== undefined) user.displayName = data.displayName
-      if (data.email !== undefined) user.email = data.email
-      saveCustomUsers()
-      return { success: true, message: 'Usuario actualizado (modo demo)' }
-    }
 
     try {
       const payload = {}
@@ -826,17 +632,6 @@ export const useAdminStore = defineStore('admin', () => {
   const resetUserPassword = async (userId) => {
     const user = users.value.find(u => u.uid === userId || u.id === userId)
     if (!user) return { success: false, error: 'Usuario no encontrado' }
-
-    if (!isSupabaseConfigured()) {
-      const newPassword = 'temp' + Math.random().toString(36).slice(2, 8)
-      const authStore = useAuthStore()
-      const creds = JSON.parse(localStorage.getItem('mockCredentials') || '{}')
-      if (creds[user.email]) {
-        creds[user.email] = { ...creds[user.email], password: newPassword, mustChangePassword: true }
-        localStorage.setItem('mockCredentials', JSON.stringify(creds))
-      }
-      return { success: true, password: newPassword, message: `Contraseña restablecida. Nueva contraseña temporal: ${newPassword}` }
-    }
 
     try {
       const authStore = useAuthStore()
@@ -864,19 +659,6 @@ export const useAdminStore = defineStore('admin', () => {
       subscription.endDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000)
     }
 
-    if (!isSupabaseConfigured()) {
-      user.subscription = subscription
-      const authStore = useAuthStore()
-      const creds = JSON.parse(localStorage.getItem('mockCredentials') || '{}')
-      if (creds[user.email]) {
-        creds[user.email] = { ...creds[user.email], subscription }
-        localStorage.setItem('mockCredentials', JSON.stringify(creds))
-      }
-      saveCustomUsers()
-      updateStats()
-      return { success: true, message: `Suscripción ${status === 'canceled' ? 'cancelada' : status === 'paused' ? 'suspendida' : 'reanudada'} (modo demo)` }
-    }
-
     try {
       const result = await apiPatch(`/users/${userId}`, { subscription })
       if (!result.success) {
@@ -901,30 +683,20 @@ export const useAdminStore = defineStore('admin', () => {
     const current = subscriptionPlans.value[planIndex]
     const merged = { ...current, ...updates }
 
-    if (isSupabaseConfigured()) {
-      try {
-        const result = await apiPatch(`/plans/${planId}`, merged)
-        if (!result.success) {
-          throw new Error(result.error?.message || 'Error updating plan')
-        }
-        const updatedPlans = [...subscriptionPlans.value]
-        updatedPlans[planIndex] = result.data || merged
-        subscriptionPlans.value = updatedPlans
-        savePlansToStorage(subscriptionPlans.value)
-        console.log('✅ Plan actualizado en API:', planId, updates)
-        return { success: true }
-      } catch (err) {
-        console.error('❌ Error actualizando plan en API:', err)
-        return { success: false, error: err.message }
+    try {
+      const result = await apiPatch(`/plans/${planId}`, merged)
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Error updating plan')
       }
-    } else {
-      // Local fallback
       const updatedPlans = [...subscriptionPlans.value]
-      updatedPlans[planIndex] = merged
+      updatedPlans[planIndex] = result.data || merged
       subscriptionPlans.value = updatedPlans
       savePlansToStorage(subscriptionPlans.value)
-      console.log('✅ Plan actualizado (localStorage):', planId, updates)
+      console.log('✅ Plan actualizado en API:', planId, updates)
       return { success: true }
+    } catch (err) {
+      console.error('❌ Error actualizando plan en API:', err)
+      return { success: false, error: err.message }
     }
   }
 

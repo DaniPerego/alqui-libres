@@ -1,4 +1,3 @@
-import { isSupabaseConfigured } from '@/config/supabase'
 import { apiGet, apiPost } from '@/services/api'
 import { mockReviews } from '@/data/mockData'
 
@@ -27,11 +26,6 @@ function resolvePropertyId(review) {
 }
 
 export async function getPropertyReviews(propertyId) {
-  if (!isSupabaseConfigured()) {
-    const reviews = loadReviews()
-    return reviews.filter(r => r.listingId === propertyId || r.propertyId === propertyId)
-  }
-
   const result = await apiGet('/reviews', { propertyId }, { public: true })
   if (!result.success) {
     console.warn('⚠️ Error fetching reviews, falling back to localStorage:', result.error?.message)
@@ -42,7 +36,16 @@ export async function getPropertyReviews(propertyId) {
 }
 
 export async function addReview(review) {
-  if (!isSupabaseConfigured()) {
+  const payload = {
+    propertyId: resolvePropertyId(review),
+    rating: review.rating,
+    comment: review.comment,
+    guestName: review.guestName,
+    ratings: review.ratings
+  }
+  const result = await apiPost('/reviews', payload)
+  if (!result.success) {
+    console.warn('⚠️ Error adding review, falling back to localStorage:', result.error?.message)
     const reviews = loadReviews()
     const propertyId = resolvePropertyId(review)
     const newReview = {
@@ -57,28 +60,10 @@ export async function addReview(review) {
     saveReviews(reviews)
     return newReview
   }
-
-  const payload = {
-    propertyId: resolvePropertyId(review),
-    rating: review.rating,
-    comment: review.comment,
-    guestName: review.guestName,
-    ratings: review.ratings
-  }
-  const result = await apiPost('/reviews', payload)
-  if (!result.success) {
-    console.warn('⚠️ Error adding review, falling back to localStorage:', result.error?.message)
-    return addReview({ ...review, propertyId: resolvePropertyId(review) })
-  }
   return result.data
 }
 
 export async function getOwnerReviews(ownerPropertyIds) {
-  if (!isSupabaseConfigured()) {
-    const reviews = loadReviews()
-    return sortByNewest(reviews.filter(r => ownerPropertyIds.includes(r.listingId) || ownerPropertyIds.includes(r.propertyId)))
-  }
-
   const result = await apiGet('/reviews', { owner: 'me' })
   if (!result.success) {
     console.warn('⚠️ Error fetching owner reviews, falling back to localStorage:', result.error?.message)

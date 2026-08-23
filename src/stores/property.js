@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { isSupabaseConfigured } from '@/config/supabase'
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/services/api'
 import { mockProperties } from '@/data/mockData'
 
@@ -95,13 +94,6 @@ export const usePropertyStore = defineStore('property', {
       this.error = null
 
       try {
-        if (!isSupabaseConfigured()) {
-          console.log('🧪 Usando datos de prueba (mock data)')
-          await new Promise(resolve => setTimeout(resolve, 500))
-          this.properties = mockProperties.filter(p => p.ownerId === userId)
-          return { success: true, data: this.properties }
-        }
-
         const result = await apiGet('/properties', { mine: 'owner' })
         if (!result.success) {
           this.error = result.error?.message || 'Failed to fetch properties'
@@ -111,9 +103,9 @@ export const usePropertyStore = defineStore('property', {
         this.properties = (result.data || []).map(normalizeProperty)
         return { success: true, data: this.properties }
       } catch (error) {
-        console.warn('⚠️ Error fetching properties, using mock data:', error.message)
-        this.properties = mockProperties.filter(p => p.ownerId === userId)
-        return { success: true, data: this.properties }
+        console.warn('⚠️ Error fetching properties:', error.message)
+        this.error = error.message
+        return { success: false, error: error.message }
       } finally {
         this.loading = false
       }
@@ -124,21 +116,6 @@ export const usePropertyStore = defineStore('property', {
       this.error = null
 
       try {
-        if (!isSupabaseConfigured()) {
-          console.log('🧪 Buscando propiedad en datos de prueba')
-          await new Promise(resolve => setTimeout(resolve, 300))
-          const property = userId
-            ? mockProperties.find(p => p.id === propertyId && p.ownerId === userId)
-            : mockProperties.find(p => p.id === propertyId)
-
-          if (property) {
-            this.currentProperty = property
-            return { success: true, data: property }
-          }
-          this.error = 'Property not found'
-          return { success: false, error: this.error }
-        }
-
         const result = await apiGet(`/properties/${propertyId}`, undefined, { public: true })
         if (!result.success) {
           this.error = result.error?.code === 'NOT_FOUND'
@@ -150,14 +127,7 @@ export const usePropertyStore = defineStore('property', {
         this.currentProperty = normalizeProperty(result.data)
         return { success: true, data: this.currentProperty }
       } catch (error) {
-        console.warn('⚠️ Error fetching property, using mock data:', error.message)
-        const fallback = userId
-          ? mockProperties.find(p => p.id === propertyId && p.ownerId === userId)
-          : mockProperties.find(p => p.id === propertyId)
-        if (fallback) {
-          this.currentProperty = fallback
-          return { success: true, data: fallback }
-        }
+        console.warn('⚠️ Error fetching property:', error.message)
         this.error = error.message
         return { success: false, error: error.message }
       } finally {
@@ -170,22 +140,6 @@ export const usePropertyStore = defineStore('property', {
       this.error = null
 
       try {
-        if (!isSupabaseConfigured()) {
-          console.log('🧪 Modo demo: Propiedad creada (no se guardará al recargar)')
-          await new Promise(resolve => setTimeout(resolve, 500))
-          const newId = `mock-${Date.now()}`
-          const newProperty = {
-            id: newId,
-            ...propertyData,
-            ownerId: userId,
-            status: 'active',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-          this.properties.unshift(newProperty)
-          return { success: true, id: newId, message: 'Propiedad creada (modo demo)' }
-        }
-
         const payload = flattenProperty(propertyData)
         const result = await apiPost('/properties', payload)
         if (!result.success) {
@@ -210,20 +164,6 @@ export const usePropertyStore = defineStore('property', {
       this.error = null
 
       try {
-        if (!isSupabaseConfigured()) {
-          console.log('🧪 Modo demo: Propiedad actualizada (no se guardará al recargar)')
-          await new Promise(resolve => setTimeout(resolve, 500))
-          const index = this.properties.findIndex(p => p.id === propertyId)
-          if (index !== -1) {
-            this.properties[index] = {
-              ...this.properties[index],
-              ...propertyData,
-              updatedAt: new Date()
-            }
-          }
-          return { success: true, message: 'Propiedad actualizada (modo demo)' }
-        }
-
         const payload = flattenProperty(propertyData)
         const result = await apiPatch(`/properties/${propertyId}`, payload)
         if (!result.success) {
@@ -251,13 +191,6 @@ export const usePropertyStore = defineStore('property', {
       this.error = null
 
       try {
-        if (!isSupabaseConfigured()) {
-          console.log('🧪 Modo demo: Propiedad eliminada (no se guardará al recargar)')
-          await new Promise(resolve => setTimeout(resolve, 500))
-          this.properties = this.properties.filter(p => p.id !== propertyId)
-          return { success: true, message: 'Propiedad eliminada (modo demo)' }
-        }
-
         const result = await apiDelete(`/properties/${propertyId}`)
         if (!result.success) {
           this.error = result.error?.message || 'Failed to delete property'

@@ -1,4 +1,3 @@
-import { isSupabaseConfigured } from '@/config/supabase'
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/services/api'
 
 const STORAGE_KEY = 'reservations'
@@ -55,40 +54,6 @@ function updateStoredReservation(reservationId, updater) {
 
 export async function createReservation(reservationData) {
   try {
-    if (!isSupabaseConfigured()) {
-      const reservations = loadReservations()
-      const reservation = {
-        id: `demo-${Date.now()}`,
-        propertyId: reservationData.propertyId,
-        ownerId: reservationData.ownerId,
-        guestId: reservationData.guestId,
-        property: reservationData.property || {
-          id: reservationData.propertyId,
-          title: '',
-          location: '',
-          image: ''
-        },
-        guest: {
-          name: reservationData.guestName || '',
-          email: reservationData.guestEmail || '',
-          phone: reservationData.guestPhone || ''
-        },
-        checkIn: reservationData.checkIn,
-        checkOut: reservationData.checkOut,
-        nights: reservationData.nights ?? 0,
-        guests: reservationData.guests,
-        basePrice: reservationData.basePrice ?? 0,
-        cleaningFee: reservationData.cleaningFee ?? 0,
-        totalPrice: reservationData.total ?? 0,
-        message: reservationData.message || '',
-        status: 'pending',
-        createdAt: Date.now()
-      }
-      reservations.unshift(reservation)
-      saveReservations(reservations)
-      return { success: true, reservation }
-    }
-
     const payload = {
       propertyId: reservationData.propertyId,
       checkIn: reservationData.checkIn,
@@ -118,54 +83,37 @@ export async function createReservation(reservationData) {
 
 export async function getOwnerReservations(ownerId, statusFilter = null) {
   try {
-    if (!isSupabaseConfigured()) {
-      const reservations = loadReservations().filter(r => r.ownerId === ownerId)
-      if (statusFilter && statusFilter !== 'all') {
-        return reservations.filter(r => r.status === statusFilter)
-      }
-      return reservations
-    }
-
     const params = { mine: 'owner' }
     if (statusFilter && statusFilter !== 'all') params.status = statusFilter
 
     const result = await apiGet('/reservations', params)
     if (!result.success) {
-      console.warn('⚠️ Error fetching owner reservations, using localStorage:', result.error?.message)
-      return loadReservations().filter(r => r.ownerId === ownerId)
+      console.warn('⚠️ Error fetching owner reservations:', result.error?.message)
+      return []
     }
     return (result.data || []).map(normalizeReservation)
   } catch (error) {
     console.error('Error getting owner reservations:', error)
-    return loadReservations().filter(r => r.ownerId === ownerId)
+    return []
   }
 }
 
 export async function getReservation(reservationId) {
   try {
-    if (!isSupabaseConfigured()) {
-      return loadReservations().find(r => r.id === reservationId) || null
-    }
-
     const result = await apiGet(`/reservations/${reservationId}`)
     if (!result.success) {
-      console.warn('⚠️ Error fetching reservation, using localStorage:', result.error?.message)
-      return loadReservations().find(r => r.id === reservationId) || null
+      console.warn('⚠️ Error fetching reservation:', result.error?.message)
+      return null
     }
     return normalizeReservation(result.data)
   } catch (error) {
     console.error('Error getting reservation:', error)
-    return loadReservations().find(r => r.id === reservationId) || null
+    return null
   }
 }
 
 export async function updateReservation(reservationId, updates) {
   try {
-    if (!isSupabaseConfigured()) {
-      updateStoredReservation(reservationId, r => ({ ...r, ...updates }))
-      return { id: reservationId, ...updates }
-    }
-
     const result = await apiPatch(`/reservations/${reservationId}`, updates)
     if (!result.success) {
       return { success: false, error: result.error?.message || 'Failed to update reservation' }
@@ -181,11 +129,6 @@ export async function updateReservation(reservationId, updates) {
 
 export async function confirmReservation(reservationId) {
   try {
-    if (!isSupabaseConfigured()) {
-      updateStoredReservation(reservationId, r => ({ ...r, status: 'confirmed', confirmedAt: Date.now() }))
-      return { success: true, reservation: loadReservations().find(r => r.id === reservationId) }
-    }
-
     const result = await apiPatch(`/reservations/${reservationId}/status`, { status: 'confirmed' })
     if (!result.success) {
       return { success: false, error: result.error?.message || 'Failed to confirm reservation' }
@@ -201,16 +144,6 @@ export async function confirmReservation(reservationId) {
 
 export async function rejectReservation(reservationId, reason = '') {
   try {
-    if (!isSupabaseConfigured()) {
-      updateStoredReservation(reservationId, r => ({
-        ...r,
-        status: 'rejected',
-        rejectionReason: reason,
-        rejectedAt: Date.now()
-      }))
-      return { success: true, reservation: loadReservations().find(r => r.id === reservationId) }
-    }
-
     const result = await apiPatch(`/reservations/${reservationId}/status`, { status: 'rejected', reason })
     if (!result.success) {
       return { success: false, error: result.error?.message || 'Failed to reject reservation' }
@@ -226,16 +159,6 @@ export async function rejectReservation(reservationId, reason = '') {
 
 export async function cancelReservation(reservationId, cancelledBy = 'owner') {
   try {
-    if (!isSupabaseConfigured()) {
-      updateStoredReservation(reservationId, r => ({
-        ...r,
-        status: 'cancelled',
-        cancelledBy,
-        cancelledAt: Date.now()
-      }))
-      return { success: true, reservation: loadReservations().find(r => r.id === reservationId) }
-    }
-
     const result = await apiPatch(`/reservations/${reservationId}/status`, { status: 'cancelled' })
     if (!result.success) {
       return { success: false, error: result.error?.message || 'Failed to cancel reservation' }
@@ -251,12 +174,6 @@ export async function cancelReservation(reservationId, cancelledBy = 'owner') {
 
 export async function deleteReservation(reservationId) {
   try {
-    if (!isSupabaseConfigured()) {
-      const reservations = loadReservations().filter(r => r.id !== reservationId)
-      saveReservations(reservations)
-      return { success: true, id: reservationId }
-    }
-
     const result = await apiDelete(`/reservations/${reservationId}`)
     if (!result.success) {
       return { success: false, error: result.error?.message || 'Failed to delete reservation' }
@@ -272,36 +189,28 @@ export async function deleteReservation(reservationId) {
 
 export async function getGuestReservations(guestId) {
   try {
-    if (!isSupabaseConfigured()) {
-      return loadReservations().filter(r => r.guestId === guestId)
-    }
-
     const result = await apiGet('/reservations', { mine: 'guest' })
     if (!result.success) {
-      console.warn('⚠️ Error fetching guest reservations, using localStorage:', result.error?.message)
-      return loadReservations().filter(r => r.guestId === guestId)
+      console.warn('⚠️ Error fetching guest reservations:', result.error?.message)
+      return []
     }
     return (result.data || []).map(normalizeReservation)
   } catch (error) {
     console.error('Error getting guest reservations:', error)
-    return loadReservations().filter(r => r.guestId === guestId)
+    return []
   }
 }
 
 export async function getPropertyReservations(propertyId) {
   try {
-    if (!isSupabaseConfigured()) {
-      return loadReservations().filter(r => r.propertyId === propertyId)
-    }
-
     const result = await apiGet('/reservations', { propertyId })
     if (!result.success) {
-      console.warn('⚠️ Error fetching property reservations, using localStorage:', result.error?.message)
-      return loadReservations().filter(r => r.propertyId === propertyId)
+      console.warn('⚠️ Error fetching property reservations:', result.error?.message)
+      return []
     }
     return (result.data || []).map(normalizeReservation)
   } catch (error) {
     console.error('Error getting property reservations:', error)
-    return loadReservations().filter(r => r.propertyId === propertyId)
+    return []
   }
 }

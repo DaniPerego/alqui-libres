@@ -7,7 +7,7 @@
 //     apartamento -> departamento, cabana -> cabana, loft -> otro
 //   - keeps rentalType values as-is ('temporario' | 'anual' -> PropertyRentalType)
 //   - remaps mock owner ids ('user123' / 'user456' / 'owner001') to the
-//     seeded Supabase owner UID (usuario@alquilibres.com)
+//     seeded owner UUID (usuario@alquilibres.com)
 //   - remaps review listingId -> seeded property id and message/review
 //     participants to the seeded guest/owner UIDs
 //   - seeds 3 demo users, plans (basic/pro/enterprise), platform_settings
@@ -62,17 +62,18 @@ export function buildSeedPayload(mockData, { userIds }) {
   } = mockData
 
   if (!userIds || !userIds.guest || !userIds.owner || !userIds.admin) {
-    throw new Error('buildSeedPayload requiere userIds = { guest, owner, admin } (Supabase UIDs)')
+    throw new Error('buildSeedPayload requiere userIds = { guest, owner, admin } (stable UUIDs)')
   }
 
   const ownerUid = buildOwnerIdMap(userIds.owner)
   const resolveOwner = (id) => ownerUid[id] || id
 
-  // --- users rows (id = Supabase Auth UID, D1) ---
+  // --- users rows (id = stable UUID, bcrypt password) ---
   const users = [
     {
       id: userIds.guest,
       email: mockGuestUser.email,
+      password: 'guest123', // Will be hashed by seed.js ensureDemoUsers
       displayName: mockGuestUser.displayName,
       role: 'guest',
       emailVerified: mockGuestUser.emailVerified !== false,
@@ -82,6 +83,7 @@ export function buildSeedPayload(mockData, { userIds }) {
     {
       id: userIds.owner,
       email: mockOwnerUser.email,
+      password: 'user123',
       displayName: mockOwnerUser.displayName,
       role: 'owner',
       emailVerified: mockOwnerUser.emailVerified !== false,
@@ -91,6 +93,7 @@ export function buildSeedPayload(mockData, { userIds }) {
     {
       id: userIds.admin,
       email: mockAdminUser.email,
+      password: 'admin123',
       displayName: mockAdminUser.displayName,
       role: 'admin',
       emailVerified: mockAdminUser.emailVerified !== false,
