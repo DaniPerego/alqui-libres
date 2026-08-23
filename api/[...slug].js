@@ -54,7 +54,6 @@ export const config = { runtime: 'nodejs' }
 // fixed segment (mine/me/delete) can never be captured by a :id route.
 const STATIC_ROUTES = [
   // 1 segment — collection endpoints.
-  { segments: ['auth'], handler: authHandler },
   { segments: ['messages'], handler: messagesHandler },
   { segments: ['notifications'], handler: notificationsHandler },
   { segments: ['payments'], handler: paymentsHandler },
@@ -81,6 +80,7 @@ const STATIC_ROUTES = [
 // segments are listed first for readability; matching requires an exact
 // length, so they cannot collide.
 const DYNAMIC_ROUTES = [
+  { segments: ['auth', ':action'], handler: authHandler },
   { segments: ['reservations', ':id', 'status'], handler: reservationsIdStatusHandler },
   { segments: ['messages', ':id'], handler: messagesIdHandler },
   { segments: ['notifications', ':id'], handler: notificationsIdHandler },
