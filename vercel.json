@@ -5,7 +5,6 @@
   "installCommand": "npm install",
   "functions": {
     "api/[...slug].js": {
-      "runtime": "@vercel/node@3",
       "maxDuration": 30
     }
   },
