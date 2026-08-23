@@ -1,5 +1,5 @@
-import { prisma } from '../lib/prisma.js'
-import { HttpError, sendError, sendJson, readJsonBody } from '../lib/http.js'
+import { prisma } from './lib/prisma.js'
+import { HttpError, sendError, sendJson, readJsonBody } from './lib/http.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { randomUUID } from 'crypto'
