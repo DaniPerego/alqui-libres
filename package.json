@@ -6,8 +6,9 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "vite",
-    "build": "vite build",
+    "build": "prisma generate && vite build",
     "preview": "vite preview",
     "prisma": "prisma",
     "seed": "prisma db seed",
