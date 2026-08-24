@@ -310,6 +310,55 @@ describe('payment store (Supabase mode)', () => {
     expect(useAuthStore().user.subscription.planId).toBe('basic')
   })
 
+  it('reactivateSubscription PATCHea /subscriptions/{id} con reactivate y deja la sub pending', async () => {
+    const cancelledSub = { ...API_SUBSCRIPTION, status: 'cancelled', cancelledAt: '2026-07-01T00:00:00.000Z' }
+    mocks.apiGet.mockResolvedValueOnce({ success: true, data: { data: cancelledSub } })
+    mocks.apiPatch.mockResolvedValueOnce({
+      success: true,
+      data: {
+        id: 'uuid-sub-1', planId: 'pro', planName: 'Plan Profesional', status: 'pending',
+        preferenceId: null, cancelledAt: null, autoRenew: true
+      }
+    })
+    const store = usePaymentStore()
+    await store.fetchCurrentSubscription()
+
+    const result = await store.reactivateSubscription()
+
+    expect(mocks.apiPatch).toHaveBeenCalledWith('/subscriptions/uuid-sub-1', { status: 'reactivate' })
+    expect(result.success).toBe(true)
+    expect(result.message).toContain('Completá el pago')
+    expect(store.currentSubscription.status).toBe('pending')
+    expect(useAuthStore().user.subscription.status).toBe('pending')
+  })
+
+  it('reactivateSubscription con sub demo (sub_) no PATCHea, solo fallback local', async () => {
+    loginDemoUser()
+    const store = usePaymentStore()
+    await store.fetchCurrentSubscription()
+    // Cancel locally first
+    store.currentSubscription.status = 'cancelled'
+
+    const result = await store.reactivateSubscription()
+
+    expect(mocks.apiPatch).not.toHaveBeenCalled()
+    expect(result.success).toBe(true)
+    expect(store.currentSubscription.status).toBe('active')
+    expect(useAuthStore().user.subscription.status).toBe('active')
+  })
+
+  it('reactivateSubscription 409 -> No se puede reactivar una suscripción que no está cancelada', async () => {
+    mocks.apiGet.mockResolvedValueOnce({ success: true, data: { data: API_SUBSCRIPTION } })
+    mocks.apiPatch.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'CONFLICT', message: 'Cannot reactivate a active subscription' }
+    })
+    const store = usePaymentStore()
+    await store.fetchCurrentSubscription()
+
+    await expect(store.reactivateSubscription()).rejects.toThrow('No se puede reactivar una suscripción que no está cancelada')
+  })
+
   it('fetchInvoices mapea pagos del backend a invoices', async () => {
     mocks.apiGet.mockResolvedValueOnce({
       success: true,

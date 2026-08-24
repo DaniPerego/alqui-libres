@@ -129,6 +129,20 @@ export const usePaymentStore = defineStore('payment', () => {
     }
   }
 
+  // Maps an api.js error contract onto a user-facing message for reactivate.
+  function mapReactivateError(apiError) {
+    switch (apiError?.code) {
+      case 'CONFLICT':
+        return 'No se puede reactivar una suscripción que no está cancelada'
+      case 'NOT_FOUND':
+        return 'Suscripción no encontrada'
+      case 'UNAUTHORIZED':
+        return 'Sesión expirada. Iniciá sesión de nuevo.'
+      default:
+        return apiError?.message || 'Error al reactivar suscripción'
+    }
+  }
+
   // Demo-mode mock preference (kept only when the API is unavailable).
   function buildMockPreference(plan) {
     return {
@@ -374,8 +388,25 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      // TODO: backend reactivation (PATCH /api/subscriptions/{id} with
-      // status active) is not implemented yet — keep the local demo fallback.
+      // Demo subscriptions carry a `sub_` id and must never be PATCHed to the
+      // backend. Only real rows (uuid) go through the API.
+      const realId = currentSubscription.value?.id && !currentSubscription.value.id.startsWith('sub_')
+        ? currentSubscription.value.id
+        : null
+
+      if (isApiAvailable() && realId) {
+        const result = await apiPatch(`/subscriptions/${realId}`, { status: 'reactivate' })
+        if (!result.success) {
+          throw new Error(mapReactivateError(result.error))
+        }
+        // The subscription is now pending; a fresh MercadoPago payment is
+        // required to activate it, so the frontend redirects to checkout.
+        currentSubscription.value = normalizeSubscription(result.data)
+        syncAuthSubscription(result.data)
+        return { success: true, message: 'Suscripción reactivada. Completá el pago para activarla.' }
+      }
+
+      // Demo fallback (no API, or a local `sub_` row): simulate locally.
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       if (currentSubscription.value) {
@@ -391,7 +422,7 @@ export const usePaymentStore = defineStore('payment', () => {
       return { success: true, message: 'Suscripción reactivada correctamente' }
     } catch (err) {
       console.error('Error reactivating subscription:', err)
-      error.value = 'Error al reactivar suscripción'
+      error.value = err.message || 'Error al reactivar suscripción'
       throw err
     } finally {
       loading.value = false

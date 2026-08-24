@@ -13,18 +13,28 @@
 //                 preference. The frontend calls POST /api/mercadopago/preference
 //                 on checkout, which reuses this pending row via
 //                 external_reference = subscription.id.
+//   reactivate  — cancelled -> pending on the SAME plan; clears preferenceId
+//                 and creates a new pending Payment. The frontend then routes
+//                 to checkout to complete the MercadoPago payment.
 import { prisma } from '../lib/prisma.js'
 import { HttpError, asyncRoute, readJsonBody } from '../lib/http.js'
 import { requireAuth } from '../lib/auth.js'
 
 export const config = { runtime: 'nodejs' }
 
-// Transitions implemented in this batch: cancel + plan change.
-const TRANSITIONS = { cancelled: true, plan_change: true }
+// Transitions implemented in this batch: cancel + plan change + reactivate.
+const TRANSITIONS = { cancelled: true, plan_change: true, reactivate: true }
 
 // Both transitions only run on a live subscription; cancelled/expired rows are
-// immutable (409).
-function assertChangeable(subscription) {
+// immutable (409) — except reactivate, which only runs on cancelled rows.
+function assertChangeable(subscription, target) {
+  if (target === 'reactivate') {
+    // Reactivate is only allowed on cancelled subscriptions.
+    if (subscription.status !== 'cancelled') {
+      throw new HttpError('CONFLICT', `Cannot reactivate a ${subscription.status} subscription`, 409)
+    }
+    return
+  }
   if (subscription.status === 'cancelled') {
     throw new HttpError('CONFLICT', 'Subscription is already cancelled', 409)
   }
@@ -57,7 +67,39 @@ export default asyncRoute(async (req, res) => {
   if (!TRANSITIONS[target]) {
     throw new HttpError('VALIDATION', `Invalid status transition: ${target}`, 400)
   }
-  assertChangeable(subscription)
+  assertChangeable(subscription, target)
+
+  if (target === 'reactivate') {
+    // Reactivate a cancelled subscription: reset to pending on the SAME plan,
+    // clear the old preference id, and create a new pending Payment row.
+    // The frontend then routes to checkout to complete the MercadoPago payment.
+    const updated = await prisma.$transaction(async (tx) => {
+      const sub = await tx.subscription.update({
+        where: { id },
+        data: {
+          status: 'pending',
+          preferenceId: null,
+          cancelledAt: null,
+        },
+      })
+      await tx.payment.create({
+        data: {
+          userId: subscription.userId,
+          userEmail: subscription.userEmail,
+          subscriptionId: subscription.id,
+          planId: subscription.planId,
+          planName: subscription.planName,
+          amount: subscription.planPrice,
+          currency: 'ARS',
+          paymentMethod: 'mercadopago',
+          status: 'pending',
+          externalReference: subscription.id,
+        },
+      })
+      return sub
+    })
+    return res.status(200).json(updated)
+  }
 
   if (target === 'plan_change') {
     const planId = body?.planId

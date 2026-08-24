@@ -8,9 +8,9 @@
         <p>Cargando información...</p>
       </div>
 
-      <div v-else-if="!paymentStore.hasActiveSubscription" class="empty-state card">
+      <div v-else-if="!paymentStore.currentSubscription" class="empty-state card">
         <div class="empty-icon">📋</div>
-        <h2>No tienes una suscripción activa</h2>
+        <h2>No tienes una suscripción</h2>
         <p>Elige un plan para comenzar a publicar propiedades</p>
         <button @click="showPlansModal = true" class="btn btn-primary">
           Ver Planes Disponibles
@@ -39,9 +39,17 @@
               <span class="detail-label">📅 Fecha de inicio:</span>
               <span class="detail-value">{{ formatDate(paymentStore.currentSubscription?.startedAt) }}</span>
             </div>
-            <div class="detail-item">
+            <div v-if="paymentStore.currentSubscription?.status !== 'cancelled'" class="detail-item">
               <span class="detail-label">🔄 Próxima renovación:</span>
               <span class="detail-value">{{ formatDate(paymentStore.currentSubscription?.expiresAt) }}</span>
+            </div>
+            <div v-if="paymentStore.currentSubscription?.status === 'cancelled'" class="detail-item">
+              <span class="detail-label">❌ Cancelada:</span>
+              <span class="detail-value">{{ formatDate(paymentStore.currentSubscription?.cancelledAt) }}</span>
+            </div>
+            <div v-if="paymentStore.currentSubscription?.status === 'pending'" class="detail-item pending-notice">
+              <span class="detail-label">⏳ Pendiente:</span>
+              <span class="detail-value">Completá el pago para activar tu suscripción</span>
             </div>
           </div>
 
@@ -55,11 +63,17 @@
           </div>
 
           <div class="plan-actions">
-            <button @click="showPlansModal = true" class="btn btn-primary">
+            <button v-if="paymentStore.currentSubscription?.status === 'pending'" @click="handleCheckout" class="btn btn-primary">
+              Completar Pago
+            </button>
+            <button v-if="paymentStore.currentSubscription?.status === 'active'" @click="showPlansModal = true" class="btn btn-primary">
               Cambiar Plan
             </button>
             <button v-if="paymentStore.currentSubscription?.status === 'active'" @click="handleCancelSubscription" class="btn btn-outline">
               Cancelar Suscripción
+            </button>
+            <button v-if="paymentStore.currentSubscription?.status === 'cancelled'" @click="handleReactivateSubscription" class="btn btn-primary">
+              Reactivar Suscripción
             </button>
           </div>
         </div>
@@ -133,13 +147,14 @@ const subscriptionStatusClass = computed(() => {
   return {
     'active': status === 'active',
     'cancelled': status === 'cancelled',
-    'expired': status === 'expired'
+    'expired': status === 'expired',
+    'pending': status === 'pending'
   }
 })
 
 const subscriptionStatusText = computed(() => {
   const status = paymentStore.currentSubscription?.status
-  const statusMap = { 'active': 'Activa', 'cancelled': 'Cancelada', 'expired': 'Expirada' }
+  const statusMap = { 'active': 'Activa', 'cancelled': 'Cancelada', 'expired': 'Expirada', 'pending': 'Pendiente de pago' }
   return statusMap[status] || status
 })
 
@@ -152,19 +167,19 @@ const formatDate = (dateString) => {
 
 const handleSelectPlan = async (planId) => {
   try {
-    // Si ya tiene suscripción, cambiar directamente
+    // If user has an active subscription, change plan directly
     if (paymentStore.currentSubscription && paymentStore.currentSubscription.status === 'active') {
       if (confirm('¿Confirmas el cambio de plan? Se aplicará al pagar.')) {
         const result = await paymentStore.changePlan(planId)
         showPlansModal.value = false
-        // El pago activa el cambio: la sub queda pending y el checkout crea la
-        // nueva preferencia de MercadoPago que la reactiva.
+        // The payment activates the change: the sub becomes pending and checkout
+        // creates the new MercadoPago preference that reactivates it.
         if (result?.success) {
           router.push({ name: 'checkout', query: { plan: planId } })
         }
       }
     } else {
-      // Si no tiene suscripción, ir al checkout
+      // No active subscription or cancelled: go to checkout
       showPlansModal.value = false
       router.push({ name: 'checkout', query: { plan: planId } })
     }
@@ -181,6 +196,23 @@ const handleCancelSubscription = async () => {
   } catch (error) {
     alert('Error: ' + error.message)
   }
+}
+
+const handleReactivateSubscription = async () => {
+  if (!confirm('¿Reactivar suscripción? Se te redirigirá al pago.')) return
+  try {
+    const result = await paymentStore.reactivateSubscription()
+    if (result?.success) {
+      // The subscription is now pending; redirect to checkout to complete payment.
+      router.push({ name: 'checkout', query: { plan: paymentStore.currentSubscription?.planId } })
+    }
+  } catch (error) {
+    alert('Error: ' + error.message)
+  }
+}
+
+const handleCheckout = () => {
+  router.push({ name: 'checkout', query: { plan: paymentStore.currentSubscription?.planId } })
 }
 
 onMounted(() => {
@@ -206,11 +238,13 @@ onMounted(() => {
 .status-badge { padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; }
 .status-badge.active { background: #d1fae5; color: #065f46; }
 .status-badge.cancelled { background: #fee2e2; color: #991b1b; }
+.status-badge.pending { background: #fef3c7; color: #92400e; }
 .plan-details { display: grid; gap: 1rem; margin-bottom: 2rem; }
 .detail-item { display: flex; justify-content: space-between; padding: 0.75rem; background: #f8fafc; border-radius: 0.5rem; }
 .detail-label { font-weight: 500; color: #475569; }
 .plan-features { margin-bottom: 2rem; }
 .plan-features ul { list-style: disc; padding-left: 1.5rem; }
+.pending-notice { background: #fef3c7 !important; border: 1px solid #fcd34d; }
 .plan-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 1000; }
 .modal-content { background: white; border-radius: 0.75rem; max-width: 1200px; width: 100%; max-height: 90vh; overflow-y: auto; }
