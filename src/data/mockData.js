@@ -55,7 +55,7 @@ export const mockProperties = [
     mainImage: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
     images: [
       'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-      'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800',
+      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
       'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'
     ],
     pricing: {
@@ -272,9 +272,9 @@ export const mockPendingProperties = [
     description: 'Departamento pequeño pero funcional, cerca de la universidad. Precio económico para estudiantes. Consultar por estadías mínimas.',
     propertyType: 'departamento',
     rentalType: 'anual',
-    mainImage: 'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800',
+    mainImage: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
     images: [
-      'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800'
+      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'
     ],
     pricing: {
       basePrice: 450,
@@ -442,9 +442,9 @@ export const mockAnnualProperty = {
   description: 'Amplio departamento en zona residencial tranquila. Ideal para familias o profesionales que buscan estabilidad. Contrato anual con opción a renovación. Agua y expensas incluidas.',
   propertyType: 'apartamento',
   rentalType: 'anual',
-  mainImage: 'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800',
+  mainImage: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
   images: [
-    'https://images.unsplash.com/photo-1502672260066-6bc35f0a1e1e?w=800',
+    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
     'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'
   ],
   pricing: {
