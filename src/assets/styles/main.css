@@ -380,3 +380,125 @@ body {
 .toast-error { border-left: 4px solid var(--danger-color); }
 .toast-warning { border-left: 4px solid var(--warning-color); }
 .toast-info { border-left: 4px solid var(--primary-color); }
+
+/* ========================================
+   DesarrolloWeb-pdl Design Pattern
+   ======================================== */
+
+/* Section label — mono, uppercase, tracking amplio, color accent */
+.section-label {
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Section title — bold, grande */
+.section-heading {
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--gray-900);
+  margin-bottom: var(--spacing-2xl);
+  line-height: 1.2;
+}
+
+@media (min-width: 640px) {
+  .section-heading {
+    font-size: 2.25rem;
+  }
+}
+
+/* Section divider — borde sutil entre secciones */
+.section-divider {
+  border-top: 1px solid var(--gray-200);
+}
+
+/* Section block — padding generoso consistente */
+.section-block {
+  padding: var(--spacing-3xl) var(--spacing-lg);
+}
+
+@media (min-width: 640px) {
+  .section-block {
+    padding: 5rem var(--spacing-xl);
+  }
+}
+
+/* Content container — max-width centrado */
+.content-container {
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* PDL Logo — 4 cuadrados en grilla 2x2 */
+.pdl-logo {
+  display: inline-flex;
+  transition: transform var(--transition-base);
+}
+
+.pdl-logo:hover {
+  transform: scale(1.05);
+}
+
+.pdl-logo svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Logo sizes */
+.pdl-logo-sm { width: 28px; height: 28px; }
+.pdl-logo-md { width: 36px; height: 36px; }
+.pdl-logo-lg { width: 48px; height: 48px; }
+
+/* Footer pattern — limpio, centrado, borde superior */
+.footer-pdl {
+  border-top: 1px solid var(--gray-200);
+  padding: var(--spacing-xl) var(--spacing-lg);
+  text-align: center;
+}
+
+.footer-pdl p {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+}
+
+/* Link hover pattern — underline slide */
+.link-hover {
+  position: relative;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.link-hover::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width var(--transition-base);
+}
+
+.link-hover:hover::after {
+  width: 100%;
+}
+
+/* Card pattern — borde sutil, hover con borde accent */
+.card-pdl {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.card-pdl:hover {
+  border-color: rgba(37, 99, 235, 0.3);
+  box-shadow: var(--shadow-md);
+}

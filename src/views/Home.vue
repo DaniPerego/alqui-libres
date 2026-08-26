@@ -112,9 +112,10 @@
     </section>
 
     <!-- Featured Properties -->
-    <section class="featured">
+    <section class="featured section-divider">
       <div class="container">
-        <h2 class="section-title">Propiedades Destacadas</h2>
+        <p class="section-label">Explorar</p>
+        <h2 class="section-heading">Propiedades Destacadas</h2>
         <div class="featured-grid">
           <div
             v-for="property in filteredFeatured"
@@ -152,9 +153,10 @@
     </section>
 
     <!-- Features Section -->
-    <section class="features">
+    <section class="features section-divider">
       <div class="container">
-        <h2 class="section-title">¿Por qué AlquiLibres?</h2>
+        <p class="section-label">Beneficios</p>
+        <h2 class="section-heading">¿Por qué AlquiLibres?</h2>
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-icon"><Wallet :size="32" /></div>
@@ -193,10 +195,11 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="cta">
+    <section class="cta section-divider">
       <div class="container">
         <div class="cta-content">
-          <h2 class="cta-title">¿Tienes una propiedad para alquilar?</h2>
+          <p class="section-label">Propietarios</p>
+          <h2 class="section-heading">¿Tienes una propiedad para alquilar?</h2>
           <p class="cta-text">
             Únete a AlquiLibres y ahorra hasta 25% en comisiones.<br>
             Suscripción desde $XX/mes. Sin costos ocultos.
@@ -485,7 +488,7 @@ const viewProperty = (id) => {
   padding: var(--spacing-2xl) 0;
 }
 
-.section-title {
+.section-heading {
   font-size: 2rem;
   font-weight: 700;
   text-align: center;
@@ -573,7 +576,7 @@ const viewProperty = (id) => {
     font-size: 1.875rem;
   }
 
-  .section-title {
+  .section-heading {
     font-size: 1.5rem;
   }
 

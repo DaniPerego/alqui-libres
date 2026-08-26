@@ -3,7 +3,14 @@
     <nav class="container">
       <div class="nav-wrapper">
         <router-link to="/" class="logo">
-          <Home :size="24" />
+          <span class="pdl-logo pdl-logo-md">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+              <rect x="4" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="1"/>
+              <rect x="17" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="0.7"/>
+              <rect x="4" y="17" width="11" height="11" rx="2" fill="currentColor" opacity="0.5"/>
+              <rect x="17" y="17" width="11" height="11" rx="2" fill="currentColor" opacity="0.3"/>
+            </svg>
+          </span>
           <span class="logo-text">AlquiLibres</span>
         </router-link>
         
@@ -42,7 +49,14 @@
         <div v-if="mobileMenuOpen" class="mobile-menu">
           <div class="mobile-header">
             <div class="mobile-logo">
-              <Home :size="24" />
+              <span class="pdl-logo pdl-logo-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+                  <rect x="4" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="1"/>
+                  <rect x="17" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="0.7"/>
+                  <rect x="4" y="17" width="11" height="11" rx="2" fill="currentColor" opacity="0.5"/>
+                  <rect x="17" y="17" width="11" height="11" rx="2" fill="currentColor" opacity="0.3"/>
+                </svg>
+              </span>
               <span>AlquiLibres</span>
             </div>
             <button @click="mobileMenuOpen = false" class="close-btn">
@@ -122,7 +136,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { Home, Search, User, Crown, LayoutDashboard, LogOut, Menu, X, Plus, MessageSquare, CreditCard, Building, Sparkles } from '@lucide/vue'
+import { Search, User, Crown, LayoutDashboard, LogOut, Menu, X, Plus, MessageSquare, CreditCard, Building, Sparkles } from '@lucide/vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
