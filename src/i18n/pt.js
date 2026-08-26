@@ -158,7 +158,7 @@ export default {
     cookies: 'Política de Cookies',
     support: 'Suporte',
     helpCenter: 'Central de Ajuda',
-    email: 'suporte@alquilibres.com',
+    email: "suporte{'@'}alquilibres.com",
     rights: 'Todos os direitos reservados.'
   },
   property: {
