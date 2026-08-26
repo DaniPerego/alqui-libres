@@ -5,11 +5,17 @@
         <router-link to="/" class="logo">
           <span class="pdl-logo pdl-logo-md">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-              <rect x="4" y="4" width="11" height="11" rx="2" fill="#e85d04"/>
-              <rect x="17" y="4" width="11" height="11" rx="2" fill="#e85d04" opacity="0.7"/>
-              <rect x="4" y="17" width="11" height="11" rx="2" fill="#e85d04" opacity="0.5"/>
-              <rect x="17" y="17" width="11" height="11" rx="2" fill="#e85d04" opacity="0.3"/>
-              <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z" fill="#2563eb" stroke="#2563eb" stroke-width="0.5" stroke-linejoin="round"/>
+              <defs>
+                <clipPath id="house-header">
+                  <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z"/>
+                </clipPath>
+              </defs>
+              <g clip-path="url(#house-header)">
+                <rect x="4" y="4" width="12" height="14" fill="#2563eb" opacity="1"/>
+                <rect x="16" y="4" width="12" height="14" fill="#2563eb" opacity="0.7"/>
+                <rect x="4" y="18" width="12" height="14" fill="#2563eb" opacity="0.5"/>
+                <rect x="16" y="18" width="12" height="14" fill="#2563eb" opacity="0.3"/>
+              </g>
             </svg>
           </span>
           <span class="logo-text">AlquiLibres</span>
@@ -58,11 +64,17 @@
             <div class="mobile-logo">
               <span class="pdl-logo pdl-logo-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-                  <rect x="4" y="4" width="11" height="11" rx="2" fill="rgba(255,255,255,0.3)"/>
-                  <rect x="17" y="4" width="11" height="11" rx="2" fill="rgba(255,255,255,0.2)"/>
-                  <rect x="4" y="17" width="11" height="11" rx="2" fill="rgba(255,255,255,0.1)"/>
-                  <rect x="17" y="17" width="11" height="11" rx="2" fill="rgba(255,255,255,0.05)"/>
-                  <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/>
+                  <defs>
+                    <clipPath id="house-mobile">
+                      <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z"/>
+                    </clipPath>
+                  </defs>
+                  <g clip-path="url(#house-mobile)">
+                    <rect x="4" y="4" width="12" height="14" fill="white" opacity="1"/>
+                    <rect x="16" y="4" width="12" height="14" fill="white" opacity="0.7"/>
+                    <rect x="4" y="18" width="12" height="14" fill="white" opacity="0.5"/>
+                    <rect x="16" y="18" width="12" height="14" fill="white" opacity="0.3"/>
+                  </g>
                 </svg>
               </span>
               <span>AlquiLibres</span>

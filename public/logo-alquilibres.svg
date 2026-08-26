@@ -1,9 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <!-- 4 cubos sutiles de fondo (patrón PDL) -->
-  <rect x="4" y="4" width="11" height="11" rx="2" fill="#e85d04"/>
-  <rect x="17" y="4" width="11" height="11" rx="2" fill="#e85d04" opacity="0.7"/>
-  <rect x="4" y="17" width="11" height="11" rx="2" fill="#e85d04" opacity="0.5"/>
-  <rect x="17" y="17" width="11" height="11" rx="2" fill="#e85d04" opacity="0.3"/>
-  <!-- Casa AlquiLibres -->
-  <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z" fill="#2563eb" stroke="#2563eb" stroke-width="0.5" stroke-linejoin="round"/>
+  <defs>
+    <clipPath id="house">
+      <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z"/>
+    </clipPath>
+  </defs>
+  <!-- 4 cuadrantes dentro de la silueta de la casa -->
+  <g clip-path="url(#house)">
+    <rect x="4" y="4" width="12" height="14" fill="#2563eb" opacity="1"/>
+    <rect x="16" y="4" width="12" height="14" fill="#2563eb" opacity="0.7"/>
+    <rect x="4" y="18" width="12" height="14" fill="#2563eb" opacity="0.5"/>
+    <rect x="16" y="18" width="12" height="14" fill="#2563eb" opacity="0.3"/>
+  </g>
 </svg>
