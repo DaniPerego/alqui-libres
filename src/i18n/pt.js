@@ -60,7 +60,7 @@ export default {
   cta: {
     label: 'Proprietários',
     title: 'Tem um imóvel para alugar?',
-    text: 'Junte-se ao AlquiLibres e economize até 25% em comissões.\nAssinatura a partir de $XX/mês. Sem custos ocultos.',
+    text: 'Junte-se ao AlquiLibres e economize até 25% em comissões.\nAssinatura a partir de 5000/mês. Sem custos ocultos.',
     button: 'Publicar Meu Imóvel'
   },
   search: {

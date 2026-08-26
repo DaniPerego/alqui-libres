@@ -60,7 +60,7 @@ export default {
   cta: {
     label: 'Propietarios',
     title: '¿Tienes una propiedad para alquilar?',
-    text: 'Únete a AlquiLibres y ahorra hasta 25% en comisiones.\nSuscripción desde $XX/mes. Sin costos ocultos.',
+    text: 'Únete a AlquiLibres y ahorra hasta 25% en comisiones.\nSuscripción desde 5000/mes. Sin costos ocultos.',
     button: 'Publicar Mi Propiedad'
   },
   search: {

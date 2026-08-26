@@ -60,7 +60,7 @@ export default {
   cta: {
     label: 'Owners',
     title: 'Have a property to rent?',
-    text: 'Join AlquiLibres and save up to 25% on commissions.\nSubscription from $XX/month. No hidden costs.',
+    text: 'Join AlquiLibres and save up to 25% on commissions.\nSubscription from 5000/month. No hidden costs.',
     button: 'List My Property'
   },
   search: {
