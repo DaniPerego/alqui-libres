@@ -2,11 +2,11 @@
   <div class="dashboard-home">
     <header class="dashboard-header">
       <div>
-        <h1>¡Hola, {{ userName }}!</h1>
-        <p class="subtitle">Resumen de tu actividad en AlquiLibres</p>
+        <h1>{{ t('dashboard.hello') }}, {{ userName }}!</h1>
+        <p class="subtitle">{{ t('dashboard.welcome') }}</p>
       </div>
       <router-link to="/panel/propiedades/nueva" class="btn btn-primary">
-        <Plus :size="20" /> Nueva Propiedad
+        <Plus :size="20" /> {{ t('dashboard.newProperty') }}
       </router-link>
     </header>
 
@@ -16,10 +16,10 @@
         <div class="metric-icon properties"><Home :size="24" /></div>
         <div class="metric-content">
           <h3 class="metric-value">{{ stats.totalProperties }}</h3>
-          <p class="metric-label">Propiedades Publicadas</p>
+          <p class="metric-label">{{ t('dashboard.propertiesPublished') }}</p>
           <div class="metric-detail">
-            <span class="active">{{ stats.activeProperties }} activas</span>
-            <span class="inactive">{{ stats.inactiveProperties }} inactivas</span>
+            <span class="active">{{ stats.activeProperties }} {{ t('dashboard.active') }}</span>
+            <span class="inactive">{{ stats.inactiveProperties }} {{ t('dashboard.inactive') }}</span>
           </div>
         </div>
       </div>
@@ -28,9 +28,9 @@
         <div class="metric-icon messages"><MessageSquare :size="24" /></div>
         <div class="metric-content">
           <h3 class="metric-value">{{ stats.unreadMessages }}</h3>
-          <p class="metric-label">Mensajes Sin Leer</p>
+          <p class="metric-label">{{ t('dashboard.unreadMessages') }}</p>
           <router-link v-if="stats.unreadMessages > 0" to="/panel/mensajes" class="metric-link">
-            Ver mensajes →
+            {{ t('dashboard.viewMessages') }} →
           </router-link>
         </div>
       </div>
@@ -39,7 +39,7 @@
         <div class="metric-icon subscription"><CreditCard :size="24" /></div>
         <div class="metric-content">
           <h3 class="metric-value">{{ stats.subscriptionDays }}</h3>
-          <p class="metric-label">Días de Suscripción</p>
+          <p class="metric-label">{{ t('dashboard.subscriptionDays') }}</p>
           <div class="metric-detail">
             <span :class="['status', subscriptionStatus]">
               {{ subscriptionStatusText }}
@@ -52,9 +52,9 @@
         <div class="metric-icon views"><Eye :size="24" /></div>
         <div class="metric-content">
           <h3 class="metric-value">{{ stats.totalViews }}</h3>
-          <p class="metric-label">Visualizaciones Totales</p>
+          <p class="metric-label">{{ t('dashboard.totalViews') }}</p>
           <p class="metric-trend">
-            <span class="trend-up">↑ +{{ stats.viewsThisWeek }}</span> esta semana
+            <span class="trend-up">↑ +{{ stats.viewsThisWeek }}</span> {{ t('dashboard.thisWeek') }}
           </p>
         </div>
       </div>
@@ -62,50 +62,50 @@
 
     <!-- Acciones Rápidas -->
     <section class="quick-actions-section">
-      <h2 class="section-title">Acciones Rápidas</h2>
+      <h2 class="section-title">{{ t('dashboard.quickActions') }}</h2>
       <div class="quick-actions-grid">
         <router-link to="/panel/propiedades/nueva" class="action-card">
           <div class="action-icon"><Plus :size="24" /></div>
-          <h3>Publicar Propiedad</h3>
-          <p>Agrega una nueva propiedad a tu catálogo</p>
+          <h3>{{ t('dashboard.publishProperty') }}</h3>
+          <p>{{ t('dashboard.publishDesc') }}</p>
         </router-link>
 
         <router-link to="/panel/propiedades" class="action-card">
           <div class="action-icon"><Edit :size="24" /></div>
-          <h3>Editar Propiedades</h3>
-          <p>Actualiza información de tus publicaciones</p>
+          <h3>{{ t('dashboard.editProperties') }}</h3>
+          <p>{{ t('dashboard.editDesc') }}</p>
         </router-link>
 
         <router-link to="/panel/mensajes" class="action-card">
           <div class="action-icon"><MessageSquare :size="24" /></div>
-          <h3>Ver Mensajes</h3>
-          <p>Responde a consultas de huéspedes</p>
+          <h3>{{ t('dashboard.viewMessagesAction') }}</h3>
+          <p>{{ t('dashboard.messagesDesc') }}</p>
           <span v-if="stats.unreadMessages > 0" class="badge">{{ stats.unreadMessages }}</span>
         </router-link>
 
         <router-link to="/panel/perfil" class="action-card">
           <div class="action-icon"><User :size="24" /></div>
-          <h3>Actualizar Perfil</h3>
-          <p>Gestiona tu información de contacto</p>
+          <h3>{{ t('dashboard.updateProfile') }}</h3>
+          <p>{{ t('dashboard.profileDesc') }}</p>
         </router-link>
 
         <router-link to="/panel/suscripcion" class="action-card">
           <div class="action-icon"><Crown :size="24" /></div>
-          <h3>Mi Suscripción</h3>
-          <p>Ver detalles y cambiar plan</p>
+          <h3>{{ t('dashboard.mySubscription') }}</h3>
+          <p>{{ t('dashboard.subscriptionDesc') }}</p>
         </router-link>
 
         <a href="https://wa.me/5493511234567" target="_blank" class="action-card support">
           <div class="action-icon"><HelpCircle :size="24" /></div>
-          <h3>Soporte</h3>
-          <p>¿Necesitas ayuda? Contáctanos</p>
+          <h3>{{ t('dashboard.support') }}</h3>
+          <p>{{ t('dashboard.supportDesc') }}</p>
         </a>
       </div>
     </section>
 
     <!-- Actividad Reciente -->
     <section class="recent-activity-section">
-      <h2 class="section-title">Actividad Reciente</h2>
+      <h2 class="section-title">{{ t('dashboard.recentActivity') }}</h2>
       <div class="activity-list">
         <div v-for="activity in recentActivity" :key="activity.id" class="activity-item">
           <div class="activity-icon" :class="activity.type">
@@ -124,48 +124,48 @@
 
         <div v-if="recentActivity.length === 0" class="empty-state">
           <ClipboardList :size="48" />
-          <p>No hay actividad reciente</p>
-          <p class="empty-hint">Las acciones que realices aparecerán aquí</p>
+          <p>{{ t('dashboard.noActivity') }}</p>
+          <p class="empty-hint">{{ t('dashboard.noActivityHint') }}</p>
         </div>
       </div>
     </section>
 
     <!-- Tips y Ayuda -->
     <section class="tips-section">
-      <h2 class="section-title"><Lightbulb :size="24" /> Consejos para Mejorar</h2>
+      <h2 class="section-title"><Lightbulb :size="24" /> {{ t('dashboard.tips') }}</h2>
       <div class="tips-grid">
         <div class="tip-card" v-if="!stats.hasProfileComplete">
           <div class="tip-header">
             <span class="tip-icon"><User :size="20" /></span>
-            <h3>Completa tu Perfil</h3>
+            <h3>{{ t('dashboard.completeProfile') }}</h3>
           </div>
-          <p>Agrega tus datos de contacto y redes sociales para generar más confianza con los huéspedes.</p>
-          <router-link to="/panel/perfil" class="tip-action">Completar ahora →</router-link>
+          <p>{{ t('dashboard.completeProfileDesc') }}</p>
+          <router-link to="/panel/perfil" class="tip-action">{{ t('dashboard.completeNow') }} →</router-link>
         </div>
 
         <div class="tip-card" v-if="stats.totalProperties === 0">
           <div class="tip-header">
             <span class="tip-icon"><Home :size="20" /></span>
-            <h3>Publica tu Primera Propiedad</h3>
+            <h3>{{ t('dashboard.publishFirst') }}</h3>
           </div>
-          <p>¡Comienza a ganar dinero! Agrega fotos atractivas y una descripción detallada.</p>
-          <router-link to="/panel/propiedades/nueva" class="tip-action">Publicar ahora →</router-link>
+          <p>{{ t('dashboard.publishFirstDesc') }}</p>
+          <router-link to="/panel/propiedades/nueva" class="tip-action">{{ t('dashboard.publishNow') }} →</router-link>
         </div>
 
         <div class="tip-card">
           <div class="tip-header">
             <span class="tip-icon"><Camera :size="20" /></span>
-            <h3>Fotos de Calidad</h3>
+            <h3>{{ t('dashboard.qualityPhotos') }}</h3>
           </div>
-          <p>Las propiedades con 5 o más fotos profesionales reciben un 40% más de consultas.</p>
+          <p>{{ t('dashboard.qualityPhotosDesc') }}</p>
         </div>
 
         <div class="tip-card">
           <div class="tip-header">
             <span class="tip-icon"><Zap :size="20" /></span>
-            <h3>Responde Rápido</h3>
+            <h3>{{ t('dashboard.respondFast') }}</h3>
           </div>
-          <p>Contesta mensajes en menos de 1 hora para aumentar tus posibilidades de reserva.</p>
+          <p>{{ t('dashboard.respondFastDesc') }}</p>
         </div>
       </div>
     </section>
@@ -176,6 +176,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAdminStore } from '@/stores/admin'
+import { useI18n } from 'vue-i18n'
 import {
   Plus,
   Home,
@@ -193,6 +194,7 @@ import {
   Zap
 } from '@lucide/vue'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const adminStore = useAdminStore()
 

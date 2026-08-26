@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- 4 cubos sutiles de fondo (patrón PDL) -->
+  <rect x="4" y="4" width="11" height="11" rx="2" fill="#2563eb" opacity="0.08"/>
+  <rect x="17" y="4" width="11" height="11" rx="2" fill="#2563eb" opacity="0.06"/>
+  <rect x="4" y="17" width="11" height="11" rx="2" fill="#2563eb" opacity="0.04"/>
+  <rect x="17" y="17" width="11" height="11" rx="2" fill="#2563eb" opacity="0.02"/>
+  <!-- Casa AlquiLibres -->
+  <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z" fill="#2563eb" stroke="#2563eb" stroke-width="0.5" stroke-linejoin="round"/>
+</svg>

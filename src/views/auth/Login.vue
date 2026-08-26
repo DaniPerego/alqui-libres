@@ -6,38 +6,38 @@
         <div v-if="isDemoMode" class="demo-info-card">
           <div class="demo-info-header">
             <span class="demo-icon"><FlaskConical :size="20" /></span>
-            <strong>Modo de Prueba</strong>
+            <strong>{{ t('auth.demoMode') }}</strong>
           </div>
           <p class="demo-info-text">
-            Usa cualquiera de estas credenciales para probar el sistema:
+            {{ t('auth.demoDescription') }}
           </p>
           <div class="demo-credentials">
             <div class="demo-credential-item">
-              <span class="demo-label">Huésped (alquila):</span>
+              <span class="demo-label">{{ t('auth.guest') }}</span>
               <code class="demo-value">huesped@alquilibres.com / guest123</code>
               <button @click="autofillDemo('huesped@alquilibres.com','guest123')" class="copy-btn" title="Autocompletar"><Zap :size="16" /></button>
             </div>
             <div class="demo-credential-item">
-              <span class="demo-label">Propietario (publica):</span>
+              <span class="demo-label">{{ t('auth.owner') }}</span>
               <code class="demo-value">usuario@alquilibres.com / user123</code>
               <button @click="autofillDemo('usuario@alquilibres.com','user123')" class="copy-btn" title="Autocompletar"><Zap :size="16" /></button>
             </div>
             <div class="demo-credential-item">
-              <span class="demo-label">Administrador:</span>
+              <span class="demo-label">{{ t('auth.admin') }}</span>
               <code class="demo-value">admin@alquilibres.com / admin123</code>
               <button @click="autofillDemo('admin@alquilibres.com','admin123')" class="copy-btn" title="Autocompletar"><Zap :size="16" /></button>
             </div>
           </div>
-          <p class="demo-warning"><AlertTriangle :size="16" /> Solo funcionan en modo demo (sin Firebase real)</p>
+          <p class="demo-warning"><AlertTriangle :size="16" /> {{ t('auth.demoWarning') }}</p>
         </div>
 
         <div class="auth-card card">
-          <h1 class="auth-title">Iniciar Sesi&#243;n</h1>
-          <p class="auth-subtitle">Accede a tu panel de control</p>
+          <h1 class="auth-title">{{ t('auth.loginTitle') }}</h1>
+          <p class="auth-subtitle">{{ t('auth.loginSubtitle') }}</p>
           
           <form @submit.prevent="handleSubmit" class="auth-form">
             <div class="form-group">
-              <label for="email" class="label"><Mail :size="18" /> Correo Electr&#243;nico</label>
+              <label for="email" class="label"><Mail :size="18" /> {{ t('auth.email') }}</label>
               <input 
                 id="email"
                 v-model="formData.email" 
@@ -49,7 +49,7 @@
             </div>
             
             <div class="form-group">
-              <label for="password" class="label"><Lock :size="18" /> Contrase&#241;a</label>
+              <label for="password" class="label"><Lock :size="18" /> {{ t('auth.password') }}</label>
               <input 
                 id="password"
                 v-model="formData.password" 
@@ -71,14 +71,14 @@
               class="btn btn-primary btn-lg" 
               :disabled="loading"
             >
-              <span v-if="!loading">Iniciar Sesi&#243;n</span>
-              <span v-else>Cargando...</span>
+              <span v-if="!loading">{{ t('auth.loginButton') }}</span>
+              <span v-else>{{ t('auth.loading') }}</span>
             </button>
           </form>
           
           <div class="auth-footer">
-            <p>&#191;No tienes cuenta? 
-              <router-link to="/registro" class="auth-link">Reg&#237;strate</router-link>
+            <p>{{ t('auth.noAccount') }} 
+              <router-link to="/registro" class="auth-link">{{ t('auth.register') }}</router-link>
             </p>
           </div>
         </div>
@@ -91,9 +91,11 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from 'vue-i18n'
 import { auth } from '@/config/firebase'
 import { FlaskConical, Zap, AlertTriangle, Mail, Lock } from '@lucide/vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 

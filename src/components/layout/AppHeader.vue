@@ -5,31 +5,38 @@
         <router-link to="/" class="logo">
           <span class="pdl-logo pdl-logo-md">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-              <rect x="4" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="1"/>
-              <rect x="17" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="0.7"/>
-              <rect x="4" y="17" width="11" height="11" rx="2" fill="currentColor" opacity="0.5"/>
-              <rect x="17" y="17" width="11" height="11" rx="2" fill="currentColor" opacity="0.3"/>
+              <rect x="4" y="4" width="11" height="11" rx="2" fill="#2563eb" opacity="0.08"/>
+              <rect x="17" y="4" width="11" height="11" rx="2" fill="#2563eb" opacity="0.06"/>
+              <rect x="4" y="17" width="11" height="11" rx="2" fill="#2563eb" opacity="0.04"/>
+              <rect x="17" y="17" width="11" height="11" rx="2" fill="#2563eb" opacity="0.02"/>
+              <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z" fill="#2563eb" stroke="#2563eb" stroke-width="0.5" stroke-linejoin="round"/>
             </svg>
           </span>
           <span class="logo-text">AlquiLibres</span>
         </router-link>
         
         <div class="nav-links">
-          <router-link to="/buscar" class="nav-link">Buscar</router-link>
+          <router-link to="/buscar" class="nav-link">{{ t('nav.search') }}</router-link>
           
           <template v-if="!authStore.isAuthenticated">
-            <router-link to="/login" class="nav-link">Iniciar Sesión</router-link>
-            <router-link to="/registro" class="btn btn-primary btn-sm">Publicar Propiedad</router-link>
+            <router-link to="/login" class="nav-link">{{ t('nav.login') }}</router-link>
+            <router-link to="/registro" class="btn btn-primary btn-sm">{{ t('nav.publish') }}</router-link>
           </template>
           
           <template v-else>
             <router-link v-if="authStore.user?.role === 'admin'" to="/admin" class="nav-link admin-link">
-              <Crown :size="18" /> Admin
+              <Crown :size="18" /> {{ t('nav.admin') }}
             </router-link>
-            <router-link v-if="authStore.user?.role === 'guest'" to="/panel/perfil" class="nav-link">Mi Perfil</router-link>
-            <router-link v-else-if="authStore.user?.role !== 'admin'" to="/panel" class="nav-link">Mi Panel</router-link>
-            <button @click="handleLogout" class="btn btn-secondary btn-sm">Cerrar Sesión</button>
+            <router-link v-if="authStore.user?.role === 'guest'" to="/panel/perfil" class="nav-link">{{ t('nav.myProfile') }}</router-link>
+            <router-link v-else-if="authStore.user?.role !== 'admin'" to="/panel" class="nav-link">{{ t('nav.myPanel') }}</router-link>
+            <button @click="handleLogout" class="btn btn-secondary btn-sm">{{ t('nav.logout') }}</button>
           </template>
+
+          <div class="lang-selector">
+            <button @click="switchLang('es')" :class="{ active: locale === 'es' }">ES</button>
+            <button @click="switchLang('en')" :class="{ active: locale === 'en' }">EN</button>
+            <button @click="switchLang('pt')" :class="{ active: locale === 'pt' }">PT</button>
+          </div>
         </div>
         
         <!-- Mobile menu button -->
@@ -51,10 +58,11 @@
             <div class="mobile-logo">
               <span class="pdl-logo pdl-logo-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-                  <rect x="4" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="1"/>
-                  <rect x="17" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="0.7"/>
-                  <rect x="4" y="17" width="11" height="11" rx="2" fill="currentColor" opacity="0.5"/>
-                  <rect x="17" y="17" width="11" height="11" rx="2" fill="currentColor" opacity="0.3"/>
+                  <rect x="4" y="4" width="11" height="11" rx="2" fill="rgba(255,255,255,0.3)"/>
+                  <rect x="17" y="4" width="11" height="11" rx="2" fill="rgba(255,255,255,0.2)"/>
+                  <rect x="4" y="17" width="11" height="11" rx="2" fill="rgba(255,255,255,0.1)"/>
+                  <rect x="17" y="17" width="11" height="11" rx="2" fill="rgba(255,255,255,0.05)"/>
+                  <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/>
                 </svg>
               </span>
               <span>AlquiLibres</span>
@@ -67,17 +75,17 @@
           <nav class="mobile-nav">
             <router-link to="/buscar" class="mobile-link" @click="mobileMenuOpen = false">
               <Search :size="18" />
-              <span>Buscar Propiedades</span>
+              <span>{{ t('nav.search') }}</span>
             </router-link>
             
             <template v-if="!authStore.isAuthenticated">
               <router-link to="/login" class="mobile-link" @click="mobileMenuOpen = false">
                 <User :size="18" />
-                <span>Iniciar Sesión</span>
+                <span>{{ t('nav.login') }}</span>
               </router-link>
               <router-link to="/registro" class="mobile-link highlight" @click="mobileMenuOpen = false">
                 <Sparkles :size="18" />
-                <span>Publicar Propiedad</span>
+                <span>{{ t('nav.publish') }}</span>
               </router-link>
             </template>
             
@@ -87,42 +95,48 @@
                   <div class="user-avatar">{{ authStore.user?.email?.charAt(0).toUpperCase() }}</div>
                   <div class="user-details">
                     <span class="user-email">{{ authStore.user?.email }}</span>
-                    <span v-if="authStore.user?.role === 'admin'" class="user-role">Administrador</span>
+                    <span v-if="authStore.user?.role === 'admin'" class="user-role">{{ t('nav.admin') }}</span>
                   </div>
                 </div>
               </div>
               
               <router-link v-if="authStore.user?.role === 'admin'" to="/admin" class="mobile-link admin-link-mobile" @click="mobileMenuOpen = false">
                 <Crown :size="18" />
-                <span>Panel de Administración</span>
+                <span>{{ t('nav.admin') }}</span>
               </router-link>
               
               <router-link v-if="authStore.user?.role === 'guest'" to="/panel/perfil" class="mobile-link" @click="mobileMenuOpen = false">
                 <User :size="18" />
-                <span>Mi Perfil</span>
+                <span>{{ t('nav.myProfile') }}</span>
               </router-link>
               <router-link v-else-if="authStore.user?.role !== 'admin'" to="/panel" class="mobile-link" @click="mobileMenuOpen = false">
                 <LayoutDashboard :size="18" />
-                <span>Mi Panel</span>
+                <span>{{ t('nav.myPanel') }}</span>
               </router-link>
               <router-link v-if="authStore.user?.role === 'owner'" to="/panel/propiedades" class="mobile-link" @click="mobileMenuOpen = false">
                 <Building :size="18" />
-                <span>Mis Propiedades</span>
+                <span>{{ t('nav.myProperties') }}</span>
               </router-link>
               <router-link v-if="authStore.user?.role === 'owner'" to="/panel/mensajes" class="mobile-link" @click="mobileMenuOpen = false">
                 <MessageSquare :size="18" />
-                <span>Mensajes</span>
+                <span>{{ t('nav.messages') }}</span>
               </router-link>
               <router-link v-if="authStore.user?.role === 'owner'" to="/panel/suscripcion" class="mobile-link" @click="mobileMenuOpen = false">
                 <CreditCard :size="18" />
-                <span>Suscripción</span>
+                <span>{{ t('nav.subscription') }}</span>
               </router-link>
               
               <div class="divider"></div>
+
+              <div class="mobile-lang-selector">
+                <button @click="switchLang('es')" :class="{ active: locale === 'es' }">ES</button>
+                <button @click="switchLang('en')" :class="{ active: locale === 'en' }">EN</button>
+                <button @click="switchLang('pt')" :class="{ active: locale === 'pt' }">PT</button>
+              </div>
               
               <button @click="handleLogout" class="mobile-link logout">
                 <LogOut :size="18" />
-                <span>Cerrar Sesión</span>
+                <span>{{ t('nav.logout') }}</span>
               </button>
             </template>
           </nav>
@@ -136,11 +150,18 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from 'vue-i18n'
 import { Search, User, Crown, LayoutDashboard, LogOut, Menu, X, Plus, MessageSquare, CreditCard, Building, Sparkles } from '@lucide/vue'
 
+const { t, locale } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const mobileMenuOpen = ref(false)
+
+const switchLang = (lang) => {
+  locale.value = lang
+  localStorage.setItem('alquilibres-locale', lang)
+}
 
 const handleLogout = async () => {
   mobileMenuOpen.value = false
@@ -463,5 +484,64 @@ const handleLogout = async () => {
   height: 1px;
   background: var(--gray-200);
   margin: var(--spacing-md) var(--spacing-lg);
+}
+
+.lang-selector {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+@media (min-width: 768px) {
+  .lang-selector {
+    display: flex;
+  }
+}
+
+.lang-selector button {
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lang-selector button.active {
+  background: white;
+  color: var(--primary-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-lang-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+}
+
+.mobile-lang-selector button {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--gray-200);
+  background: white;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-lang-selector button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
 }
 </style>

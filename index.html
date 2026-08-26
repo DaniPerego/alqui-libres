@@ -35,12 +35,15 @@
   <!-- Canonical URL -->
   <link rel="canonical" href="https://daniperego.github.io/alqui-libres/">
   
-  <!-- Favicon - Comentados temporalmente hasta que los archivos estén disponibles -->
-  <!-- <link rel="icon" type="image/svg+xml" href="/favicon.svg"> -->
-  <!-- <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"> -->
-  <!-- <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"> -->
-  <!-- <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"> -->
-  <!-- <link rel="manifest" href="/site.webmanifest"> -->
+  <!-- Favicon & PWA -->
+  <link rel="icon" type="image/svg+xml" href="/logo-alquilibres.svg">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AlquiLibres">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="AlquiLibres">
   
   <!-- Theme Color -->
   <meta name="theme-color" content="#2563eb">
@@ -78,5 +81,10 @@
 <body>
   <div id="app"></div>
   <script type="module" src="/src/main.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+  </script>
 </body>
 </html>

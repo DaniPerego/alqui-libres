@@ -5,12 +5,9 @@
       <div class="container">
         <div class="hero-content">
           <h1 class="hero-title">
-            Alquileres <span class="highlight">Sin Comisiones</span>
+            {{ t('hero.title') }} <span class="highlight">{{ t('hero.highlight') }}</span>
           </h1>
-          <p class="hero-subtitle">
-            La única plataforma local con suscripción fija para propietarios.<br>
-            Sin comisiones por reserva. Maximiza tus ganancias.
-          </p>
+          <p class="hero-subtitle" v-html="t('hero.subtitle').replace(/\n/g, '<br>')"></p>
 
           <!-- Rental Type Tabs -->
           <div class="rental-tabs">
@@ -19,14 +16,14 @@
               @click="rentalType = 'temporario'"
             >
               <Clock :size="20" />
-              Alquiler Diario
+              {{ t('hero.dailyRental') }}
             </button>
             <button
               :class="['tab-btn', { active: rentalType === 'anual' }]"
               @click="rentalType = 'anual'"
             >
               <Calendar :size="20" />
-              Alquiler Anual
+              {{ t('hero.annualRental') }}
             </button>
           </div>
 
@@ -39,7 +36,7 @@
                   id="home-city"
                   v-model="searchFilters.city"
                   type="text"
-                  placeholder="¿A dónde vas?"
+                  :placeholder="t('hero.cityPlaceholder')"
                   class="input"
                 />
               </div>
@@ -66,35 +63,35 @@
                 </div>
 
                 <div class="search-input-group">
-                  <label for="home-guests">Huéspedes</label>
+                  <label for="home-guests">{{ t('hero.guests') }}</label>
                   <select id="home-guests" v-model.number="searchFilters.guests" class="select">
-                    <option :value="1">1 huésped</option>
-                    <option :value="2">2 huéspedes</option>
-                    <option :value="3">3 huéspedes</option>
-                    <option :value="4">4 huéspedes</option>
-                    <option :value="5">5+ huéspedes</option>
+                    <option :value="1">1 {{ t('hero.guest') }}</option>
+                    <option :value="2">2 {{ t('hero.guestsPlural') }}</option>
+                    <option :value="3">3 {{ t('hero.guestsPlural') }}</option>
+                    <option :value="4">4 {{ t('hero.guestsPlural') }}</option>
+                    <option :value="5">5+ {{ t('hero.guestsPlural') }}</option>
                   </select>
                 </div>
               </template>
 
               <template v-else>
                 <div class="search-input-group">
-                  <label for="home-bedrooms">Dormitorios</label>
+                  <label for="home-bedrooms">{{ t('hero.bedrooms') }}</label>
                   <select id="home-bedrooms" v-model.number="searchFilters.minBedrooms" class="select">
-                    <option :value="0">Cualquiera</option>
-                    <option :value="1">1 dormitorio</option>
-                    <option :value="2">2 dormitorios</option>
-                    <option :value="3">3 dormitorios</option>
-                    <option :value="4">4+ dormitorios</option>
+                    <option :value="0">{{ t('hero.any') }}</option>
+                    <option :value="1">1 {{ t('hero.bedroom') }}</option>
+                    <option :value="2">2 {{ t('hero.bedroomsPlural') }}</option>
+                    <option :value="3">3 {{ t('hero.bedroomsPlural') }}</option>
+                    <option :value="4">4+ {{ t('hero.bedroomsPlural') }}</option>
                   </select>
                 </div>
                 <div class="search-input-group">
-                  <label for="home-maxprice">Precio Máx / Mes</label>
+                  <label for="home-maxprice">{{ t('hero.maxPriceMonth') }}</label>
                   <input
                     id="home-maxprice"
                     v-model.number="searchFilters.priceMax"
                     type="number"
-                    placeholder="Presupuesto mensual"
+                    :placeholder="t('hero.monthlyBudget')"
                     class="input"
                     min="0"
                   />
@@ -104,7 +101,7 @@
 
             <button @click="handleSearch" class="btn btn-primary btn-lg search-btn">
               <Search :size="20" />
-              {{ rentalType === 'anual' ? 'Buscar Propiedades' : 'Buscar Alojamiento' }}
+              {{ rentalType === 'anual' ? t('hero.searchProperties') : t('hero.searchAccommodation') }}
             </button>
           </div>
         </div>
@@ -114,8 +111,8 @@
     <!-- Featured Properties -->
     <section class="featured section-divider">
       <div class="container">
-        <p class="section-label">Explorar</p>
-        <h2 class="section-heading">Propiedades Destacadas</h2>
+        <p class="section-label">{{ t('featured.label') }}</p>
+        <h2 class="section-heading">{{ t('featured.title') }}</h2>
         <div class="featured-grid">
           <div
             v-for="property in filteredFeatured"
@@ -138,7 +135,7 @@
               <div class="card-footer">
                 <div class="card-price">
                   <strong>${{ property.pricing.basePrice }}</strong>
-                  <span>{{ property.rentalType === 'anual' ? '/mes' : '/noche' }}</span>
+                  <span>{{ property.rentalType === 'anual' ? t('featured.perMonth') : t('featured.perNight') }}</span>
                 </div>
                 <div class="card-rating" v-if="property.rating">
                   <Star :size="16" fill="#fbbf24" stroke="#fbbf24" />
@@ -155,39 +152,35 @@
     <!-- Features Section -->
     <section class="features section-divider">
       <div class="container">
-        <p class="section-label">Beneficios</p>
-        <h2 class="section-heading">¿Por qué AlquiLibres?</h2>
+        <p class="section-label">{{ t('features.label') }}</p>
+        <h2 class="section-heading">{{ t('features.title') }}</h2>
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-icon"><Wallet :size="32" /></div>
-            <h3 class="feature-title">Sin Comisiones por Reserva</h3>
+            <h3 class="feature-title">{{ t('features.noCommissions.title') }}</h3>
             <p class="feature-text">
-              Los propietarios pagan una suscripción fija mensual.
-              No importa cuántas reservas tengas, tu ganancia es 100%.
+              {{ t('features.noCommissions.text') }}
             </p>
           </div>
           <div class="feature-card">
             <div class="feature-icon"><MapPin :size="32" /></div>
-            <h3 class="feature-title">Hiper-Local</h3>
+            <h3 class="feature-title">{{ t('features.hyperLocal.title') }}</h3>
             <p class="feature-text">
-              Conocemos tu ciudad. Filtros específicos que los gigantes no tienen:
-              tipo de parrilla, cercanía a atracciones locales, y más.
+              {{ t('features.hyperLocal.text') }}
             </p>
           </div>
           <div class="feature-card">
             <div class="feature-icon"><Zap :size="32" /></div>
-            <h3 class="feature-title">Simple y Rápido</h3>
+            <h3 class="feature-title">{{ t('features.simple.title') }}</h3>
             <p class="feature-text">
-              Editor de anuncios intuitivo, calendario sincronizado,
-              y gestión de mensajes más simple que las plataformas globales.
+              {{ t('features.simple.text') }}
             </p>
           </div>
           <div class="feature-card">
             <div class="feature-icon"><Shield :size="32" /></div>
-            <h3 class="feature-title">Transparencia Total</h3>
+            <h3 class="feature-title">{{ t('features.transparent.title') }}</h3>
             <p class="feature-text">
-              Precio final visible desde el principio. Sin tasas ocultas.
-              Los huéspedes saben exactamente cuánto van a pagar.
+              {{ t('features.transparent.text') }}
             </p>
           </div>
         </div>
@@ -198,14 +191,12 @@
     <section class="cta section-divider">
       <div class="container">
         <div class="cta-content">
-          <p class="section-label">Propietarios</p>
-          <h2 class="section-heading">¿Tienes una propiedad para alquilar?</h2>
-          <p class="cta-text">
-            Únete a AlquiLibres y ahorra hasta 25% en comisiones.<br>
-            Suscripción desde $XX/mes. Sin costos ocultos.
+          <p class="section-label">{{ t('cta.label') }}</p>
+          <h2 class="section-heading">{{ t('cta.title') }}</h2>
+          <p class="cta-text" v-html="t('cta.text').replace(/\n/g, '<br>')">
           </p>
           <router-link to="/registro" class="btn btn-primary btn-lg">
-            Publicar Mi Propiedad
+            {{ t('cta.button') }}
             <ArrowRight :size="20" />
           </router-link>
         </div>
@@ -218,9 +209,11 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSearchStore } from '@/stores/search'
+import { useI18n } from 'vue-i18n'
 import { mockProperties, mockAnnualProperty } from '@/data/mockData'
 import { Clock, Calendar, Search, MapPin, Star, Wallet, Zap, Shield, ArrowRight } from '@lucide/vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const searchStore = useSearchStore()
 

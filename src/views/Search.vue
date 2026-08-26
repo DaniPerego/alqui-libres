@@ -39,18 +39,18 @@
           </div>
           
           <div class="filter-group">
-            <label for="search-guests" class="label">Huéspedes</label>
+            <label for="search-guests" class="label">{{ t('hero.guests') }}</label>
             <select 
               id="search-guests"
               v-model.number="searchStore.filters.guests" 
               @change="handleSearch"
               class="select"
             >
-              <option :value="1">1 huésped</option>
-              <option :value="2">2 huéspedes</option>
-              <option :value="3">3 huéspedes</option>
-              <option :value="4">4 huéspedes</option>
-              <option :value="5">5+ huéspedes</option>
+              <option :value="1">1 {{ t('search.guests') }}</option>
+              <option :value="2">2 {{ t('search.guests') }}</option>
+              <option :value="3">3 {{ t('search.guests') }}</option>
+              <option :value="4">4 {{ t('search.guests') }}</option>
+              <option :value="5">5+ {{ t('search.guests') }}</option>
             </select>
           </div>
         </div>
@@ -60,7 +60,7 @@
           <button @click="showAdvanced = !showAdvanced" class="toggle-advanced">
             <span class="toggle-label">
               <SlidersHorizontal :size="18" />
-              {{ showAdvanced ? 'Ocultar' : 'Mostrar' }} Filtros Avanzados
+              {{ showAdvanced ? t('search.hideFilters') : t('search.advancedFilters') }}
             </span>
             <span class="toggle-chevron" :class="{ rotated: showAdvanced }">
               <ChevronUp v-if="showAdvanced" :size="18" />
@@ -71,22 +71,22 @@
           <div v-if="showAdvanced" class="advanced-content">
             <div class="filters-row">
               <div class="filter-group">
-                <label for="property-type" class="label">Tipo de Propiedad</label>
+                <label for="property-type" class="label">{{ t('search.propertyType') }}</label>
                 <select id="property-type" v-model="searchStore.filters.propertyType" @change="handleSearch" class="select">
-                  <option value="">Todos</option>
-                  <option value="casa">Casa</option>
-                  <option value="apartamento">Apartamento</option>
-                  <option value="cabana">Cabaña</option>
-                  <option value="departamento">Departamento</option>
+                  <option value="">{{ t('search.all') }}</option>
+                  <option value="casa">{{ t('search.house') }}</option>
+                  <option value="apartamento">{{ t('search.apartment') }}</option>
+                  <option value="cabana">{{ t('search.cabin') }}</option>
+                  <option value="departamento">{{ t('search.apartment') }}</option>
                 </select>
               </div>
 
               <div class="filter-group">
-                <label for="rental-type" class="label">Tipo de Alquiler</label>
+                <label for="rental-type" class="label">{{ t('search.rentalType') }}</label>
                 <select id="rental-type" v-model="searchStore.filters.rentalType" @change="handleSearch" class="select">
-                  <option value="">Todos</option>
-                  <option value="temporario">Temporario</option>
-                  <option value="anual">Anual</option>
+                  <option value="">{{ t('search.all') }}</option>
+                  <option value="temporario">{{ t('search.temporary') }}</option>
+                  <option value="anual">{{ t('search.annual') }}</option>
                 </select>
               </div>
               
@@ -94,7 +94,7 @@
               <div class="filter-group">
                 <label for="grill-type" class="label">
                   <span class="label-icon"><Flame :size="16" /></span>
-                  Tipo de Parrilla
+                  {{ t('search.grillType') }}
                 </label>
                 <select 
                   id="grill-type"
@@ -102,17 +102,17 @@
                   @change="handleSearch" 
                   class="select"
                 >
-                  <option value="">Cualquiera</option>
-                  <option value="carbon">Carbón</option>
-                  <option value="gas">Gas</option>
-                  <option value="electrica">Eléctrica</option>
+                  <option value="">{{ t('search.any') }}</option>
+                  <option value="carbon">{{ t('search.charcoal') }}</option>
+                  <option value="gas">{{ t('search.gas') }}</option>
+                  <option value="electrica">{{ t('search.electric') }}</option>
                 </select>
               </div>
               
               <div class="filter-group">
                 <label for="parking-size" class="label">
                   <span class="label-icon"><Car :size="16" /></span>
-                  Tamaño de Cochera
+                  {{ t('search.parkingSize') }}
                 </label>
                 <select 
                   id="parking-size"
@@ -120,16 +120,16 @@
                   @change="handleSearch" 
                   class="select"
                 >
-                  <option value="">No importa</option>
-                  <option value="pequena">Pequeña (1 auto)</option>
-                  <option value="mediana">Mediana (2 autos)</option>
-                  <option value="grande">Grande (3+ autos)</option>
+                  <option value="">{{ t('search.noMatter') }}</option>
+                  <option value="pequena">{{ t('search.small') }}</option>
+                  <option value="mediana">{{ t('search.medium') }}</option>
+                  <option value="grande">{{ t('search.large') }}</option>
                 </select>
               </div>
             </div>
             
             <div class="filter-group">
-              <label for="price-range">Precio por Noche</label>
+              <label for="price-range">{{ t('search.pricePerNight') }}</label>
               <div class="price-range">
                 <input 
                   id="price-min"
@@ -137,7 +137,7 @@
                   @input="handleSearch"
                   type="number" 
                   class="input" 
-                  placeholder="Mín"
+                  :placeholder="t('search.min')"
                   aria-label="Precio mínimo"
                 />
                 <span>-</span>
@@ -148,7 +148,7 @@
                   type="number"
                   aria-label="Precio máximo" 
                   class="input" 
-                  placeholder="Máx"
+                  :placeholder="t('search.max')"
                 />
               </div>
             </div>
@@ -160,7 +160,7 @@
       <div class="search-results">
         <div class="results-header">
           <h2 class="results-title">
-            {{ searchStore.resultsCount }} propiedades encontradas
+            {{ searchStore.resultsCount }} {{ t('search.title') }}
           </h2>
           <button 
             v-if="searchStore.hasActiveFilters" 
@@ -168,21 +168,21 @@
             class="btn btn-secondary btn-sm clear-filters-btn"
           >
             <X :size="16" />
-            Limpiar Filtros
+            {{ t('search.cleanFilters') }}
           </button>
         </div>
         
         <div v-if="searchStore.loading" class="loading-container">
           <div class="spinner"></div>
-          <p>Buscando propiedades...</p>
+          <p>{{ t('search.searching') }}</p>
         </div>
         
         <div v-else-if="searchStore.filteredListings.length === 0" class="empty-results">
           <div class="empty-icon-wrapper">
             <SearchIcon :size="48" class="empty-search-icon" />
           </div>
-          <h3>No se encontraron propiedades</h3>
-          <p>Intenta ajustar tus filtros de búsqueda</p>
+          <h3>{{ t('search.noResults') }}</h3>
+          <p>{{ t('search.adjustFilters') }}</p>
         </div>
         
         <div v-else class="results-grid">
@@ -208,7 +208,7 @@
               <p class="listing-type">
                 {{ listing.propertyType }}
                 <span class="rental-tag" :class="listing.rentalType">
-                  {{ listing.rentalType === 'anual' ? 'Anual' : 'Temp.' }}
+                  {{ listing.rentalType === 'anual' ? t('search.annualShort') : t('search.temporaryShort') }}
                 </span>
               </p>
               <p class="listing-location">
@@ -217,11 +217,11 @@
               </p>
               
               <div class="listing-capacity">
-                <span>{{ listing.capacity.guests }} huéspedes</span>
+                <span>{{ listing.capacity.guests }} {{ t('search.guests') }}</span>
                 <span>•</span>
                 <span>{{ listing.capacity.bedrooms }} hab.</span>
                 <span>•</span>
-                <span>{{ listing.capacity.beds }} camas</span>
+                <span>{{ listing.capacity.beds }} {{ t('search.beds') }}</span>
               </div>
               
               <!-- Características Locales Destacadas -->
@@ -242,7 +242,7 @@
                   <span class="price-period">{{ listing.rentalType === 'anual' ? '/ mes' : '/ noche' }}</span>
                 </div>
                 <span class="view-details">
-                  Ver Detalles
+                  {{ t('search.viewDetails') }}
                   <ArrowRight :size="16" />
                 </span>
               </div>
@@ -257,6 +257,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useSearchStore } from '@/stores/search'
+import { useI18n } from 'vue-i18n'
 import {
   Search as SearchIcon,
   MapPin,
@@ -270,6 +271,7 @@ import {
   ArrowRight
 } from '@lucide/vue'
 
+const { t } = useI18n()
 const searchStore = useSearchStore()
 const showAdvanced = ref(false)
 

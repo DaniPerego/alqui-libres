@@ -30,37 +30,37 @@
               </p>
               <div class="rental-type-badge" :class="property.rentalType">
                 <template v-if="property.rentalType === 'anual'">
-                  <Calendar :size="16" /> Alquiler Anual
+                  <Calendar :size="16" /> {{ t('hero.annualRental') }}
                 </template>
                 <template v-else>
-                  <Calendar :size="16" /> Alquiler Temporario
+                  <Calendar :size="16" /> {{ t('hero.dailyRental') }}
                 </template>
               </div>
               <div class="property-meta">
-                <span>{{ property.capacity.guests }} huéspedes</span>
+                <span>{{ property.capacity.guests }} {{ t('search.guests') }}</span>
                 <span>•</span>
-                <span>{{ property.capacity.bedrooms }} habitaciones</span>
+                <span>{{ property.capacity.bedrooms }} {{ t('hero.bedroomsPlural') }}</span>
                 <span>•</span>
-                <span>{{ property.capacity.beds }} camas</span>
+                <span>{{ property.capacity.beds }} {{ t('search.beds') }}</span>
                 <span>•</span>
                 <span>{{ property.capacity.bathrooms }} baños</span>
               </div>
             </div>
             <div v-if="property.rating" class="property-rating">
               <span class="rating-value"><Star :size="16" fill="#fbbf24" stroke="#fbbf24" /> {{ property.rating.toFixed(1) }}</span>
-              <span class="rating-count">({{ property.reviewCount }} reseñas)</span>
+              <span class="rating-count">({{ property.reviewCount }} {{ t('featured.reviews') }})</span>
             </div>
           </div>
           
           <!-- Descripción -->
           <section class="detail-section">
-            <h2 class="section-title">Sobre esta propiedad</h2>
+            <h2 class="section-title">{{ t('property.about') }}</h2>
             <p class="property-description">{{ property.description }}</p>
           </section>
           
           <!-- Características Locales Destacadas -->
           <section class="detail-section highlight-section" v-if="property.localFeatures">
-            <h2 class="section-title">Características Especiales</h2>
+            <h2 class="section-title">{{ t('property.specialFeatures') }}</h2>
             <div class="features-grid">
               <div v-if="property.localFeatures.grillType" class="feature-item">
                 <span class="feature-icon"><Flame :size="20" /></span>
@@ -90,7 +90,7 @@
           
           <!-- Amenidades -->
           <section class="detail-section">
-            <h2 class="section-title">Comodidades</h2>
+            <h2 class="section-title">{{ t('property.amenities') }}</h2>
             <div class="amenities-grid">
               <div v-for="amenity in property.amenities" :key="amenity" class="amenity-item">
                 <span class="amenity-icon"><CheckCircle :size="16" /></span>
@@ -101,7 +101,7 @@
           
           <!-- Contacto del Propietario -->
           <section class="detail-section contact-section">
-            <h2 class="section-title"><User :size="20" /> Contacta con el Propietario</h2>
+            <h2 class="section-title"><User :size="20" /> {{ t('property.contactOwner') }}</h2>
             
             <!-- Usuario autenticado: Mostrar contactos -->
             <div v-if="isAuthenticated && ownerProfile" class="owner-contact-info">
@@ -121,7 +121,7 @@
               
               <!-- Contacto Principal -->
               <div class="contact-methods">
-                <h4><Phone :size="18" /> Contacto Principal</h4>
+                <h4><Phone :size="18" /> {{ t('property.phone') }}</h4>
                 <div class="contact-buttons">
                   <a 
                     v-if="ownerProfile.contactoPrincipal?.whatsapp" 
@@ -148,7 +148,7 @@
                     :href="`mailto:${ownerProfile.contactoPrincipal?.email || ownerProfile.email}`"
                     class="contact-btn email"
                   >
-                    <Mail :size="18" /> Enviar Email
+                    <Mail :size="18" /> {{ t('property.email') }}
                   </a>
                 </div>
               </div>
@@ -189,7 +189,7 @@
               
               <!-- Redes Sociales -->
               <div v-if="hasSocialMedia" class="social-media">
-                <h4><Globe :size="18" /> Redes Sociales</h4>
+                <h4><Globe :size="18" /> {{ t('property.socialMedia') }}</h4>
                 <div class="social-links">
                   <a v-if="ownerProfile.redesSociales?.instagram" 
                      :href="`https://instagram.com/${ownerProfile.redesSociales.instagram}`" 
@@ -227,16 +227,16 @@
             <div v-else class="contact-locked">
               <div class="blur-overlay">
                 <div class="lock-icon"><Lock :size="48" /></div>
-                <h3>Regístrate para ver los datos de contacto</h3>
-                <p>Crea una cuenta gratuita para conectar directamente con el propietario</p>
+                <h3>{{ t('property.registerToSee') }}</h3>
+                <p>{{ t('property.registerDescription') }}</p>
                 <div class="contact-preview">
-                  <div class="preview-item"><Phone :size="18" /> Teléfono</div>
-                  <div class="preview-item"><MessageSquare :size="18" /> WhatsApp</div>
-                  <div class="preview-item"><Mail :size="18" /> Email</div>
-                  <div class="preview-item"><Globe :size="18" /> Redes Sociales</div>
+                  <div class="preview-item"><Phone :size="18" /> {{ t('property.phone') }}</div>
+                  <div class="preview-item"><MessageSquare :size="18" /> {{ t('property.whatsapp') }}</div>
+                  <div class="preview-item"><Mail :size="18" /> {{ t('property.email') }}</div>
+                  <div class="preview-item"><Globe :size="18" /> {{ t('property.socialMedia') }}</div>
                 </div>
                 <router-link to="/registro" class="btn btn-primary btn-lg">
-                  Crear Cuenta Gratis
+                  {{ t('property.createFreeAccount') }}
                 </router-link>
                 <p class="small-text">
                   ¿Ya tienes cuenta? <router-link to="/login">Inicia sesión</router-link>
@@ -247,10 +247,10 @@
           
           <!-- Calendario de Disponibilidad -->
           <section class="detail-section">
-            <h2 class="section-title">Disponibilidad</h2>
+            <h2 class="section-title">{{ t('property.availability') }}</h2>
             <div class="calendar-placeholder">
-              <p><Calendar :size="16" /> Calendario de disponibilidad</p>
-              <p class="calendar-note">Selecciona tus fechas para ver la disponibilidad</p>
+              <p><Calendar :size="16" /> {{ t('property.availability') }}</p>
+              <p class="calendar-note">{{ t('property.calendarNote') }}</p>
             </div>
           </section>
         </div>
@@ -268,7 +268,7 @@
           </div>
           
           <div v-if="property.rentalType === 'anual'" class="annual-notice">
-            <p><Calendar :size="16" /> Esta propiedad se alquila por mes.</p>
+            <p><Calendar :size="16" /> {{ t('hero.annualRental') }}</p>
             <p>Consultá disponibilidad y condiciones contactando al propietario.</p>
           </div>
           <div v-else class="booking-form">
@@ -295,10 +295,10 @@
               />
             </div>
             <div class="form-group">
-              <label class="label">Huéspedes</label>
+              <label class="label">{{ t('hero.guests') }}</label>
               <select v-model.number="bookingDates.guests" class="select">
                 <option v-for="n in property.capacity.guests" :key="n" :value="n">
-                  {{ n }} {{ n === 1 ? 'huésped' : 'huéspedes' }}
+                  {{ n }} {{ n === 1 ? t('hero.guest') : t('hero.guestsPlural') }}
                 </option>
               </select>
             </div>
@@ -306,7 +306,7 @@
           
           <div v-if="property.rentalType === 'anual'" class="price-breakdown">
             <div class="price-row total">
-              <strong>Precio mensual</strong>
+              <strong>{{ t('hero.monthlyBudget') }}</strong>
               <strong>${{ property.pricing.basePrice }}</strong>
             </div>
           </div>
@@ -326,13 +326,13 @@
           </div>
           
           <button @click="openReservationModal" class="btn btn-primary btn-lg">
-            <Calendar :size="16" /> Solicitar Reserva
+            <Calendar :size="16" /> {{ t('property.requestReservation') }}
           </button>
           
           <p class="no-fees-notice">
-            <CheckCircle :size="16" /> Precio final sin cargos ocultos<br>
-            <CheckCircle :size="16" /> Sin comisiones adicionales<br>
-            <CheckCircle :size="16" /> Respuesta en menos de 24hs
+            <CheckCircle :size="16" /> {{ t('property.finalPrice') }}<br>
+            <CheckCircle :size="16" /> {{ t('property.noCommissions') }}<br>
+            <CheckCircle :size="16" /> {{ t('property.quickResponse') }}
           </p>
         </aside>
       </div>
@@ -342,7 +342,7 @@
         <div v-if="showReservationModal" class="modal-overlay" @click="showReservationModal = false">
           <div class="modal reservation-modal" @click.stop>
             <div class="modal-header">
-              <h2><Calendar :size="20" /> Solicitar Reserva</h2>
+              <h2><Calendar :size="20" /> {{ t('property.requestReservation') }}</h2>
               <button @click="showReservationModal = false" class="close-btn"><X :size="20" /></button>
             </div>
             <div class="modal-body">
@@ -357,10 +357,10 @@
               <div v-if="!isAuthenticated" class="auth-required">
                 <p>Debes iniciar sesión para solicitar una reserva</p>
                 <router-link to="/login" class="btn btn-primary">
-                  Iniciar Sesión
+                  {{ t('nav.login') }}
                 </router-link>
                 <p class="small-text">
-                  ¿No tienes cuenta? <router-link to="/registro">Regístrate gratis</router-link>
+                  {{ t('auth.noAccount') }} <router-link to="/registro">{{ t('auth.register') }}</router-link>
                 </p>
               </div>
 
@@ -485,7 +485,7 @@
       
       <!-- Reseñas -->
       <section class="reviews-section">
-        <h2 class="section-title">Reseñas de Huéspedes <span v-if="reviews.length">({{ reviews.length }})</span></h2>
+        <h2 class="section-title">{{ t('property.reviews') }} <span v-if="reviews.length">({{ reviews.length }})</span></h2>
         <div class="reviews-grid" v-if="reviews.length">
           <div v-for="review in reviews" :key="review.id" class="review-card">
             <div class="review-header">
@@ -494,7 +494,7 @@
             </div>
             <p class="review-date">{{ formatDate(review.createdAt) }}</p>
             <p class="review-comment">{{ review.comment }}</p>
-            <span v-if="review.verified" class="verified-badge"><CheckCircle :size="16" /> Verificado</span>
+            <span v-if="review.verified" class="verified-badge"><CheckCircle :size="16" /> {{ t('property.verified') }}</span>
           </div>
         </div>
         <div v-else class="reviews-empty">
@@ -502,7 +502,7 @@
         </div>
 
         <div v-if="isAuthenticated" class="review-form">
-          <h3>Deja tu reseña</h3>
+          <h3>{{ t('property.leaveReview') }}</h3>
           <div class="star-rating">
             <span
               v-for="star in 5"
@@ -518,21 +518,21 @@
             rows="3"
           ></textarea>
           <button @click="submitReview" :disabled="!newRating || !newComment.trim()" class="btn-submit-review">
-            Publicar Reseña
+            {{ t('property.publishReview') }}
           </button>
         </div>
         <div v-else class="review-login-cta">
-          <p><router-link to="/login">Iniciá sesión</router-link> para dejar una reseña.</p>
+          <p><router-link to="/login">{{ t('auth.login') }}</router-link> {{ t('property.loginToReview') }}</p>
         </div>
       </section>
     </div>
   </div>
   
   <div v-else-if="notFound" class="not-found-container">
-    <h2>Propiedad no encontrada</h2>
-    <p>La propiedad que buscás no existe o fue eliminada.</p>
+    <h2>{{ t('property.propertyNotFound') }}</h2>
+    <p>{{ t('property.notFoundDesc') }}</p>
     <router-link to="/buscar" class="btn btn-primary">
-      Ver otras propiedades
+      {{ t('property.viewOther') }}
     </router-link>
   </div>
   <div v-else class="loading-container">
@@ -546,6 +546,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePropertyStore } from '@/stores/property'
+import { useI18n } from 'vue-i18n'
 import { useSEO, generatePropertySchema } from '@/composables/useSEO'
 import { getPropertyReviews, addReview, getPropertyRating } from '@/services/reviews'
 import { createReservation } from '@/services/reservations'
@@ -557,6 +558,7 @@ import { MapPin, Calendar, Star, Flame, Car, Clock, Phone, Mail, MessageSquare, 
 const route = useRoute()
 const authStore = useAuthStore()
 const propertyStore = usePropertyStore()
+const { t } = useI18n()
 const { updateMetaTags, addStructuredData } = useSEO()
 
 // Estado

@@ -6,70 +6,70 @@
           <h3 class="footer-title">
             <span class="pdl-logo pdl-logo-sm">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-                <rect x="4" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="1"/>
-                <rect x="17" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="0.7"/>
-                <rect x="4" y="17" width="11" height="11" rx="2" fill="currentColor" opacity="0.5"/>
-                <rect x="17" y="17" width="11" height="11" rx="2" fill="currentColor" opacity="0.3"/>
+                <rect x="4" y="4" width="11" height="11" rx="2" fill="#2563eb" opacity="0.3"/>
+                <rect x="17" y="4" width="11" height="11" rx="2" fill="#2563eb" opacity="0.2"/>
+                <rect x="4" y="17" width="11" height="11" rx="2" fill="#2563eb" opacity="0.1"/>
+                <rect x="17" y="17" width="11" height="11" rx="2" fill="#2563eb" opacity="0.05"/>
+                <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z" fill="#2563eb" stroke="#2563eb" stroke-width="0.5" stroke-linejoin="round"/>
               </svg>
             </span>
             AlquiLibres
           </h3>
           <p class="footer-text">
-            Plataforma hiper-local de alquileres temporarios sin comisiones por reserva.
-            Suscripci&#243;n fija para propietarios.
+            {{ t('footer.description') }}
           </p>
         </div>
         
         <div class="footer-section">
-          <h4 class="footer-subtitle">Para Propietarios</h4>
+          <h4 class="footer-subtitle">{{ t('footer.forOwners') }}</h4>
           <ul class="footer-links">
-            <li><router-link to="/registro">Publicar Propiedad</router-link></li>
-            <li><router-link to="/panel">Panel de Control</router-link></li>
-            <li><a href="#planes">Planes y Precios</a></li>
+            <li><router-link to="/registro">{{ t('footer.publishProperty') }}</router-link></li>
+            <li><router-link to="/panel">{{ t('footer.controlPanel') }}</router-link></li>
+            <li><a href="#planes">{{ t('footer.plans') }}</a></li>
           </ul>
         </div>
         
         <div class="footer-section">
-          <h4 class="footer-subtitle">Para Hu&#233;spedes</h4>
+          <h4 class="footer-subtitle">{{ t('footer.forGuests') }}</h4>
           <ul class="footer-links">
-            <li><router-link to="/buscar">Buscar Alojamiento</router-link></li>
-            <li><router-link to="/como-funciona">&#191;C&#243;mo Funciona?</router-link></li>
-            <li><router-link to="/faq">Preguntas Frecuentes</router-link></li>
+            <li><router-link to="/buscar">{{ t('footer.searchAccommodation') }}</router-link></li>
+            <li><router-link to="/como-funciona">{{ t('footer.howItWorks') }}</router-link></li>
+            <li><router-link to="/faq">{{ t('footer.faq') }}</router-link></li>
           </ul>
         </div>
         
         <div class="footer-section">
-          <h4 class="footer-subtitle">Compa&#241;&#237;a</h4>
+          <h4 class="footer-subtitle">{{ t('footer.company') }}</h4>
           <ul class="footer-links">
-            <li><router-link to="/nosotros">Sobre Nosotros</router-link></li>
-            <li><router-link to="/contacto">Contacto</router-link></li>
+            <li><router-link to="/nosotros">{{ t('footer.aboutUs') }}</router-link></li>
+            <li><router-link to="/contacto">{{ t('footer.contact') }}</router-link></li>
           </ul>
         </div>
         
         <div class="footer-section">
-          <h4 class="footer-subtitle">Legal</h4>
+          <h4 class="footer-subtitle">{{ t('footer.legal') }}</h4>
           <ul class="footer-links">
-            <li><router-link to="/terminos">T&#233;rminos y Condiciones</router-link></li>
-            <li><router-link to="/privacidad">Pol&#237;tica de Privacidad</router-link></li>
-            <li><router-link to="/contrato">Modelo de Contrato</router-link></li>
-            <li><router-link to="/cookies">Pol&#237;tica de Cookies</router-link></li>
+            <li><router-link to="/terminos">{{ t('footer.terms') }}</router-link></li>
+            <li><router-link to="/privacidad">{{ t('footer.privacy') }}</router-link></li>
+            <li><router-link to="/contrato">{{ t('footer.contract') }}</router-link></li>
+            <li><router-link to="/cookies">{{ t('footer.cookies') }}</router-link></li>
           </ul>
         </div>
         
         <div class="footer-section">
-          <h4 class="footer-subtitle">Soporte</h4>
+          <h4 class="footer-subtitle">{{ t('footer.support') }}</h4>
           <ul class="footer-links">
-            <li><router-link to="/faq">Centro de Ayuda</router-link></li>
-            <li><router-link to="/faq">Preguntas Frecuentes</router-link></li>
-            <li><router-link to="/contacto">Contacto</router-link></li>
-            <li><a href="mailto:soporte@alquilibres.com">soporte@alquilibres.com</a></li>
+            <li><router-link to="/faq">{{ t('footer.helpCenter') }}</router-link></li>
+            <li><router-link to="/faq">{{ t('footer.faq') }}</router-link></li>
+            <li><router-link to="/contacto">{{ t('footer.contact') }}</router-link></li>
+            <li><a href="mailto:soporte@alquilibres.com">{{ t('footer.email') }}</a></li>
           </ul>
         </div>
       </div>
       
       <div class="footer-bottom">
         <div class="footer-bottom-content">
-          <p>&copy; 2026 AlquiLibres. Todos los derechos reservados.</p>
+          <p>&copy; 2026 AlquiLibres. {{ t('footer.rights') }}</p>
           <p class="footer-brand">
             <span class="pdl-logo pdl-logo-sm">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
@@ -88,8 +88,9 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
 
-
+const { t } = useI18n()
 </script>
 
 <style scoped>
