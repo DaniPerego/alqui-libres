@@ -2,18 +2,18 @@
   <div class="dashboard-home">
     <header class="dashboard-header">
       <div>
-        <h1>¡Hola, {{ userName }}! 👋</h1>
+        <h1>¡Hola, {{ userName }}!</h1>
         <p class="subtitle">Resumen de tu actividad en AlquiLibres</p>
       </div>
       <router-link to="/panel/propiedades/nueva" class="btn btn-primary">
-        ➕ Nueva Propiedad
+        <Plus :size="20" /> Nueva Propiedad
       </router-link>
     </header>
 
     <!-- Tarjetas de Métricas -->
     <div class="metrics-grid">
       <div class="metric-card">
-        <div class="metric-icon properties">🏠</div>
+        <div class="metric-icon properties"><Home :size="24" /></div>
         <div class="metric-content">
           <h3 class="metric-value">{{ stats.totalProperties }}</h3>
           <p class="metric-label">Propiedades Publicadas</p>
@@ -25,7 +25,7 @@
       </div>
 
       <div class="metric-card">
-        <div class="metric-icon messages">💬</div>
+        <div class="metric-icon messages"><MessageSquare :size="24" /></div>
         <div class="metric-content">
           <h3 class="metric-value">{{ stats.unreadMessages }}</h3>
           <p class="metric-label">Mensajes Sin Leer</p>
@@ -36,7 +36,7 @@
       </div>
 
       <div class="metric-card">
-        <div class="metric-icon subscription">💳</div>
+        <div class="metric-icon subscription"><CreditCard :size="24" /></div>
         <div class="metric-content">
           <h3 class="metric-value">{{ stats.subscriptionDays }}</h3>
           <p class="metric-label">Días de Suscripción</p>
@@ -49,7 +49,7 @@
       </div>
 
       <div class="metric-card">
-        <div class="metric-icon views">👁️</div>
+        <div class="metric-icon views"><Eye :size="24" /></div>
         <div class="metric-content">
           <h3 class="metric-value">{{ stats.totalViews }}</h3>
           <p class="metric-label">Visualizaciones Totales</p>
@@ -65,38 +65,38 @@
       <h2 class="section-title">Acciones Rápidas</h2>
       <div class="quick-actions-grid">
         <router-link to="/panel/propiedades/nueva" class="action-card">
-          <div class="action-icon">➕</div>
+          <div class="action-icon"><Plus :size="24" /></div>
           <h3>Publicar Propiedad</h3>
           <p>Agrega una nueva propiedad a tu catálogo</p>
         </router-link>
 
         <router-link to="/panel/propiedades" class="action-card">
-          <div class="action-icon">✏️</div>
+          <div class="action-icon"><Edit :size="24" /></div>
           <h3>Editar Propiedades</h3>
           <p>Actualiza información de tus publicaciones</p>
         </router-link>
 
         <router-link to="/panel/mensajes" class="action-card">
-          <div class="action-icon">💬</div>
+          <div class="action-icon"><MessageSquare :size="24" /></div>
           <h3>Ver Mensajes</h3>
           <p>Responde a consultas de huéspedes</p>
           <span v-if="stats.unreadMessages > 0" class="badge">{{ stats.unreadMessages }}</span>
         </router-link>
 
         <router-link to="/panel/perfil" class="action-card">
-          <div class="action-icon">👤</div>
+          <div class="action-icon"><User :size="24" /></div>
           <h3>Actualizar Perfil</h3>
           <p>Gestiona tu información de contacto</p>
         </router-link>
 
         <router-link to="/panel/suscripcion" class="action-card">
-          <div class="action-icon">💎</div>
+          <div class="action-icon"><Crown :size="24" /></div>
           <h3>Mi Suscripción</h3>
           <p>Ver detalles y cambiar plan</p>
         </router-link>
 
         <a href="https://wa.me/5493511234567" target="_blank" class="action-card support">
-          <div class="action-icon">🆘</div>
+          <div class="action-icon"><HelpCircle :size="24" /></div>
           <h3>Soporte</h3>
           <p>¿Necesitas ayuda? Contáctanos</p>
         </a>
@@ -109,7 +109,12 @@
       <div class="activity-list">
         <div v-for="activity in recentActivity" :key="activity.id" class="activity-item">
           <div class="activity-icon" :class="activity.type">
-            {{ getActivityIcon(activity.type) }}
+            <Eye v-if="activity.type === 'view'" :size="18" />
+            <MessageSquare v-else-if="activity.type === 'message'" :size="18" />
+            <Home v-else-if="activity.type === 'property'" :size="18" />
+            <CreditCard v-else-if="activity.type === 'subscription'" :size="18" />
+            <User v-else-if="activity.type === 'profile'" :size="18" />
+            <Pin v-else :size="18" />
           </div>
           <div class="activity-content">
             <p class="activity-text">{{ activity.text }}</p>
@@ -118,7 +123,7 @@
         </div>
 
         <div v-if="recentActivity.length === 0" class="empty-state">
-          <span class="empty-icon">📋</span>
+          <ClipboardList :size="48" />
           <p>No hay actividad reciente</p>
           <p class="empty-hint">Las acciones que realices aparecerán aquí</p>
         </div>
@@ -127,11 +132,11 @@
 
     <!-- Tips y Ayuda -->
     <section class="tips-section">
-      <h2 class="section-title">💡 Consejos para Mejorar</h2>
+      <h2 class="section-title"><Lightbulb :size="24" /> Consejos para Mejorar</h2>
       <div class="tips-grid">
         <div class="tip-card" v-if="!stats.hasProfileComplete">
           <div class="tip-header">
-            <span class="tip-icon">👤</span>
+            <span class="tip-icon"><User :size="20" /></span>
             <h3>Completa tu Perfil</h3>
           </div>
           <p>Agrega tus datos de contacto y redes sociales para generar más confianza con los huéspedes.</p>
@@ -140,7 +145,7 @@
 
         <div class="tip-card" v-if="stats.totalProperties === 0">
           <div class="tip-header">
-            <span class="tip-icon">🏠</span>
+            <span class="tip-icon"><Home :size="20" /></span>
             <h3>Publica tu Primera Propiedad</h3>
           </div>
           <p>¡Comienza a ganar dinero! Agrega fotos atractivas y una descripción detallada.</p>
@@ -149,7 +154,7 @@
 
         <div class="tip-card">
           <div class="tip-header">
-            <span class="tip-icon">📸</span>
+            <span class="tip-icon"><Camera :size="20" /></span>
             <h3>Fotos de Calidad</h3>
           </div>
           <p>Las propiedades con 5 o más fotos profesionales reciben un 40% más de consultas.</p>
@@ -157,7 +162,7 @@
 
         <div class="tip-card">
           <div class="tip-header">
-            <span class="tip-icon">⚡</span>
+            <span class="tip-icon"><Zap :size="20" /></span>
             <h3>Responde Rápido</h3>
           </div>
           <p>Contesta mensajes en menos de 1 hora para aumentar tus posibilidades de reserva.</p>
@@ -171,6 +176,22 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAdminStore } from '@/stores/admin'
+import {
+  Plus,
+  Home,
+  MessageSquare,
+  CreditCard,
+  Eye,
+  Edit,
+  User,
+  Crown,
+  HelpCircle,
+  Pin,
+  ClipboardList,
+  Lightbulb,
+  Camera,
+  Zap
+} from '@lucide/vue'
 
 const authStore = useAuthStore()
 const adminStore = useAdminStore()
@@ -206,10 +227,6 @@ const subscriptionStatusText = computed(() => {
 })
 
 const loadStats = () => {
-  // TODO: Cargar stats reales desde Firestore
-  // Por ahora usamos datos de ejemplo
-  
-  // Verificar si tiene perfil completo
   const profile = localStorage.getItem(`profile_${authStore.user?.uid}`)
   const hasProfile = !!profile
   
@@ -222,7 +239,6 @@ const loadStats = () => {
     )
   }
 
-  // Simulación de datos (en producción vendrían de Firestore)
   stats.value = {
     ...stats.value,
     totalProperties: 3,
@@ -234,44 +250,32 @@ const loadStats = () => {
     viewsThisWeek: 28
   }
 
-  // Actividad reciente simulada
   recentActivity.value = [
     {
       id: 1,
       type: 'view',
       text: 'Tu propiedad "Casa con Parrilla" recibió 5 nuevas visitas',
-      timestamp: Date.now() - 2 * 60 * 60 * 1000 // 2 horas atrás
+      timestamp: Date.now() - 2 * 60 * 60 * 1000
     },
     {
       id: 2,
       type: 'message',
       text: 'Nuevo mensaje de María sobre "Departamento Céntrico"',
-      timestamp: Date.now() - 5 * 60 * 60 * 1000 // 5 horas atrás
+      timestamp: Date.now() - 5 * 60 * 60 * 1000
     },
     {
       id: 3,
       type: 'property',
       text: 'Editaste la propiedad "Cabaña en las Sierras"',
-      timestamp: Date.now() - 24 * 60 * 60 * 1000 // 1 día atrás
+      timestamp: Date.now() - 24 * 60 * 60 * 1000
     },
     {
       id: 4,
       type: 'subscription',
       text: 'Tu suscripción se renovó exitosamente',
-      timestamp: Date.now() - 3 * 24 * 60 * 60 * 1000 // 3 días atrás
+      timestamp: Date.now() - 3 * 24 * 60 * 60 * 1000
     }
   ]
-}
-
-const getActivityIcon = (type) => {
-  const icons = {
-    view: '👁️',
-    message: '💬',
-    property: '🏠',
-    subscription: '💳',
-    profile: '👤'
-  }
-  return icons[type] || '📌'
 }
 
 const formatRelativeTime = (timestamp) => {
@@ -352,7 +356,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
+  color: white;
   flex-shrink: 0;
 }
 
@@ -453,6 +457,9 @@ onMounted(() => {
   font-weight: 700;
   color: var(--gray-900);
   margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .quick-actions-grid {
@@ -495,8 +502,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
   margin-bottom: var(--spacing-md);
+  color: var(--gray-700);
 }
 
 .action-card h3 {
@@ -555,24 +562,27 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
   flex-shrink: 0;
 }
 
 .activity-icon.view {
   background: #fef3c7;
+  color: #92400e;
 }
 
 .activity-icon.message {
   background: #e0e7ff;
+  color: #3730a3;
 }
 
 .activity-icon.property {
   background: #dbeafe;
+  color: #1e40af;
 }
 
 .activity-icon.subscription {
   background: #d1fae5;
+  color: #065f46;
 }
 
 .activity-content {
@@ -594,13 +604,10 @@ onMounted(() => {
   text-align: center;
   padding: var(--spacing-2xl);
   color: var(--gray-500);
-}
-
-.empty-icon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: var(--spacing-md);
-  opacity: 0.5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .empty-hint {
@@ -630,7 +637,7 @@ onMounted(() => {
 }
 
 .tip-icon {
-  font-size: 1.5rem;
+  color: var(--gray-700);
 }
 
 .tip-card h3 {

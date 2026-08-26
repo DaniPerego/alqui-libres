@@ -26,10 +26,15 @@
             <div>
               <h1 class="property-title">{{ property.title }}</h1>
               <p class="property-location">
-                📍 {{ property.location.city }}, {{ property.location.state }}
+                <MapPin :size="16" /> {{ property.location.city }}, {{ property.location.state }}
               </p>
               <div class="rental-type-badge" :class="property.rentalType">
-                {{ property.rentalType === 'anual' ? '📆 Alquiler Anual' : '📅 Alquiler Temporario' }}
+                <template v-if="property.rentalType === 'anual'">
+                  <Calendar :size="16" /> Alquiler Anual
+                </template>
+                <template v-else>
+                  <Calendar :size="16" /> Alquiler Temporario
+                </template>
               </div>
               <div class="property-meta">
                 <span>{{ property.capacity.guests }} huéspedes</span>
@@ -42,7 +47,7 @@
               </div>
             </div>
             <div v-if="property.rating" class="property-rating">
-              <span class="rating-value">⭐ {{ property.rating.toFixed(1) }}</span>
+              <span class="rating-value"><Star :size="16" fill="#fbbf24" stroke="#fbbf24" /> {{ property.rating.toFixed(1) }}</span>
               <span class="rating-count">({{ property.reviewCount }} reseñas)</span>
             </div>
           </div>
@@ -55,10 +60,10 @@
           
           <!-- Características Locales Destacadas -->
           <section class="detail-section highlight-section" v-if="property.localFeatures">
-            <h2 class="section-title">🎯 Características Especiales</h2>
+            <h2 class="section-title">Características Especiales</h2>
             <div class="features-grid">
               <div v-if="property.localFeatures.grillType" class="feature-item">
-                <span class="feature-icon">🔥</span>
+                <span class="feature-icon"><Flame :size="20" /></span>
                 <div>
                   <strong>Parrilla {{ property.localFeatures.grillType }}</strong>
                   <p>Perfecta para asados al aire libre</p>
@@ -66,7 +71,7 @@
               </div>
               
               <div v-if="property.localFeatures.parkingSize" class="feature-item">
-                <span class="feature-icon">🚗</span>
+                <span class="feature-icon"><Car :size="20" /></span>
                 <div>
                   <strong>Cochera {{ property.localFeatures.parkingSize }}</strong>
                   <p>Estacionamiento seguro</p>
@@ -74,7 +79,7 @@
               </div>
               
               <div v-if="property.localFeatures.distanceToCenter" class="feature-item">
-                <span class="feature-icon">📍</span>
+                <span class="feature-icon"><MapPin :size="20" /></span>
                 <div>
                   <strong>{{ property.localFeatures.distanceToCenter }} km del centro</strong>
                   <p>Ubicación conveniente</p>
@@ -88,7 +93,7 @@
             <h2 class="section-title">Comodidades</h2>
             <div class="amenities-grid">
               <div v-for="amenity in property.amenities" :key="amenity" class="amenity-item">
-                <span class="amenity-icon">✓</span>
+                <span class="amenity-icon"><CheckCircle :size="16" /></span>
                 <span>{{ amenity }}</span>
               </div>
             </div>
@@ -96,7 +101,7 @@
           
           <!-- Contacto del Propietario -->
           <section class="detail-section contact-section">
-            <h2 class="section-title">👤 Contacta con el Propietario</h2>
+            <h2 class="section-title"><User :size="20" /> Contacta con el Propietario</h2>
             
             <!-- Usuario autenticado: Mostrar contactos -->
             <div v-if="isAuthenticated && ownerProfile" class="owner-contact-info">
@@ -109,14 +114,14 @@
                 </div>
                 <div class="owner-details">
                   <h3>{{ ownerProfile.displayName || 'Propietario' }}</h3>
-                  <p v-if="ownerProfile.city" class="owner-location">📍 {{ ownerProfile.city }}</p>
+                  <p v-if="ownerProfile.city" class="owner-location"><MapPin :size="16" /> {{ ownerProfile.city }}</p>
                   <p v-if="ownerProfile.bio" class="owner-bio">{{ ownerProfile.bio }}</p>
                 </div>
               </div>
               
               <!-- Contacto Principal -->
               <div class="contact-methods">
-                <h4>📞 Contacto Principal</h4>
+                <h4><Phone :size="18" /> Contacto Principal</h4>
                 <div class="contact-buttons">
                   <a 
                     v-if="ownerProfile.contactoPrincipal?.whatsapp" 
@@ -135,7 +140,7 @@
                     :href="`tel:${ownerProfile.contactoPrincipal.telefono}`"
                     class="contact-btn phone"
                   >
-                    📞 {{ ownerProfile.contactoPrincipal.telefono }}
+                    <Phone :size="18" /> {{ ownerProfile.contactoPrincipal.telefono }}
                   </a>
                   
                   <a 
@@ -143,14 +148,14 @@
                     :href="`mailto:${ownerProfile.contactoPrincipal?.email || ownerProfile.email}`"
                     class="contact-btn email"
                   >
-                    ✉️ Enviar Email
+                    <Mail :size="18" /> Enviar Email
                   </a>
                 </div>
               </div>
               
               <!-- Contacto Secundario -->
               <div v-if="ownerProfile.contactoSecundario?.enabled && ownerProfile.contactoSecundario?.telefono" class="contact-methods secondary">
-                <h4>📱 {{ ownerProfile.contactoSecundario.descripcion || 'Contacto Secundario' }}</h4>
+                <h4><Phone :size="16" /> {{ ownerProfile.contactoSecundario.descripcion || 'Contacto Secundario' }}</h4>
                 <div class="contact-buttons">
                   <a 
                     v-if="ownerProfile.contactoSecundario.whatsapp" 
@@ -169,7 +174,7 @@
                     :href="`tel:${ownerProfile.contactoSecundario.telefono}`"
                     class="contact-btn phone small"
                   >
-                    📞 {{ ownerProfile.contactoSecundario.telefono }}
+                    <Phone :size="18" /> {{ ownerProfile.contactoSecundario.telefono }}
                   </a>
                   
                   <a 
@@ -177,42 +182,42 @@
                     :href="`mailto:${ownerProfile.contactoSecundario.email}`"
                     class="contact-btn email small"
                   >
-                    ✉️ Email
+                    <Mail :size="18" /> Email
                   </a>
                 </div>
               </div>
               
               <!-- Redes Sociales -->
               <div v-if="hasSocialMedia" class="social-media">
-                <h4>🌐 Redes Sociales</h4>
+                <h4><Globe :size="18" /> Redes Sociales</h4>
                 <div class="social-links">
                   <a v-if="ownerProfile.redesSociales?.instagram" 
                      :href="`https://instagram.com/${ownerProfile.redesSociales.instagram}`" 
                      target="_blank" 
                      class="social-link instagram"
                   >
-                    📷 Instagram
+                    Instagram
                   </a>
                   <a v-if="ownerProfile.redesSociales?.facebook" 
                      :href="`https://facebook.com/${ownerProfile.redesSociales.facebook}`" 
                      target="_blank" 
                      class="social-link facebook"
                   >
-                    📘 Facebook
+                    Facebook
                   </a>
                   <a v-if="ownerProfile.redesSociales?.linkedin" 
                      :href="`https://linkedin.com/in/${ownerProfile.redesSociales.linkedin}`" 
                      target="_blank" 
                      class="social-link linkedin"
                   >
-                    💼 LinkedIn
+                    <ExternalLink :size="16" /> LinkedIn
                   </a>
                   <a v-if="ownerProfile.redesSociales?.website" 
                      :href="ownerProfile.redesSociales.website" 
                      target="_blank" 
                      class="social-link website"
                   >
-                    🌐 Sitio Web
+                    <Globe :size="18" /> Sitio Web
                   </a>
                 </div>
               </div>
@@ -221,14 +226,14 @@
             <!-- Usuario NO autenticado: Mostrar mensaje difuminado -->
             <div v-else class="contact-locked">
               <div class="blur-overlay">
-                <div class="lock-icon">🔒</div>
+                <div class="lock-icon"><Lock :size="48" /></div>
                 <h3>Regístrate para ver los datos de contacto</h3>
                 <p>Crea una cuenta gratuita para conectar directamente con el propietario</p>
                 <div class="contact-preview">
-                  <div class="preview-item">📞 Teléfono</div>
-                  <div class="preview-item">💬 WhatsApp</div>
-                  <div class="preview-item">✉️ Email</div>
-                  <div class="preview-item">🌐 Redes Sociales</div>
+                  <div class="preview-item"><Phone :size="18" /> Teléfono</div>
+                  <div class="preview-item"><MessageSquare :size="18" /> WhatsApp</div>
+                  <div class="preview-item"><Mail :size="18" /> Email</div>
+                  <div class="preview-item"><Globe :size="18" /> Redes Sociales</div>
                 </div>
                 <router-link to="/registro" class="btn btn-primary btn-lg">
                   Crear Cuenta Gratis
@@ -244,7 +249,7 @@
           <section class="detail-section">
             <h2 class="section-title">Disponibilidad</h2>
             <div class="calendar-placeholder">
-              <p>📅 Calendario de disponibilidad</p>
+              <p><Calendar :size="16" /> Calendario de disponibilidad</p>
               <p class="calendar-note">Selecciona tus fechas para ver la disponibilidad</p>
             </div>
           </section>
@@ -263,7 +268,7 @@
           </div>
           
           <div v-if="property.rentalType === 'anual'" class="annual-notice">
-            <p>📆 Esta propiedad se alquila por mes.</p>
+            <p><Calendar :size="16" /> Esta propiedad se alquila por mes.</p>
             <p>Consultá disponibilidad y condiciones contactando al propietario.</p>
           </div>
           <div v-else class="booking-form">
@@ -321,13 +326,13 @@
           </div>
           
           <button @click="openReservationModal" class="btn btn-primary btn-lg">
-            📅 Solicitar Reserva
+            <Calendar :size="16" /> Solicitar Reserva
           </button>
           
           <p class="no-fees-notice">
-            ✓ Precio final sin cargos ocultos<br>
-            ✓ Sin comisiones adicionales<br>
-            ✓ Respuesta en menos de 24hs
+            <CheckCircle :size="16" /> Precio final sin cargos ocultos<br>
+            <CheckCircle :size="16" /> Sin comisiones adicionales<br>
+            <CheckCircle :size="16" /> Respuesta en menos de 24hs
           </p>
         </aside>
       </div>
@@ -337,20 +342,20 @@
         <div v-if="showReservationModal" class="modal-overlay" @click="showReservationModal = false">
           <div class="modal reservation-modal" @click.stop>
             <div class="modal-header">
-              <h2>📅 Solicitar Reserva</h2>
-              <button @click="showReservationModal = false" class="close-btn">✕</button>
+              <h2><Calendar :size="20" /> Solicitar Reserva</h2>
+              <button @click="showReservationModal = false" class="close-btn"><X :size="20" /></button>
             </div>
             <div class="modal-body">
               <div class="reservation-summary">
                 <img :src="property.images[0]" :alt="property.title" class="summary-image">
                 <div>
                   <h3>{{ property.title }}</h3>
-                  <p>📍 {{ property.location.city }}, {{ property.location.state }}</p>
+                  <p><MapPin :size="16" /> {{ property.location.city }}, {{ property.location.state }}</p>
                 </div>
               </div>
 
               <div v-if="!isAuthenticated" class="auth-required">
-                <p>⚠️ Debes iniciar sesión para solicitar una reserva</p>
+                <p>Debes iniciar sesión para solicitar una reserva</p>
                 <router-link to="/login" class="btn btn-primary">
                   Iniciar Sesión
                 </router-link>
@@ -456,11 +461,11 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-lg" :disabled="submittingReservation">
-                  {{ submittingReservation ? 'Enviando...' : '📩 Enviar Solicitud' }}
+                  {{ submittingReservation ? 'Enviando...' : '' }} <Send :size="18" /> Enviar Solicitud
                 </button>
 
                 <p class="form-note">
-                  ℹ️ Tu solicitud será enviada al propietario. Recibirás una confirmación por email.
+                  Tu solicitud será enviada al propietario. Recibirás una confirmación por email.
                 </p>
               </form>
             </div>
@@ -485,11 +490,11 @@
           <div v-for="review in reviews" :key="review.id" class="review-card">
             <div class="review-header">
               <strong>{{ review.guestName }}</strong>
-              <span class="review-rating">⭐ {{ review.rating }}</span>
+              <span class="review-rating"><Star :size="16" fill="#fbbf24" stroke="#fbbf24" /> {{ review.rating }}</span>
             </div>
             <p class="review-date">{{ formatDate(review.createdAt) }}</p>
             <p class="review-comment">{{ review.comment }}</p>
-            <span v-if="review.verified" class="verified-badge">✓ Verificado</span>
+            <span v-if="review.verified" class="verified-badge"><CheckCircle :size="16" /> Verificado</span>
           </div>
         </div>
         <div v-else class="reviews-empty">
@@ -547,6 +552,7 @@ import { createReservation } from '@/services/reservations'
 // isSupabaseConfigured removed — auth is now native JWT
 import DatePicker from 'vue-datepicker-next';
 import 'vue-datepicker-next/index.css';
+import { MapPin, Calendar, Star, Flame, Car, Clock, Phone, Mail, MessageSquare, Lock, Globe, ExternalLink, CheckCircle, ArrowRight, Send, X, ChevronLeft, ChevronRight, User } from '@lucide/vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -826,7 +832,7 @@ const submitReservation = async () => {
     }
 
     showReservationModal.value = false
-    toastMessage.value = '✅ ¡Solicitud enviada! El propietario recibirá tu consulta por email y WhatsApp'
+    toastMessage.value = '¡Solicitud enviada! El propietario recibirá tu consulta por email y WhatsApp'
     showToast.value = true
     setTimeout(() => {
       showToast.value = false
@@ -842,8 +848,8 @@ const submitReservation = async () => {
       message: ''
     }
   } catch (error) {
-    console.error('❌ Error enviando reserva:', error)
-    toastMessage.value = '❌ ' + (error.message || 'Error al enviar la solicitud. Por favor intenta nuevamente.')
+    console.error('Error enviando reserva:', error)
+    toastMessage.value = (error.message || 'Error al enviar la solicitud. Por favor intenta nuevamente.')
     showToast.value = true
     setTimeout(() => {
       showToast.value = false
@@ -993,10 +999,15 @@ onMounted(async () => {
   font-size: 1rem;
   color: var(--gray-600);
   margin-bottom: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .rental-type-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   padding: 0.25rem 0.75rem;
   border-radius: 999px;
   font-size: 0.75rem;
@@ -1028,6 +1039,9 @@ onMounted(async () => {
 .rating-value {
   font-size: 1.25rem;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .rating-count {
@@ -1045,6 +1059,9 @@ onMounted(async () => {
   font-weight: 600;
   margin-bottom: var(--spacing-lg);
   color: var(--gray-900);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .property-description {
@@ -1073,6 +1090,9 @@ onMounted(async () => {
 
 .feature-icon {
   font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .amenities-grid {
@@ -1090,6 +1110,8 @@ onMounted(async () => {
 .amenity-icon {
   color: var(--secondary-color);
   font-weight: 700;
+  display: flex;
+  align-items: center;
 }
 
 .calendar-placeholder {
@@ -1097,6 +1119,13 @@ onMounted(async () => {
   background-color: var(--gray-100);
   border-radius: var(--radius-md);
   text-align: center;
+}
+
+.calendar-placeholder p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
 }
 
 .calendar-note {
@@ -1203,6 +1232,13 @@ onMounted(async () => {
   font-size: 0.875rem;
 }
 
+.annual-notice p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
 .price-breakdown {
   padding: var(--spacing-lg);
   background-color: var(--gray-50);
@@ -1229,6 +1265,12 @@ onMounted(async () => {
   color: var(--secondary-color);
   margin-top: var(--spacing-md);
   line-height: 1.6;
+}
+
+.no-fees-notice span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .reviews-section {
@@ -1259,6 +1301,9 @@ onMounted(async () => {
 
 .review-rating {
   color: var(--warning-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .review-date {
@@ -1274,7 +1319,9 @@ onMounted(async () => {
 }
 
 .verified-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
   background-color: var(--secondary-color);
   color: white;
@@ -1417,6 +1464,9 @@ onMounted(async () => {
   color: var(--gray-600);
   font-size: 0.875rem;
   margin-bottom: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .owner-bio {
@@ -1435,6 +1485,9 @@ onMounted(async () => {
   font-size: 1rem;
   color: var(--gray-800);
   margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .contact-methods.secondary {
@@ -1515,6 +1568,9 @@ onMounted(async () => {
   font-size: 1rem;
   color: var(--gray-800);
   margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .social-links {
@@ -1524,6 +1580,9 @@ onMounted(async () => {
 }
 
 .social-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   padding: var(--spacing-sm) var(--spacing-lg);
   border-radius: var(--radius-md);
   text-decoration: none;
@@ -1592,9 +1651,11 @@ onMounted(async () => {
 }
 
 .lock-icon {
-  font-size: 4rem;
   margin-bottom: var(--spacing-lg);
   animation: pulse 2s ease-in-out infinite;
+  display: flex;
+  justify-content: center;
+  color: var(--gray-600);
 }
 
 @keyframes pulse {
@@ -1621,6 +1682,9 @@ onMounted(async () => {
 }
 
 .preview-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-md);
   background: rgba(255,255,255,0.5);
   border-radius: var(--radius-md);
@@ -1690,6 +1754,9 @@ onMounted(async () => {
 .modal-header h2 {
   font-size: 1.5rem;
   color: var(--gray-900);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .close-btn {
@@ -1741,6 +1808,9 @@ onMounted(async () => {
 .reservation-summary p {
   color: var(--gray-600);
   font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .auth-required {

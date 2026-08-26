@@ -58,7 +58,14 @@
         <!-- Filtros Avanzados (Hiper-Locales) -->
         <div class="advanced-filters" :class="{ open: showAdvanced }">
           <button @click="showAdvanced = !showAdvanced" class="toggle-advanced">
-            {{ showAdvanced ? '▲ Ocultar' : '▼ Mostrar' }} Filtros Avanzados
+            <span class="toggle-label">
+              <SlidersHorizontal :size="18" />
+              {{ showAdvanced ? 'Ocultar' : 'Mostrar' }} Filtros Avanzados
+            </span>
+            <span class="toggle-chevron" :class="{ rotated: showAdvanced }">
+              <ChevronUp v-if="showAdvanced" :size="18" />
+              <ChevronDown v-else :size="18" />
+            </span>
           </button>
           
           <div v-if="showAdvanced" class="advanced-content">
@@ -85,7 +92,10 @@
               
               <!-- FILTROS HIPER-LOCALES (Ventaja Competitiva) -->
               <div class="filter-group">
-                <label for="grill-type" class="label">🔥 Tipo de Parrilla</label>
+                <label for="grill-type" class="label">
+                  <span class="label-icon"><Flame :size="16" /></span>
+                  Tipo de Parrilla
+                </label>
                 <select 
                   id="grill-type"
                   v-model="searchStore.filters.localFeatures.grillType" 
@@ -100,7 +110,10 @@
               </div>
               
               <div class="filter-group">
-                <label for="parking-size" class="label">🚗 Tamaño de Cochera</label>
+                <label for="parking-size" class="label">
+                  <span class="label-icon"><Car :size="16" /></span>
+                  Tamaño de Cochera
+                </label>
                 <select 
                   id="parking-size"
                   v-model="searchStore.filters.localFeatures.parkingSize" 
@@ -152,8 +165,9 @@
           <button 
             v-if="searchStore.hasActiveFilters" 
             @click="searchStore.clearFilters()"
-            class="btn btn-secondary btn-sm"
+            class="btn btn-secondary btn-sm clear-filters-btn"
           >
+            <X :size="16" />
             Limpiar Filtros
           </button>
         </div>
@@ -164,7 +178,9 @@
         </div>
         
         <div v-else-if="searchStore.filteredListings.length === 0" class="empty-results">
-          <div class="empty-icon">🔍</div>
+          <div class="empty-icon-wrapper">
+            <SearchIcon :size="48" class="empty-search-icon" />
+          </div>
           <h3>No se encontraron propiedades</h3>
           <p>Intenta ajustar tus filtros de búsqueda</p>
         </div>
@@ -184,7 +200,8 @@
               <div class="listing-header">
                 <h3 class="listing-title">{{ listing.title }}</h3>
                 <div class="listing-rating" v-if="listing.rating > 0">
-                  ⭐ {{ listing.rating.toFixed(1) }}
+                  <Star :size="14" fill="#fbbf24" stroke="#fbbf24" />
+                  <span>{{ listing.rating.toFixed(1) }}</span>
                 </div>
               </div>
               
@@ -194,7 +211,10 @@
                   {{ listing.rentalType === 'anual' ? 'Anual' : 'Temp.' }}
                 </span>
               </p>
-              <p class="listing-location">📍 {{ listing.location.city }}</p>
+              <p class="listing-location">
+                <MapPin :size="14" />
+                <span>{{ listing.location.city }}</span>
+              </p>
               
               <div class="listing-capacity">
                 <span>{{ listing.capacity.guests }} huéspedes</span>
@@ -207,10 +227,12 @@
               <!-- Características Locales Destacadas -->
               <div v-if="listing.localFeatures" class="local-features">
                 <span v-if="listing.localFeatures.grillType" class="feature-tag">
-                  🔥 Parrilla {{ listing.localFeatures.grillType }}
+                  <Flame :size="14" />
+                  Parrilla {{ listing.localFeatures.grillType }}
                 </span>
                 <span v-if="listing.localFeatures.parkingSize" class="feature-tag">
-                  🚗 Cochera {{ listing.localFeatures.parkingSize }}
+                  <Car :size="14" />
+                  Cochera {{ listing.localFeatures.parkingSize }}
                 </span>
               </div>
               
@@ -219,7 +241,10 @@
                   <span class="price-amount">${{ listing.pricing.basePrice }}</span>
                   <span class="price-period">{{ listing.rentalType === 'anual' ? '/ mes' : '/ noche' }}</span>
                 </div>
-                <span class="view-details">Ver Detalles →</span>
+                <span class="view-details">
+                  Ver Detalles
+                  <ArrowRight :size="16" />
+                </span>
               </div>
             </div>
           </router-link>
@@ -232,6 +257,18 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useSearchStore } from '@/stores/search'
+import {
+  Search as SearchIcon,
+  MapPin,
+  Star,
+  ChevronDown,
+  ChevronUp,
+  Flame,
+  Car,
+  X,
+  SlidersHorizontal,
+  ArrowRight
+} from '@lucide/vue'
 
 const searchStore = useSearchStore()
 const showAdvanced = ref(false)
@@ -251,6 +288,9 @@ onMounted(() => {
 }
 
 .search-filters {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
   padding: var(--spacing-xl);
   margin-bottom: var(--spacing-xl);
 }
@@ -268,6 +308,20 @@ onMounted(() => {
   gap: var(--spacing-xs);
 }
 
+.label {
+  font-weight: 600;
+  color: var(--gray-700);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.label-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--primary-color);
+}
+
 .advanced-filters {
   margin-top: var(--spacing-lg);
   padding-top: var(--spacing-lg);
@@ -283,6 +337,24 @@ onMounted(() => {
   padding: var(--spacing-sm) 0;
   width: 100%;
   text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.toggle-chevron {
+  display: inline-flex;
+  transition: transform 0.25s ease;
+}
+
+.toggle-chevron.rotated {
+  transform: rotate(180deg);
 }
 
 .advanced-content {
@@ -312,15 +384,31 @@ onMounted(() => {
   color: var(--gray-900);
 }
 
+.clear-filters-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .loading-container,
 .empty-results {
   text-align: center;
   padding: var(--spacing-2xl);
 }
 
-.empty-icon {
-  font-size: 4rem;
+.empty-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
   margin-bottom: var(--spacing-lg);
+}
+
+.empty-search-icon {
+  color: var(--primary-color);
 }
 
 .empty-results h3 {
@@ -341,10 +429,11 @@ onMounted(() => {
 
 .listing-card {
   background: white;
+  border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
-  transition: transform var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
   text-decoration: none;
   color: inherit;
 }
@@ -352,6 +441,7 @@ onMounted(() => {
 .listing-card:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
 }
 
 .listing-image {
@@ -385,7 +475,15 @@ onMounted(() => {
 }
 
 .listing-rating {
-  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  background: #fef9c3;
+  padding: 2px 6px;
+  border-radius: 999px;
   white-space: nowrap;
 }
 
@@ -419,6 +517,9 @@ onMounted(() => {
 }
 
 .listing-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   color: var(--gray-600);
   font-size: 0.875rem;
   margin-bottom: var(--spacing-sm);
@@ -440,6 +541,9 @@ onMounted(() => {
 }
 
 .feature-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background-color: var(--secondary-color);
   color: white;
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -474,6 +578,9 @@ onMounted(() => {
 }
 
 .view-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--primary-color);
   font-weight: 600;
   font-size: 0.875rem;

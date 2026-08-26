@@ -3,7 +3,7 @@
     <nav class="container">
       <div class="nav-wrapper">
         <router-link to="/" class="logo">
-          <span class="logo-icon">🏠</span>
+          <Home :size="24" />
           <span class="logo-text">AlquiLibres</span>
         </router-link>
         
@@ -17,7 +17,7 @@
           
           <template v-else>
             <router-link v-if="authStore.user?.role === 'admin'" to="/admin" class="nav-link admin-link">
-              👑 Admin
+              <Crown :size="18" /> Admin
             </router-link>
             <router-link v-if="authStore.user?.role === 'guest'" to="/panel/perfil" class="nav-link">Mi Perfil</router-link>
             <router-link v-else-if="authStore.user?.role !== 'admin'" to="/panel" class="nav-link">Mi Panel</router-link>
@@ -27,7 +27,8 @@
         
         <!-- Mobile menu button -->
         <button @click="mobileMenuOpen = !mobileMenuOpen" class="mobile-menu-btn" :class="{ active: mobileMenuOpen }">
-          <span class="hamburger"></span>
+          <Menu v-if="!mobileMenuOpen" :size="24" />
+          <X v-else :size="24" />
         </button>
       </div>
       
@@ -41,25 +42,27 @@
         <div v-if="mobileMenuOpen" class="mobile-menu">
           <div class="mobile-header">
             <div class="mobile-logo">
-              <span class="logo-icon">🏠</span>
+              <Home :size="24" />
               <span>AlquiLibres</span>
             </div>
-            <button @click="mobileMenuOpen = false" class="close-btn">✕</button>
+            <button @click="mobileMenuOpen = false" class="close-btn">
+              <X :size="20" />
+            </button>
           </div>
           
           <nav class="mobile-nav">
             <router-link to="/buscar" class="mobile-link" @click="mobileMenuOpen = false">
-              <span class="link-icon">🔍</span>
+              <Search :size="18" />
               <span>Buscar Propiedades</span>
             </router-link>
             
             <template v-if="!authStore.isAuthenticated">
               <router-link to="/login" class="mobile-link" @click="mobileMenuOpen = false">
-                <span class="link-icon">👤</span>
+                <User :size="18" />
                 <span>Iniciar Sesión</span>
               </router-link>
               <router-link to="/registro" class="mobile-link highlight" @click="mobileMenuOpen = false">
-                <span class="link-icon">✨</span>
+                <Sparkles :size="18" />
                 <span>Publicar Propiedad</span>
               </router-link>
             </template>
@@ -76,35 +79,35 @@
               </div>
               
               <router-link v-if="authStore.user?.role === 'admin'" to="/admin" class="mobile-link admin-link-mobile" @click="mobileMenuOpen = false">
-                <span class="link-icon">👑</span>
+                <Crown :size="18" />
                 <span>Panel de Administración</span>
               </router-link>
               
               <router-link v-if="authStore.user?.role === 'guest'" to="/panel/perfil" class="mobile-link" @click="mobileMenuOpen = false">
-                <span class="link-icon">👤</span>
+                <User :size="18" />
                 <span>Mi Perfil</span>
               </router-link>
               <router-link v-else-if="authStore.user?.role !== 'admin'" to="/panel" class="mobile-link" @click="mobileMenuOpen = false">
-                <span class="link-icon">📊</span>
+                <LayoutDashboard :size="18" />
                 <span>Mi Panel</span>
               </router-link>
               <router-link v-if="authStore.user?.role === 'owner'" to="/panel/propiedades" class="mobile-link" @click="mobileMenuOpen = false">
-                <span class="link-icon">🏘️</span>
+                <Building :size="18" />
                 <span>Mis Propiedades</span>
               </router-link>
               <router-link v-if="authStore.user?.role === 'owner'" to="/panel/mensajes" class="mobile-link" @click="mobileMenuOpen = false">
-                <span class="link-icon">💬</span>
+                <MessageSquare :size="18" />
                 <span>Mensajes</span>
               </router-link>
               <router-link v-if="authStore.user?.role === 'owner'" to="/panel/suscripcion" class="mobile-link" @click="mobileMenuOpen = false">
-                <span class="link-icon">💳</span>
+                <CreditCard :size="18" />
                 <span>Suscripción</span>
               </router-link>
               
               <div class="divider"></div>
               
               <button @click="handleLogout" class="mobile-link logout">
-                <span class="link-icon">🚪</span>
+                <LogOut :size="18" />
                 <span>Cerrar Sesión</span>
               </button>
             </template>
@@ -119,6 +122,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { Home, Search, User, Crown, LayoutDashboard, LogOut, Menu, X, Plus, MessageSquare, CreditCard, Building, Sparkles } from '@lucide/vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -164,10 +168,6 @@ const handleLogout = async () => {
 
 .logo:hover {
   transform: scale(1.05);
-}
-
-.logo-icon {
-  font-size: 2rem;
 }
 
 .logo-text {
@@ -233,48 +233,7 @@ const handleLogout = async () => {
   padding: 0;
   position: relative;
   z-index: 1001;
-}
-
-.hamburger {
-  width: 24px;
-  height: 2px;
-  background: var(--gray-700);
-  border-radius: 2px;
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.hamburger::before,
-.hamburger::after {
-  content: '';
-  position: absolute;
-  width: 24px;
-  height: 2px;
-  background: var(--gray-700);
-  border-radius: 2px;
-  transition: all 0.3s ease;
-}
-
-.hamburger::before {
-  top: -8px;
-}
-
-.hamburger::after {
-  top: 8px;
-}
-
-.mobile-menu-btn.active .hamburger {
-  background: transparent;
-}
-
-.mobile-menu-btn.active .hamburger::before {
-  transform: rotate(45deg);
-  top: 0;
-}
-
-.mobile-menu-btn.active .hamburger::after {
-  transform: rotate(-45deg);
-  top: 0;
+  color: var(--gray-700);
 }
 
 @media (min-width: 768px) {
@@ -362,7 +321,6 @@ const handleLogout = async () => {
   background: rgba(255, 255, 255, 0.2);
   border: none;
   border-radius: 50%;
-  font-size: 1.5rem;
   color: white;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -421,7 +379,6 @@ const handleLogout = async () => {
 }
 
 .link-icon {
-  font-size: 1.25rem;
   display: flex;
   align-items: center;
   justify-content: center;

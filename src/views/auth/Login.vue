@@ -5,7 +5,7 @@
         <!-- Demo Info Banner -->
         <div v-if="isDemoMode" class="demo-info-card">
           <div class="demo-info-header">
-            <span class="demo-icon">🧪</span>
+            <span class="demo-icon"><FlaskConical :size="20" /></span>
             <strong>Modo de Prueba</strong>
           </div>
           <p class="demo-info-text">
@@ -13,31 +13,31 @@
           </p>
           <div class="demo-credentials">
             <div class="demo-credential-item">
-              <span class="demo-label">Huésped (alquila):</span>
+              <span class="demo-label">Hu�sped (alquila):</span>
               <code class="demo-value">huesped@alquilibres.com / guest123</code>
-              <button @click="autofillDemo('huesped@alquilibres.com','guest123')" class="copy-btn" title="Autocompletar">⚡</button>
+              <button @click="autofillDemo('huesped@alquilibres.com','guest123')" class="copy-btn" title="Autocompletar"><Zap :size="16" /></button>
             </div>
             <div class="demo-credential-item">
               <span class="demo-label">Propietario (publica):</span>
               <code class="demo-value">usuario@alquilibres.com / user123</code>
-              <button @click="autofillDemo('usuario@alquilibres.com','user123')" class="copy-btn" title="Autocompletar">⚡</button>
+              <button @click="autofillDemo('usuario@alquilibres.com','user123')" class="copy-btn" title="Autocompletar"><Zap :size="16" /></button>
             </div>
             <div class="demo-credential-item">
               <span class="demo-label">Administrador:</span>
               <code class="demo-value">admin@alquilibres.com / admin123</code>
-              <button @click="autofillDemo('admin@alquilibres.com','admin123')" class="copy-btn" title="Autocompletar">⚡</button>
+              <button @click="autofillDemo('admin@alquilibres.com','admin123')" class="copy-btn" title="Autocompletar"><Zap :size="16" /></button>
             </div>
           </div>
-          <p style="font-size:0.95em;opacity:0.8;margin-top:8px;">⚠️ Solo funcionan en modo demo (sin Firebase real)</p>
+          <p class="demo-warning"><AlertTriangle :size="16" /> Solo funcionan en modo demo (sin Firebase real)</p>
         </div>
 
         <div class="auth-card card">
-          <h1 class="auth-title">Iniciar Sesión</h1>
+          <h1 class="auth-title">Iniciar Sesi&#243;n</h1>
           <p class="auth-subtitle">Accede a tu panel de control</p>
           
           <form @submit.prevent="handleSubmit" class="auth-form">
             <div class="form-group">
-              <label for="email" class="label">Correo Electrónico</label>
+              <label for="email" class="label"><Mail :size="18" /> Correo Electr&#243;nico</label>
               <input 
                 id="email"
                 v-model="formData.email" 
@@ -49,34 +49,36 @@
             </div>
             
             <div class="form-group">
-              <label for="password" class="label">Contraseña</label>
+              <label for="password" class="label"><Lock :size="18" /> Contrase&#241;a</label>
               <input 
                 id="password"
                 v-model="formData.password" 
                 type="password" 
                 class="input" 
-                placeholder="••••••••"
+                placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
                 required
               />
             </div>
             
-            <div v-if="error" class="error-message">
-              {{ error }}
-            </div>
+            <Transition name="error-slide">
+              <div v-if="error" class="error-message">
+                {{ error }}
+              </div>
+            </Transition>
             
             <button 
               type="submit" 
               class="btn btn-primary btn-lg" 
               :disabled="loading"
             >
-              <span v-if="!loading">Iniciar Sesión</span>
+              <span v-if="!loading">Iniciar Sesi&#243;n</span>
               <span v-else>Cargando...</span>
             </button>
           </form>
           
           <div class="auth-footer">
-            <p>¿No tienes cuenta? 
-              <router-link to="/registro" class="auth-link">Regístrate</router-link>
+            <p>&#191;No tienes cuenta? 
+              <router-link to="/registro" class="auth-link">Reg&#237;strate</router-link>
             </p>
           </div>
         </div>
@@ -90,6 +92,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { auth } from '@/config/firebase'
+import { FlaskConical, Zap, AlertTriangle, Mail, Lock } from '@lucide/vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -113,9 +116,9 @@ const autofillDemo = (email, password) => {
 const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text)
-    console.log('✅ Copiado al portapapeles:', text)
+    console.log('Copiado al portapapeles:', text)
   } catch (err) {
-    console.log('⚠️ No se pudo copiar automáticamente')
+    console.log('No se pudo copiar automaticamente')
   }
 }
 
@@ -172,7 +175,8 @@ const handleSubmit = async () => {
 }
 
 .demo-icon {
-  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
 }
 
 .demo-info-text {
@@ -213,39 +217,34 @@ const handleSubmit = async () => {
 }
 
 .copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: rgba(255, 255, 255, 0.2);
   border: none;
-  padding: 4px 8px;
+  padding: 6px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 0.875rem;
 }
 
 .copy-btn:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
-.btn-autofill {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.25);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-autofill:hover {
-  background: rgba(255, 255, 255, 0.35);
-  border-color: rgba(255, 255, 255, 0.6);
-  transform: translateY(-1px);
+.demo-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95em;
+  opacity: 0.8;
+  margin-top: 8px;
 }
 
 .auth-card {
   padding: var(--spacing-2xl);
+  border-top: 4px solid;
+  border-image: linear-gradient(90deg, #667eea, #764ba2) 1;
 }
 
 .auth-title {
@@ -274,12 +273,32 @@ const handleSubmit = async () => {
   gap: var(--spacing-xs);
 }
 
+.form-group .label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .error-message {
   background-color: #fee;
   color: var(--danger-color);
   padding: var(--spacing-md);
   border-radius: var(--radius-md);
   font-size: 0.875rem;
+}
+
+.error-slide-enter-active,
+.error-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.error-slide-enter-from,
+.error-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+  max-height: 0;
+  padding: 0 var(--spacing-md);
+  margin: 0;
 }
 
 .auth-footer {
@@ -315,10 +334,6 @@ const handleSubmit = async () => {
   .demo-info-header {
     font-size: 1rem;
     margin-bottom: var(--spacing-sm);
-  }
-
-  .demo-icon {
-    font-size: 1.25rem;
   }
 
   .demo-info-text {

@@ -3,10 +3,10 @@
     <div class="container">
       <div class="footer-content">
         <div class="footer-section">
-          <h3 class="footer-title">AlquiLibres</h3>
+          <h3 class="footer-title"><Home :size="20" /> AlquiLibres</h3>
           <p class="footer-text">
             Plataforma hiper-local de alquileres temporarios sin comisiones por reserva.
-            Suscripción fija para propietarios.
+            Suscripci&#243;n fija para propietarios.
           </p>
         </div>
         
@@ -20,16 +20,16 @@
         </div>
         
         <div class="footer-section">
-          <h4 class="footer-subtitle">Para Huéspedes</h4>
+          <h4 class="footer-subtitle">Para Hu&#233;spedes</h4>
           <ul class="footer-links">
             <li><router-link to="/buscar">Buscar Alojamiento</router-link></li>
-            <li><router-link to="/como-funciona">¿Cómo Funciona?</router-link></li>
+            <li><router-link to="/como-funciona">&#191;C&#243;mo Funciona?</router-link></li>
             <li><router-link to="/faq">Preguntas Frecuentes</router-link></li>
           </ul>
         </div>
         
         <div class="footer-section">
-          <h4 class="footer-subtitle">Compañía</h4>
+          <h4 class="footer-subtitle">Compa&#241;&#237;a</h4>
           <ul class="footer-links">
             <li><router-link to="/nosotros">Sobre Nosotros</router-link></li>
             <li><router-link to="/contacto">Contacto</router-link></li>
@@ -39,10 +39,10 @@
         <div class="footer-section">
           <h4 class="footer-subtitle">Legal</h4>
           <ul class="footer-links">
-            <li><router-link to="/terminos">Términos y Condiciones</router-link></li>
-            <li><router-link to="/privacidad">Política de Privacidad</router-link></li>
+            <li><router-link to="/terminos">T&#233;rminos y Condiciones</router-link></li>
+            <li><router-link to="/privacidad">Pol&#237;tica de Privacidad</router-link></li>
             <li><router-link to="/contrato">Modelo de Contrato</router-link></li>
-            <li><router-link to="/cookies">Política de Cookies</router-link></li>
+            <li><router-link to="/cookies">Pol&#237;tica de Cookies</router-link></li>
           </ul>
         </div>
         
@@ -59,11 +59,11 @@
       
       <div class="footer-bottom">
         <div class="footer-bottom-content">
-          <p>&copy; 2025 AlquiLibres. Todos los derechos reservados.</p>
+          <p>&copy; 2026 AlquiLibres. Todos los derechos reservados.</p>
           <div class="footer-social">
             <a href="https://facebook.com/alquilibres" target="_blank" rel="noopener" aria-label="Facebook">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.759-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
               </svg>
             </a>
             <a href="https://instagram.com/alquilibres" target="_blank" rel="noopener" aria-label="Instagram">
@@ -88,12 +88,37 @@
   </footer>
 </template>
 
+<script setup>
+import { Home } from '@lucide/vue'
+</script>
+
 <style scoped>
 .footer {
+  position: relative;
   background-color: var(--gray-900);
   color: var(--gray-300);
   padding: var(--spacing-2xl) 0 var(--spacing-lg);
   margin-top: var(--spacing-2xl);
+}
+
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-600), #764ba2, var(--primary-600));
+}
+
+.footer-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: var(--spacing-sm);
 }
 
 .footer-content {
@@ -107,13 +132,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--gray-800);
 }
 
-.footer-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: white;
-  margin-bottom: var(--spacing-sm);
+.footer-section:first-child {
+  border-top: none;
+  padding-top: 0;
 }
 
 .footer-subtitle {
@@ -140,11 +165,13 @@
   color: var(--gray-400);
   text-decoration: none;
   font-size: 0.875rem;
-  transition: color var(--transition-fast);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+  display: inline-block;
 }
 
 .footer-links a:hover {
   color: white;
+  transform: translateX(4px);
 }
 
 .footer-bottom {
@@ -171,17 +198,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   background-color: var(--gray-800);
   color: var(--gray-400);
   border-radius: 50%;
+  border: 1px solid var(--gray-700);
   transition: all var(--transition-fast);
 }
 
 .footer-social a:hover {
   background-color: var(--primary-600);
   color: white;
+  border-color: var(--primary-600);
   transform: translateY(-2px);
 }
 
@@ -193,6 +222,10 @@
 
   .footer-links {
     align-items: center;
+  }
+
+  .footer-links a:hover {
+    transform: none;
   }
 
   .footer-bottom-content {

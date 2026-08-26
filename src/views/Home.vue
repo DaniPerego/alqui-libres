@@ -18,22 +18,14 @@
               :class="['tab-btn', { active: rentalType === 'temporario' }]"
               @click="rentalType = 'temporario'"
             >
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
+              <Clock :size="20" />
               Alquiler Diario
             </button>
             <button
               :class="['tab-btn', { active: rentalType === 'anual' }]"
               @click="rentalType = 'anual'"
             >
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-              </svg>
+              <Calendar :size="20" />
               Alquiler Anual
             </button>
           </div>
@@ -43,10 +35,10 @@
             <div class="search-inputs">
               <div class="search-input-group">
                 <label for="home-city">Ciudad</label>
-                <input 
+                <input
                   id="home-city"
-                  v-model="searchFilters.city" 
-                  type="text" 
+                  v-model="searchFilters.city"
+                  type="text"
                   placeholder="¿A dónde vas?"
                   class="input"
                 />
@@ -55,24 +47,24 @@
               <template v-if="rentalType === 'temporario'">
                 <div class="search-input-group">
                   <label for="home-checkin">Check-in</label>
-                  <input 
+                  <input
                     id="home-checkin"
-                    v-model="searchFilters.checkIn" 
-                    type="date" 
+                    v-model="searchFilters.checkIn"
+                    type="date"
                     class="input"
                   />
                 </div>
-                
+
                 <div class="search-input-group">
                   <label for="home-checkout">Check-out</label>
-                  <input 
+                  <input
                     id="home-checkout"
-                    v-model="searchFilters.checkOut" 
-                    type="date" 
+                    v-model="searchFilters.checkOut"
+                    type="date"
                     class="input"
                   />
                 </div>
-                
+
                 <div class="search-input-group">
                   <label for="home-guests">Huéspedes</label>
                   <select id="home-guests" v-model.number="searchFilters.guests" class="select">
@@ -98,10 +90,10 @@
                 </div>
                 <div class="search-input-group">
                   <label for="home-maxprice">Precio Máx / Mes</label>
-                  <input 
+                  <input
                     id="home-maxprice"
-                    v-model.number="searchFilters.priceMax" 
-                    type="number" 
+                    v-model.number="searchFilters.priceMax"
+                    type="number"
                     placeholder="Presupuesto mensual"
                     class="input"
                     min="0"
@@ -109,8 +101,9 @@
                 </div>
               </template>
             </div>
-            
+
             <button @click="handleSearch" class="btn btn-primary btn-lg search-btn">
+              <Search :size="20" />
               {{ rentalType === 'anual' ? 'Buscar Propiedades' : 'Buscar Alojamiento' }}
             </button>
           </div>
@@ -138,10 +131,7 @@
             <div class="card-body">
               <h3 class="card-title">{{ property.title }}</h3>
               <p class="card-location">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
+                <MapPin :size="14" />
                 {{ property.location.city }}, {{ property.location.state }}
               </p>
               <div class="card-footer">
@@ -150,9 +140,7 @@
                   <span>{{ property.rentalType === 'anual' ? '/mes' : '/noche' }}</span>
                 </div>
                 <div class="card-rating" v-if="property.rating">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="#fbbf24" stroke="#fbbf24">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                  </svg>
+                  <Star :size="16" fill="#fbbf24" stroke="#fbbf24" />
                   <span>{{ property.rating }}</span>
                   <span class="review-count">({{ property.reviewCount }})</span>
                 </div>
@@ -169,15 +157,15 @@
         <h2 class="section-title">¿Por qué AlquiLibres?</h2>
         <div class="features-grid">
           <div class="feature-card">
-            <div class="feature-icon">💰</div>
+            <div class="feature-icon"><Wallet :size="32" /></div>
             <h3 class="feature-title">Sin Comisiones por Reserva</h3>
             <p class="feature-text">
-              Los propietarios pagan una suscripción fija mensual. 
+              Los propietarios pagan una suscripción fija mensual.
               No importa cuántas reservas tengas, tu ganancia es 100%.
             </p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">📍</div>
+            <div class="feature-icon"><MapPin :size="32" /></div>
             <h3 class="feature-title">Hiper-Local</h3>
             <p class="feature-text">
               Conocemos tu ciudad. Filtros específicos que los gigantes no tienen:
@@ -185,15 +173,15 @@
             </p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">⚡</div>
+            <div class="feature-icon"><Zap :size="32" /></div>
             <h3 class="feature-title">Simple y Rápido</h3>
             <p class="feature-text">
-              Editor de anuncios intuitivo, calendario sincronizado, 
+              Editor de anuncios intuitivo, calendario sincronizado,
               y gestión de mensajes más simple que las plataformas globales.
             </p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">🔒</div>
+            <div class="feature-icon"><Shield :size="32" /></div>
             <h3 class="feature-title">Transparencia Total</h3>
             <p class="feature-text">
               Precio final visible desde el principio. Sin tasas ocultas.
@@ -215,6 +203,7 @@
           </p>
           <router-link to="/registro" class="btn btn-primary btn-lg">
             Publicar Mi Propiedad
+            <ArrowRight :size="20" />
           </router-link>
         </div>
       </div>
@@ -227,6 +216,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSearchStore } from '@/stores/search'
 import { mockProperties, mockAnnualProperty } from '@/data/mockData'
+import { Clock, Calendar, Search, MapPin, Star, Wallet, Zap, Shield, ArrowRight } from '@lucide/vue'
 
 const router = useRouter()
 const searchStore = useSearchStore()
@@ -277,7 +267,7 @@ const viewProperty = (id) => {
 <style scoped>
 /* ===== Hero ===== */
 .hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #4f46e5 100%);
   color: white;
   padding: var(--spacing-2xl) 0;
   margin-bottom: var(--spacing-2xl);
@@ -319,7 +309,7 @@ const viewProperty = (id) => {
   align-items: center;
   gap: 8px;
   padding: 12px 28px;
-  border: 2px solid rgba(255,255,255,0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
   background: transparent;
   color: white;
@@ -330,19 +320,20 @@ const viewProperty = (id) => {
 }
 
 .tab-btn:hover {
-  border-color: rgba(255,255,255,0.6);
-  background: rgba(255,255,255,0.1);
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .tab-btn.active {
   border-color: #fbbf24;
-  background: rgba(251,191,36,0.15);
-  color: #fbbf24;
+  background: #fbbf24;
+  color: #1e3a5f;
 }
 
 /* ===== Search Form ===== */
 .search-form {
   background: white;
+  border: 1px solid var(--gray-100);
   border-radius: var(--radius-xl);
   padding: var(--spacing-xl);
   box-shadow: var(--shadow-xl);
@@ -369,6 +360,10 @@ const viewProperty = (id) => {
 
 .search-btn {
   width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 /* ===== Featured Properties ===== */
@@ -384,7 +379,8 @@ const viewProperty = (id) => {
 
 .property-card {
   background: white;
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-md);
   cursor: pointer;
@@ -392,7 +388,7 @@ const viewProperty = (id) => {
 }
 
 .property-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
   box-shadow: var(--shadow-xl);
 }
 
@@ -517,8 +513,15 @@ const viewProperty = (id) => {
 }
 
 .feature-icon {
-  font-size: 3rem;
-  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--spacing-md);
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
 }
 
 .feature-title {
@@ -559,15 +562,21 @@ const viewProperty = (id) => {
   line-height: 1.6;
 }
 
+.cta-content .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 768px) {
   .hero-title {
     font-size: 1.875rem;
   }
-  
+
   .section-title {
     font-size: 1.5rem;
   }
-  
+
   .search-inputs {
     grid-template-columns: 1fr;
   }
