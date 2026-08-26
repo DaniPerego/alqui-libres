@@ -5,10 +5,10 @@
         <router-link to="/" class="logo">
           <span class="pdl-logo pdl-logo-md">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-              <rect x="4" y="4" width="11" height="11" rx="2" fill="#e85d04" opacity="0.12"/>
-              <rect x="17" y="4" width="11" height="11" rx="2" fill="#e85d04" opacity="0.09"/>
-              <rect x="4" y="17" width="11" height="11" rx="2" fill="#e85d04" opacity="0.06"/>
-              <rect x="17" y="17" width="11" height="11" rx="2" fill="#e85d04" opacity="0.03"/>
+              <rect x="4" y="4" width="11" height="11" rx="2" fill="#e85d04" opacity="0.25"/>
+              <rect x="17" y="4" width="11" height="11" rx="2" fill="#e85d04" opacity="0.18"/>
+              <rect x="4" y="17" width="11" height="11" rx="2" fill="#e85d04" opacity="0.12"/>
+              <rect x="17" y="17" width="11" height="11" rx="2" fill="#e85d04" opacity="0.06"/>
               <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z" fill="#2563eb" stroke="#2563eb" stroke-width="0.5" stroke-linejoin="round"/>
             </svg>
           </span>
