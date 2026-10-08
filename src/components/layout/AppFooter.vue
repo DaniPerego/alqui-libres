@@ -77,6 +77,7 @@
         <div class="footer-bottom-content">
           <p>&copy; 2026 AlquiLibres. {{ t('footer.rights') }}</p>
           <p class="footer-brand">
+            <a href="https://desarrolloweb-pdl.vercel.app" target="_blank" rel="noopener noreferrer">
             <span class="pdl-logo pdl-logo-sm">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
                 <rect x="4" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="1"/>
@@ -86,6 +87,7 @@
               </svg>
             </span>
             DesarrolloWeb-pdl
+            </a>
           </p>
         </div>
       </div>
@@ -230,12 +232,27 @@ const { t } = useI18n()
   color: var(--gray-500);
 }
 
-.footer-brand .pdl-logo {
-  color: var(--gray-500);
+.footer-brand a {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
-.footer-brand .pdl-logo:hover {
+.footer-brand a:hover {
   color: var(--primary-color);
+}
+
+.footer-brand .pdl-logo {
+  color: var(--gray-500);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.footer-brand a:hover .pdl-logo {
+  color: var(--primary-color);
+  transform: scale(1.1);
 }
 
 @media (max-width: 768px) {
