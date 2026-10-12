@@ -6,6 +6,7 @@
 //   overlap -> 409, PATCH confirm -> guest notification row,
 //   PATCH cancel -> NO notification row, GET non-participant -> 404.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { makeAuthHeaders } from './helpers/auth.js'
 
 const mocks = vi.hoisted(() => {
   const delegates = {}
@@ -18,7 +19,7 @@ const mocks = vi.hoisted(() => {
       updateMany: vi.fn(), deleteMany: vi.fn(),
     }
   }
-  return { delegates, createUser: vi.fn(), $queryRaw: vi.fn() }
+  return { delegates, $queryRaw: vi.fn() }
 })
 
 vi.mock('@prisma/client', async () => {
@@ -42,8 +43,11 @@ function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
+let authHeaders = {}
+
 function authAs({ uid = 'guest-1', role = 'guest', email = 'guest@test.com', displayName = 'Guest Test' } = {}) {
   mocks.delegates.user.findUnique.mockResolvedValue({ id: uid, role, isActive: true, displayName, email })
+  authHeaders = makeAuthHeaders({ uid, role, email })
   return { uid, role }
 }
 
@@ -78,7 +82,7 @@ describe('GET /api/reservations', () => {
     mocks.delegates.reservation.findMany.mockResolvedValue([{ id: 'r1' }])
     mocks.delegates.reservation.count.mockResolvedValue(1)
     const res = mockRes()
-    await reservationsHandler({ query: {}, headers: { authorization: 'Bearer tok' }, method: 'GET' }, res)
+    await reservationsHandler({ query: {}, headers: authHeaders, method: 'GET' }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.reservation.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { OR: [{ ownerId: 'guest-1' }, { guestId: 'guest-1' }] },
@@ -90,7 +94,7 @@ describe('GET /api/reservations', () => {
     mocks.delegates.reservation.findMany.mockResolvedValue([{ id: 'r1' }])
     mocks.delegates.reservation.count.mockResolvedValue(1)
     const res = mockRes()
-    await reservationsHandler({ query: {}, headers: { authorization: 'Bearer tok' }, method: 'GET' }, res)
+    await reservationsHandler({ query: {}, headers: authHeaders, method: 'GET' }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.reservation.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }))
   })
@@ -108,7 +112,7 @@ describe('POST /api/reservations', () => {
   it('owner no puede reservar como guest -> 403 (API-02)', async () => {
     authAs({ role: 'owner' })
     const res = mockRes()
-    await reservationsHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: validBody }, res)
+    await reservationsHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
     expect(res.status).toHaveBeenCalledWith(403)
   })
 
@@ -118,7 +122,7 @@ describe('POST /api/reservations', () => {
     mocks.delegates.reservation.create.mockImplementation(async ({ data }) => ({ id: 'r1', ...data }))
     mocks.delegates.notification.create.mockResolvedValue({ id: 'n1' })
     const res = mockRes()
-    await reservationsHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: validBody }, res)
+    await reservationsHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
     expect(res.status).toHaveBeenCalledWith(201)
     const createArgs = mocks.delegates.reservation.create.mock.calls[0][0]
     expect(createArgs.data.guestId).toBe('guest-1')
@@ -135,7 +139,7 @@ describe('POST /api/reservations', () => {
   it('fechas invalidas -> 400', async () => {
     authAs()
     const res = mockRes()
-    await reservationsHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: { ...validBody, checkOut: '2026-08-01' } }, res)
+    await reservationsHandler({ query: {}, method: 'POST', headers: authHeaders, body: { ...validBody, checkOut: '2026-08-01' } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
   })
 
@@ -144,7 +148,7 @@ describe('POST /api/reservations', () => {
     mocks.delegates.property.findUnique.mockResolvedValue(activeProperty)
     mocks.delegates.reservation.findFirst.mockResolvedValue({ id: 'r-existente', status: 'pending' })
     const res = mockRes()
-    await reservationsHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: validBody }, res)
+    await reservationsHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
     expect(res.status).toHaveBeenCalledWith(409)
     expect(res.json).toHaveBeenCalledWith({ error: { code: 'CONFLICT', message: expect.any(String) } })
     expect(mocks.delegates.reservation.create).not.toHaveBeenCalled()
@@ -153,7 +157,7 @@ describe('POST /api/reservations', () => {
   it('propiedad inexistente o inactiva -> 404', async () => {
     authAs()
     const res = mockRes()
-    await reservationsHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: validBody }, res)
+    await reservationsHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
     expect(res.status).toHaveBeenCalledWith(404)
   })
 })
@@ -163,7 +167,7 @@ describe('GET /api/reservations/[id]', () => {
     authAs()
     mocks.delegates.reservation.findUnique.mockResolvedValue({ id: 'r1', ownerId: 'owner-9', guestId: 'guest-9' })
     const res = mockRes()
-    await reservationDetailHandler({ query: { id: 'r1' }, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await reservationDetailHandler({ query: { id: 'r1' }, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(404)
   })
 
@@ -171,7 +175,7 @@ describe('GET /api/reservations/[id]', () => {
     authAs({ uid: 'owner-1', role: 'owner' })
     mocks.delegates.reservation.findUnique.mockResolvedValue({ id: 'r1', ownerId: 'owner-1', guestId: 'guest-1' })
     const res = mockRes()
-    await reservationDetailHandler({ query: { id: 'r1' }, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await reservationDetailHandler({ query: { id: 'r1' }, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
   })
 })
@@ -189,7 +193,7 @@ describe('PATCH /api/reservations/[id]/status (API-04 / D6)', () => {
     authAs({ uid: 'owner-1', role: 'owner' })
     mocks.delegates.reservation.findUnique.mockResolvedValue({ ...reservation, status: 'confirmed' })
     const res = mockRes()
-    await reservationStatusHandler({ query: { id: 'r1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'confirmed' } }, res)
+    await reservationStatusHandler({ query: { id: 'r1' }, method: 'PATCH', headers: authHeaders, body: { status: 'confirmed' } }, res)
     expect(res.status).toHaveBeenCalledWith(409)
     expect(res.json).toHaveBeenCalledWith({ error: { code: 'CONFLICT', message: expect.any(String) } })
   })
@@ -198,7 +202,7 @@ describe('PATCH /api/reservations/[id]/status (API-04 / D6)', () => {
     authAs({ uid: 'guest-1', role: 'guest' })
     mocks.delegates.reservation.findUnique.mockResolvedValue(reservation)
     const res = mockRes()
-    await reservationStatusHandler({ query: { id: 'r1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'confirmed' } }, res)
+    await reservationStatusHandler({ query: { id: 'r1' }, method: 'PATCH', headers: authHeaders, body: { status: 'confirmed' } }, res)
     expect(res.status).toHaveBeenCalledWith(403)
   })
 
@@ -208,7 +212,7 @@ describe('PATCH /api/reservations/[id]/status (API-04 / D6)', () => {
     mocks.delegates.reservation.update.mockImplementation(async ({ data }) => ({ id: 'r1', ...data }))
     mocks.delegates.notification.create.mockResolvedValue({ id: 'n1' })
     const res = mockRes()
-    await reservationStatusHandler({ query: { id: 'r1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'confirmed' } }, res)
+    await reservationStatusHandler({ query: { id: 'r1' }, method: 'PATCH', headers: authHeaders, body: { status: 'confirmed' } }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.reservation.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ status: 'confirmed', confirmedAt: expect.any(Date) }),
@@ -224,7 +228,7 @@ describe('PATCH /api/reservations/[id]/status (API-04 / D6)', () => {
     mocks.delegates.reservation.update.mockImplementation(async ({ data }) => ({ id: 'r1', ...data }))
     mocks.delegates.notification.create.mockResolvedValue({ id: 'n1' })
     const res = mockRes()
-    await reservationStatusHandler({ query: { id: 'r1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'rejected', reason: 'No disponible' } }, res)
+    await reservationStatusHandler({ query: { id: 'r1' }, method: 'PATCH', headers: authHeaders, body: { status: 'rejected', reason: 'No disponible' } }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.reservation.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ status: 'rejected', rejectionReason: 'No disponible' }),
@@ -237,7 +241,7 @@ describe('PATCH /api/reservations/[id]/status (API-04 / D6)', () => {
     mocks.delegates.reservation.findUnique.mockResolvedValue({ ...reservation, status: 'confirmed' })
     mocks.delegates.reservation.update.mockImplementation(async ({ data }) => ({ id: 'r1', ...data }))
     const res = mockRes()
-    await reservationStatusHandler({ query: { id: 'r1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'cancelled' } }, res)
+    await reservationStatusHandler({ query: { id: 'r1' }, method: 'PATCH', headers: authHeaders, body: { status: 'cancelled' } }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     const updateArgs = mocks.delegates.reservation.update.mock.calls[0][0]
     expect(updateArgs.data.status).toBe('cancelled')

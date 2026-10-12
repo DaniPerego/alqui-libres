@@ -31,7 +31,6 @@ const mocks = vi.hoisted(() => {
   return {
     delegates,
     mp,
-    createUser: vi.fn(),
     $queryRaw: vi.fn(),
     $transaction: vi.fn(async (callback) => callback(delegates)),
   }

@@ -6,6 +6,7 @@
 //   payments: self (user), all (admin), ?mine=true (admin self);
 //   notifications: list self only, PATCH mark read self only.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { makeAuthHeaders } from './helpers/auth.js'
 
 const mocks = vi.hoisted(() => {
   const delegates = {}
@@ -23,7 +24,7 @@ const mocks = vi.hoisted(() => {
   const $transaction = vi.fn(async (fn) => (
     typeof fn === 'function' ? fn(delegates) : undefined
   ))
-  return { delegates, createUser: vi.fn(), $queryRaw: vi.fn(), $transaction }
+  return { delegates, $queryRaw: vi.fn(), $transaction }
 })
 
 vi.mock('@prisma/client', async () => {
@@ -52,8 +53,11 @@ function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
+let authHeaders = {}
+
 function authAs({ uid = 'uid-1', role = 'owner', email = 'user@test.com', displayName = 'User Test' } = {}) {
   mocks.delegates.user.findUnique.mockResolvedValue({ id: uid, role, isActive: true, displayName, email })
+  authHeaders = makeAuthHeaders({ uid, role, email })
   return { uid, role }
 }
 
@@ -79,7 +83,7 @@ describe('GET /api/subscriptions/mine', () => {
     authAs({ uid: 'owner-1' })
     mocks.delegates.subscription.findFirst.mockResolvedValue({ id: 's1', status: 'active' })
     const res = mockRes()
-    await subscriptionsMineHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await subscriptionsMineHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.subscription.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: { userId: 'owner-1', status: { in: ['active', 'pending'] } },
@@ -91,7 +95,7 @@ describe('GET /api/subscriptions/mine', () => {
     authAs()
     mocks.delegates.subscription.findFirst.mockResolvedValue(null)
     const res = mockRes()
-    await subscriptionsMineHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await subscriptionsMineHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(res.json).toHaveBeenCalledWith({ data: null })
   })
@@ -101,7 +105,7 @@ describe('GET /api/subscriptions (admin)', () => {
   it('no-admin -> 403', async () => {
     authAs()
     const res = mockRes()
-    await subscriptionsHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await subscriptionsHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(403)
   })
 
@@ -110,7 +114,7 @@ describe('GET /api/subscriptions (admin)', () => {
     mocks.delegates.subscription.findMany.mockResolvedValue([{ id: 's1' }])
     mocks.delegates.subscription.count.mockResolvedValue(1)
     const res = mockRes()
-    await subscriptionsHandler({ query: { status: 'active' }, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await subscriptionsHandler({ query: { status: 'active' }, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.subscription.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { status: 'active' },
@@ -122,7 +126,7 @@ describe('GET /api/payments', () => {
   it('user -> 200 solo sus pagos', async () => {
     authAs({ uid: 'owner-1' })
     const res = mockRes()
-    await paymentsHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await paymentsHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.payment.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { userId: 'owner-1' },
@@ -132,14 +136,14 @@ describe('GET /api/payments', () => {
   it('admin -> 200 todos; admin ?mine=true -> self', async () => {
     authAs({ uid: 'admin-1', role: 'admin' })
     const res = mockRes()
-    await paymentsHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await paymentsHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.payment.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: {},
     }))
 
     const res2 = mockRes()
-    await paymentsHandler({ query: { mine: 'true' }, method: 'GET', headers: { authorization: 'Bearer tok' } }, res2)
+    await paymentsHandler({ query: { mine: 'true' }, method: 'GET', headers: authHeaders }, res2)
     expect(mocks.delegates.payment.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { userId: 'admin-1' },
     }))
@@ -148,7 +152,7 @@ describe('GET /api/payments', () => {
   it('filtro status', async () => {
     authAs()
     const res = mockRes()
-    await paymentsHandler({ query: { status: 'approved' }, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await paymentsHandler({ query: { status: 'approved' }, method: 'GET', headers: authHeaders }, res)
     expect(mocks.delegates.payment.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { userId: 'uid-1', status: 'approved' },
     }))
@@ -167,7 +171,7 @@ describe('GET /api/payments/status', () => {
     mocks.delegates.subscription.findFirst.mockResolvedValue({ id: 's1', status: 'active' })
     mocks.delegates.payment.findFirst.mockResolvedValue({ id: 'p1', status: 'approved' })
     const res = mockRes()
-    await paymentsStatusHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await paymentsStatusHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.subscription.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: { userId: 'owner-1', status: { in: ['active', 'pending'] } },
@@ -186,7 +190,7 @@ describe('GET /api/payments/status', () => {
     mocks.delegates.subscription.findFirst.mockResolvedValue({ id: 's2', status: 'pending' })
     mocks.delegates.payment.findFirst.mockResolvedValue(null)
     const res = mockRes()
-    await paymentsStatusHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await paymentsStatusHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(res.json).toHaveBeenCalledWith({
       data: { subscription: { id: 's2', status: 'pending' }, payment: null, status: 'pending' },
@@ -198,7 +202,7 @@ describe('GET /api/payments/status', () => {
     mocks.delegates.subscription.findFirst.mockResolvedValue(null)
     mocks.delegates.payment.findFirst.mockResolvedValue(null)
     const res = mockRes()
-    await paymentsStatusHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await paymentsStatusHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(res.json).toHaveBeenCalledWith({
       data: { subscription: null, payment: null, status: 'none' },
@@ -216,7 +220,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
   it('sin id -> 400 VALIDATION', async () => {
     authAs()
     const res = mockRes()
-    await subscriptionsIdHandler({ query: {}, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'cancelled' } }, res)
+    await subscriptionsIdHandler({ query: {}, method: 'PATCH', headers: authHeaders, body: { status: 'cancelled' } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
   })
 
@@ -224,7 +228,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     authAs({ uid: 'owner-1' })
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's-other', userId: 'other-user' })
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's-other' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'cancelled' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's-other' }, method: 'PATCH', headers: authHeaders, body: { status: 'cancelled' } }, res)
     expect(res.status).toHaveBeenCalledWith(404)
     expect(mocks.delegates.subscription.update).not.toHaveBeenCalled()
   })
@@ -234,7 +238,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'active', autoRenew: true })
     mocks.delegates.subscription.update.mockImplementation(async ({ data }) => ({ id: 's1', ...data }))
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'cancelled' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: authHeaders, body: { status: 'cancelled' } }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.subscription.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 's1' },
@@ -250,7 +254,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     authAs()
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'uid-1', status: 'cancelled' })
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'cancelled' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: authHeaders, body: { status: 'cancelled' } }, res)
     expect(res.status).toHaveBeenCalledWith(409)
   })
 
@@ -258,7 +262,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     authAs()
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'uid-1', status: 'active' })
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'active' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: authHeaders, body: { status: 'active' } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
     expect(res.json).toHaveBeenCalledWith({ error: expect.objectContaining({ code: 'VALIDATION' }) })
   })
@@ -267,7 +271,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     authAs()
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'uid-1', status: 'active' })
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: {} }, res)
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: authHeaders, body: {} }, res)
     expect(res.status).toHaveBeenCalledWith(400)
   })
 
@@ -275,7 +279,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     authAs({ uid: 'owner-1' })
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'active', planId: 'pro' })
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: authHeaders, body: { status: 'plan_change' } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
     expect(res.json).toHaveBeenCalledWith({ error: expect.objectContaining({ code: 'VALIDATION' }) })
   })
@@ -284,7 +288,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     authAs({ uid: 'owner-1' })
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'active', planId: 'pro' })
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'pro' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: authHeaders, body: { status: 'plan_change', planId: 'pro' } }, res)
     expect(res.status).toHaveBeenCalledWith(409)
     expect(res.json).toHaveBeenCalledWith({ error: expect.objectContaining({ code: 'CONFLICT' }) })
   })
@@ -294,7 +298,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'active', planId: 'pro' })
     mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue(null)
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'ghost' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: authHeaders, body: { status: 'plan_change', planId: 'ghost' } }, res)
     expect(res.status).toHaveBeenCalledWith(404)
     expect(mocks.delegates.subscription.update).not.toHaveBeenCalled()
   })
@@ -304,7 +308,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'active', planId: 'pro' })
     mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue({ id: 'old', name: 'Plan Retirado', price: 1, isActive: false })
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'old' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: authHeaders, body: { status: 'plan_change', planId: 'old' } }, res)
     expect(res.status).toHaveBeenCalledWith(404)
     expect(mocks.delegates.subscription.update).not.toHaveBeenCalled()
   })
@@ -313,7 +317,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     authAs({ uid: 'owner-1' })
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's1', userId: 'owner-1', status: 'cancelled', planId: 'pro' })
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'basic' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: authHeaders, body: { status: 'plan_change', planId: 'basic' } }, res)
     expect(res.status).toHaveBeenCalledWith(409)
     expect(mocks.delegates.subscription.update).not.toHaveBeenCalled()
   })
@@ -322,7 +326,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     authAs({ uid: 'owner-1' })
     mocks.delegates.subscription.findUnique.mockResolvedValue({ id: 's-other', userId: 'other-user', status: 'active', planId: 'pro' })
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's-other' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'basic' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's-other' }, method: 'PATCH', headers: authHeaders, body: { status: 'plan_change', planId: 'basic' } }, res)
     expect(res.status).toHaveBeenCalledWith(404)
     expect(mocks.delegates.subscription.update).not.toHaveBeenCalled()
   })
@@ -336,7 +340,7 @@ describe('PATCH /api/subscriptions/[id]', () => {
     mocks.delegates.subscription.update.mockImplementation(async ({ data }) => ({ id: 's1', ...data }))
     mocks.delegates.payment.create.mockImplementation(async ({ data }) => ({ id: 'p-new', ...data }))
     const res = mockRes()
-    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'plan_change', planId: 'basic' } }, res)
+    await subscriptionsIdHandler({ query: { id: 's1' }, method: 'PATCH', headers: authHeaders, body: { status: 'plan_change', planId: 'basic' } }, res)
 
     expect(res.status).toHaveBeenCalledWith(200)
     // La sub quedó pending sobre el plan nuevo, con preferenceId limpiado.
@@ -383,7 +387,7 @@ describe('GET /api/notifications', () => {
     mocks.delegates.notification.findMany.mockResolvedValue([{ id: 'n1' }])
     mocks.delegates.notification.count.mockResolvedValue(1)
     const res = mockRes()
-    await notificationsHandler({ query: { read: 'false' }, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await notificationsHandler({ query: { read: 'false' }, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.notification.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { userId: 'uid-1', read: false },
@@ -397,7 +401,7 @@ describe('PATCH /api/notifications/[id]', () => {
     mocks.delegates.notification.findUnique.mockResolvedValue({ id: 'n1', userId: 'uid-1' })
     mocks.delegates.notification.update.mockImplementation(async ({ data }) => ({ id: 'n1', ...data }))
     const res = mockRes()
-    await notificationIdHandler({ query: { id: 'n1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' } }, res)
+    await notificationIdHandler({ query: { id: 'n1' }, method: 'PATCH', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.notification.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'n1' },
@@ -409,7 +413,7 @@ describe('PATCH /api/notifications/[id]', () => {
     authAs({ uid: 'uid-1' })
     mocks.delegates.notification.findUnique.mockResolvedValue({ id: 'n2', userId: 'other-user' })
     const res = mockRes()
-    await notificationIdHandler({ query: { id: 'n2' }, method: 'PATCH', headers: { authorization: 'Bearer tok' } }, res)
+    await notificationIdHandler({ query: { id: 'n2' }, method: 'PATCH', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(404)
   })
 })

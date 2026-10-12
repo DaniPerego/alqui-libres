@@ -8,6 +8,7 @@
 // The @prisma/client mock keeps the real `Prisma` namespace (search.js uses
 // Prisma.sql) while replacing PrismaClient with a delegate-driven stub.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { makeAuthHeaders } from './helpers/auth.js'
 
 const mocks = vi.hoisted(() => {
   const delegates = {}
@@ -20,7 +21,7 @@ const mocks = vi.hoisted(() => {
       updateMany: vi.fn(), deleteMany: vi.fn(),
     }
   }
-  return { delegates, createUser: vi.fn(), $queryRaw: vi.fn() }
+  return { delegates, $queryRaw: vi.fn() }
 })
 
 vi.mock('@prisma/client', async () => {
@@ -44,8 +45,11 @@ function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
+let authHeaders = {}
+
 function authAs({ uid = 'owner-1', role = 'owner', email = 'owner@test.com', displayName = 'Owner Test' } = {}) {
   mocks.delegates.user.findUnique.mockResolvedValue({ id: uid, role, isActive: true, displayName, email })
+  authHeaders = makeAuthHeaders({ uid, role, email })
   return { uid, role }
 }
 
@@ -137,14 +141,14 @@ describe('GET /api/properties (public list)', () => {
 
     authAs()
     const res2 = mockRes()
-    await propertiesHandler({ query: { scope: 'all' }, headers: { authorization: 'Bearer tok' }, method: 'GET' }, res2)
+    await propertiesHandler({ query: { scope: 'all' }, headers: authHeaders, method: 'GET' }, res2)
     expect(res2.status).toHaveBeenCalledWith(403)
 
     authAs({ role: 'admin' })
     mocks.delegates.property.findMany.mockResolvedValue([{ id: 'p1', status: 'pending' }])
     mocks.delegates.property.count.mockResolvedValue(1)
     const res3 = mockRes()
-    await propertiesHandler({ query: { scope: 'all', status: 'pending' }, headers: { authorization: 'Bearer tok' }, method: 'GET' }, res3)
+    await propertiesHandler({ query: { scope: 'all', status: 'pending' }, headers: authHeaders, method: 'GET' }, res3)
     expect(res3.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.property.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { status: 'pending' },
@@ -175,7 +179,7 @@ describe('POST /api/properties', () => {
   it('guest -> 403', async () => {
     authAs({ role: 'guest' })
     const res = mockRes()
-    await propertiesHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: validBody }, res)
+    await propertiesHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
     expect(res.status).toHaveBeenCalledWith(403)
   })
 
@@ -184,7 +188,7 @@ describe('POST /api/properties', () => {
     mocks.delegates.platformSettings.findUnique.mockResolvedValue({ moderateProperties: false })
     mocks.delegates.property.create.mockImplementation(async ({ data }) => ({ id: 'new-1', ...data }))
     const res = mockRes()
-    await propertiesHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: validBody }, res)
+    await propertiesHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
     expect(res.status).toHaveBeenCalledWith(201)
     const createArgs = mocks.delegates.property.create.mock.calls[0][0]
     expect(createArgs.data.ownerId).toBe('owner-1')
@@ -198,7 +202,7 @@ describe('POST /api/properties', () => {
     mocks.delegates.platformSettings.findUnique.mockResolvedValue({ moderateProperties: true })
     mocks.delegates.property.create.mockImplementation(async ({ data }) => ({ id: 'new-1', ...data }))
     const res = mockRes()
-    await propertiesHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: validBody }, res)
+    await propertiesHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
     expect(res.status).toHaveBeenCalledWith(201)
     const createArgs = mocks.delegates.property.create.mock.calls[0][0]
     expect(createArgs.data.status).toBe('pending')
@@ -208,7 +212,7 @@ describe('POST /api/properties', () => {
   it('payload invalido -> 400 VALIDATION', async () => {
     authAs()
     const res = mockRes()
-    await propertiesHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: { title: 'Solo titulo' } }, res)
+    await propertiesHandler({ query: {}, method: 'POST', headers: authHeaders, body: { title: 'Solo titulo' } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
     expect(res.json).toHaveBeenCalledWith({ error: { code: 'VALIDATION', message: expect.any(String) } })
   })
@@ -230,7 +234,7 @@ describe('GET/PATCH/DELETE /api/properties/[id]', () => {
 
     authAs()
     const res2 = mockRes()
-    await propertyDetailHandler({ query: { id: 'p1' }, method: 'GET', headers: { authorization: 'Bearer tok' } }, res2)
+    await propertyDetailHandler({ query: { id: 'p1' }, method: 'GET', headers: authHeaders }, res2)
     expect(res2.status).toHaveBeenCalledWith(200)
   })
 
@@ -238,7 +242,7 @@ describe('GET/PATCH/DELETE /api/properties/[id]', () => {
     authAs({ role: 'admin' })
     mocks.delegates.property.findUnique.mockResolvedValue({ id: 'p1', isActive: false, ownerId: 'owner-9' })
     const res = mockRes()
-    await propertyDetailHandler({ query: { id: 'p1' }, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await propertyDetailHandler({ query: { id: 'p1' }, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
   })
 
@@ -246,7 +250,7 @@ describe('GET/PATCH/DELETE /api/properties/[id]', () => {
     authAs()
     mocks.delegates.property.findUnique.mockResolvedValue({ id: 'p1', ownerId: 'owner-2', isActive: true })
     const res = mockRes()
-    await propertyDetailHandler({ query: { id: 'p1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { title: 'Hack' } }, res)
+    await propertyDetailHandler({ query: { id: 'p1' }, method: 'PATCH', headers: authHeaders, body: { title: 'Hack' } }, res)
     expect(res.status).toHaveBeenCalledWith(403)
     expect(mocks.delegates.property.update).not.toHaveBeenCalled()
   })
@@ -257,7 +261,7 @@ describe('GET/PATCH/DELETE /api/properties/[id]', () => {
     mocks.delegates.property.update.mockImplementation(async ({ data }) => ({ id: 'p1', ...data }))
     const res = mockRes()
     await propertyDetailHandler({
-      query: { id: 'p1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' },
+      query: { id: 'p1' }, method: 'PATCH', headers: authHeaders,
       body: { title: 'Nuevo titulo', isActive: true },
     }, res)
     expect(res.status).toHaveBeenCalledWith(200)
@@ -270,7 +274,7 @@ describe('GET/PATCH/DELETE /api/properties/[id]', () => {
     authAs()
     mocks.delegates.property.findUnique.mockResolvedValue({ id: 'p1', ownerId: 'owner-1', isActive: true })
     const res = mockRes()
-    await propertyDetailHandler({ query: { id: 'p1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'active' } }, res)
+    await propertyDetailHandler({ query: { id: 'p1' }, method: 'PATCH', headers: authHeaders, body: { status: 'active' } }, res)
     expect(res.status).toHaveBeenCalledWith(403)
   })
 
@@ -279,7 +283,7 @@ describe('GET/PATCH/DELETE /api/properties/[id]', () => {
     mocks.delegates.property.findUnique.mockResolvedValue({ id: 'p1', ownerId: 'owner-1', isActive: false, status: 'pending' })
     mocks.delegates.property.update.mockImplementation(async ({ data }) => ({ id: 'p1', ...data }))
     const res = mockRes()
-    await propertyDetailHandler({ query: { id: 'p1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'active' } }, res)
+    await propertyDetailHandler({ query: { id: 'p1' }, method: 'PATCH', headers: authHeaders, body: { status: 'active' } }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     const updateArgs = mocks.delegates.property.update.mock.calls[0][0]
     expect(updateArgs.data.status).toBe('active')
@@ -292,7 +296,7 @@ describe('GET/PATCH/DELETE /api/properties/[id]', () => {
     mocks.delegates.property.findUnique.mockResolvedValue({ id: 'p1', ownerId: 'owner-1', isActive: true })
     mocks.delegates.reservation.count.mockResolvedValue(2)
     const res = mockRes()
-    await propertyDetailHandler({ query: { id: 'p1' }, method: 'DELETE', headers: { authorization: 'Bearer tok' } }, res)
+    await propertyDetailHandler({ query: { id: 'p1' }, method: 'DELETE', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(409)
     expect(res.json).toHaveBeenCalledWith({ error: { code: 'CONFLICT', message: expect.any(String) } })
     expect(mocks.delegates.property.delete).not.toHaveBeenCalled()
@@ -303,7 +307,7 @@ describe('GET/PATCH/DELETE /api/properties/[id]', () => {
     mocks.delegates.property.findUnique.mockResolvedValue({ id: 'p1', ownerId: 'owner-1', isActive: true })
     mocks.delegates.reservation.count.mockResolvedValue(0)
     const res = mockRes()
-    await propertyDetailHandler({ query: { id: 'p1' }, method: 'DELETE', headers: { authorization: 'Bearer tok' } }, res)
+    await propertyDetailHandler({ query: { id: 'p1' }, method: 'DELETE', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.review.deleteMany).toHaveBeenCalledWith({ where: { propertyId: 'p1' } })
     expect(mocks.delegates.message.deleteMany).toHaveBeenCalledWith({ where: { propertyId: 'p1' } })
@@ -319,7 +323,7 @@ describe('GET /api/properties/mine', () => {
 
     authAs({ role: 'guest' })
     const res2 = mockRes()
-    await propertyMineHandler({ query: {}, headers: { authorization: 'Bearer tok' }, method: 'GET' }, res2)
+    await propertyMineHandler({ query: {}, headers: authHeaders, method: 'GET' }, res2)
     expect(res2.status).toHaveBeenCalledWith(403)
   })
 
@@ -328,7 +332,7 @@ describe('GET /api/properties/mine', () => {
     mocks.delegates.property.findMany.mockResolvedValue([{ id: 'p1' }])
     mocks.delegates.property.count.mockResolvedValue(1)
     const res = mockRes()
-    await propertyMineHandler({ query: { status: 'pending' }, headers: { authorization: 'Bearer tok' }, method: 'GET' }, res)
+    await propertyMineHandler({ query: { status: 'pending' }, headers: authHeaders, method: 'GET' }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.property.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { ownerId: 'owner-1', status: 'pending' },

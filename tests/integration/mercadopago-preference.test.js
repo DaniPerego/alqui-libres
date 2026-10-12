@@ -7,6 +7,7 @@
 //   200 creating pending Subscription + Payment rows and returning the
 //   preference checkout URLs.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { makeAuthHeaders } from './helpers/auth.js'
 
 const mocks = vi.hoisted(() => {
   const delegates = {}
@@ -29,7 +30,6 @@ const mocks = vi.hoisted(() => {
   return {
     delegates,
     mp,
-    createUser: vi.fn(),
     $queryRaw: vi.fn(),
     $transaction: vi.fn(async (callback) => callback(delegates)),
   }
@@ -60,8 +60,11 @@ function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
+let authHeaders = {}
+
 function authAs({ uid = 'uid-1', role = 'owner', email = 'user@test.com', displayName = 'User Test' } = {}) {
   mocks.delegates.user.findUnique.mockResolvedValue({ id: uid, role, isActive: true, displayName, email })
+  authHeaders = makeAuthHeaders({ uid, role, email })
   return { uid, role }
 }
 
@@ -84,8 +87,6 @@ beforeEach(() => {
   })
 })
 
-const AUTH_HEADERS = { authorization: 'Bearer tok' }
-
 describe('POST /api/mercadopago/preference', () => {
   it('anon -> 401', async () => {
     const res = mockRes()
@@ -97,7 +98,7 @@ describe('POST /api/mercadopago/preference', () => {
   it('sin planId -> 400 VALIDATION', async () => {
     authAs()
     const res = mockRes()
-    await preferenceHandler({ query: {}, method: 'POST', body: {}, headers: AUTH_HEADERS }, res)
+    await preferenceHandler({ query: {}, method: 'POST', body: {}, headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(400)
     expect(res.json).toHaveBeenCalledWith({ error: expect.objectContaining({ code: 'VALIDATION' }) })
   })
@@ -106,7 +107,7 @@ describe('POST /api/mercadopago/preference', () => {
     authAs()
     mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue(null)
     const res = mockRes()
-    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'nope' }, headers: AUTH_HEADERS }, res)
+    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'nope' }, headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(404)
     expect(mocks.mp.preferenceCreate).not.toHaveBeenCalled()
   })
@@ -115,7 +116,7 @@ describe('POST /api/mercadopago/preference', () => {
     authAs()
     mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue({ ...PLAN, isActive: false })
     const res = mockRes()
-    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: AUTH_HEADERS }, res)
+    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(404)
   })
 
@@ -124,7 +125,7 @@ describe('POST /api/mercadopago/preference', () => {
     mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue(PLAN)
     mocks.delegates.subscription.findFirst.mockResolvedValue({ id: 'sub-active', status: 'active' })
     const res = mockRes()
-    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: AUTH_HEADERS }, res)
+    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(409)
     expect(mocks.delegates.subscription.create).not.toHaveBeenCalled()
     expect(mocks.mp.preferenceCreate).not.toHaveBeenCalled()
@@ -135,7 +136,7 @@ describe('POST /api/mercadopago/preference', () => {
     mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue(PLAN)
     delete process.env.MP_ACCESS_TOKEN
     const res = mockRes()
-    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: AUTH_HEADERS }, res)
+    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(503)
     expect(res.json).toHaveBeenCalledWith({
       error: expect.objectContaining({ code: 'SERVICE_UNAVAILABLE' }),
@@ -147,7 +148,7 @@ describe('POST /api/mercadopago/preference', () => {
     authAs({ uid: 'owner-1', email: 'owner@test.com' })
     mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue(PLAN)
     const res = mockRes()
-    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: AUTH_HEADERS }, res)
+    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: authHeaders }, res)
 
     expect(res.status).toHaveBeenCalledWith(200)
     expect(res.json).toHaveBeenCalledWith({
@@ -220,7 +221,7 @@ describe('POST /api/mercadopago/preference', () => {
       return { id: 'sub-pending', status: 'pending' }
     })
     const res = mockRes()
-    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: AUTH_HEADERS }, res)
+    await preferenceHandler({ query: {}, method: 'POST', body: { planId: 'pro' }, headers: authHeaders }, res)
 
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.subscription.create).not.toHaveBeenCalled()

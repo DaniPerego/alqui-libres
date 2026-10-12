@@ -6,6 +6,7 @@
 //          DELETE 409 when subscribed;
 //   platform-settings: admin-only GET/PATCH single row 'general'.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { makeAuthHeaders } from './helpers/auth.js'
 
 const mocks = vi.hoisted(() => {
   const delegates = {}
@@ -18,7 +19,7 @@ const mocks = vi.hoisted(() => {
       updateMany: vi.fn(), deleteMany: vi.fn(),
     }
   }
-  return { delegates, createUser: vi.fn(), $queryRaw: vi.fn() }
+  return { delegates, $queryRaw: vi.fn() }
 })
 
 vi.mock('@prisma/client', async () => {
@@ -42,8 +43,11 @@ function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
+let authHeaders = {}
+
 function authAs({ uid = 'admin-1', role = 'admin', email = 'admin@test.com', displayName = 'Admin Test' } = {}) {
   mocks.delegates.user.findUnique.mockResolvedValue({ id: uid, role, isActive: true, displayName, email })
+  authHeaders = makeAuthHeaders({ uid, role, email })
   return { uid, role }
 }
 
@@ -74,7 +78,7 @@ describe('GET /api/plans', () => {
     authAs()
     mocks.delegates.subscriptionPlan.findMany.mockResolvedValue([{ id: 'basic' }, { id: 'pro' }])
     const res = mockRes()
-    await plansHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await plansHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.subscriptionPlan.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: {},
@@ -86,7 +90,7 @@ describe('PATCH/DELETE /api/plans/[id]', () => {
   it('no-admin -> 403', async () => {
     authAs({ role: 'guest' })
     const res = mockRes()
-    await planIdHandler({ query: { id: 'basic' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { price: 10 } }, res)
+    await planIdHandler({ query: { id: 'basic' }, method: 'PATCH', headers: authHeaders, body: { price: 10 } }, res)
     expect(res.status).toHaveBeenCalledWith(403)
   })
 
@@ -94,7 +98,7 @@ describe('PATCH/DELETE /api/plans/[id]', () => {
     authAs()
     mocks.delegates.subscriptionPlan.upsert.mockImplementation(async ({ create }) => ({ ...create }))
     const res = mockRes()
-    await planIdHandler({ query: { id: 'basic' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { name: 'Básico', price: 10, maxProperties: 1 } }, res)
+    await planIdHandler({ query: { id: 'basic' }, method: 'PATCH', headers: authHeaders, body: { name: 'Básico', price: 10, maxProperties: 1 } }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.subscriptionPlan.upsert).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'basic' },
@@ -107,7 +111,7 @@ describe('PATCH/DELETE /api/plans/[id]', () => {
     authAs()
     mocks.delegates.subscription.count.mockResolvedValue(3)
     const res = mockRes()
-    await planIdHandler({ query: { id: 'basic' }, method: 'DELETE', headers: { authorization: 'Bearer tok' } }, res)
+    await planIdHandler({ query: { id: 'basic' }, method: 'DELETE', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(409)
     expect(mocks.delegates.subscriptionPlan.delete).not.toHaveBeenCalled()
   })
@@ -116,7 +120,7 @@ describe('PATCH/DELETE /api/plans/[id]', () => {
     authAs()
     mocks.delegates.subscriptionPlan.delete.mockResolvedValue({ id: 'basic' })
     const res = mockRes()
-    await planIdHandler({ query: { id: 'basic' }, method: 'DELETE', headers: { authorization: 'Bearer tok' } }, res)
+    await planIdHandler({ query: { id: 'basic' }, method: 'DELETE', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.subscriptionPlan.delete).toHaveBeenCalledWith({ where: { id: 'basic' } })
   })
@@ -130,7 +134,7 @@ describe('GET/PATCH /api/platform-settings (D3 single row)', () => {
 
     authAs({ role: 'guest' })
     const res2 = mockRes()
-    await settingsHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res2)
+    await settingsHandler({ query: {}, method: 'GET', headers: authHeaders }, res2)
     expect(res2.status).toHaveBeenCalledWith(403)
   })
 
@@ -138,13 +142,13 @@ describe('GET/PATCH /api/platform-settings (D3 single row)', () => {
     authAs()
     mocks.delegates.platformSettings.findUnique.mockResolvedValue({ id: 'general', platformName: 'AlquiLibres' })
     const res = mockRes()
-    await settingsHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await settingsHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.platformSettings.findUnique).toHaveBeenCalledWith({ where: { id: 'general' } })
 
     mocks.delegates.platformSettings.findUnique.mockResolvedValue(null)
     const res2 = mockRes()
-    await settingsHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res2)
+    await settingsHandler({ query: {}, method: 'GET', headers: authHeaders }, res2)
     expect(res2.status).toHaveBeenCalledWith(404)
   })
 
@@ -152,7 +156,7 @@ describe('GET/PATCH /api/platform-settings (D3 single row)', () => {
     authAs()
     mocks.delegates.platformSettings.update.mockImplementation(async ({ data }) => ({ id: 'general', ...data }))
     const res = mockRes()
-    await settingsHandler({ query: {}, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { commissionRate: 10, moderateProperties: true } }, res)
+    await settingsHandler({ query: {}, method: 'PATCH', headers: authHeaders, body: { commissionRate: 10, moderateProperties: true } }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.platformSettings.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'general' },
@@ -163,7 +167,7 @@ describe('GET/PATCH /api/platform-settings (D3 single row)', () => {
   it('commissionRate fuera de rango -> 400', async () => {
     authAs()
     const res = mockRes()
-    await settingsHandler({ query: {}, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { commissionRate: 150 } }, res)
+    await settingsHandler({ query: {}, method: 'PATCH', headers: authHeaders, body: { commissionRate: 150 } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
   })
 })

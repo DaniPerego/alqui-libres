@@ -5,6 +5,7 @@
 //   GET participant-scoped with read/propertyId filters, POST guest contact
 //   owner (unread row), PATCH owner mark read/replied.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { makeAuthHeaders } from './helpers/auth.js'
 
 const mocks = vi.hoisted(() => {
   const delegates = {}
@@ -17,7 +18,7 @@ const mocks = vi.hoisted(() => {
       updateMany: vi.fn(), deleteMany: vi.fn(),
     }
   }
-  return { delegates, createUser: vi.fn(), $queryRaw: vi.fn() }
+  return { delegates, $queryRaw: vi.fn() }
 })
 
 vi.mock('@prisma/client', async () => {
@@ -40,8 +41,11 @@ function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
+let authHeaders = {}
+
 function authAs({ uid = 'uid-1', role = 'owner', email = 'user@test.com', displayName = 'User Test' } = {}) {
   mocks.delegates.user.findUnique.mockResolvedValue({ id: uid, role, isActive: true, displayName, email })
+  authHeaders = makeAuthHeaders({ uid, role, email })
   return { uid, role }
 }
 
@@ -64,7 +68,7 @@ describe('GET /api/messages', () => {
     mocks.delegates.message.findMany.mockResolvedValue([{ id: 'm1' }])
     mocks.delegates.message.count.mockResolvedValue(1)
     const res = mockRes()
-    await messagesHandler({ query: {}, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await messagesHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.message.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { OR: [{ ownerId: 'guest-1' }, { guestId: 'guest-1' }] },
@@ -75,7 +79,7 @@ describe('GET /api/messages', () => {
   it('filtro read=true', async () => {
     authAs()
     const res = mockRes()
-    await messagesHandler({ query: { read: 'true' }, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await messagesHandler({ query: { read: 'true' }, method: 'GET', headers: authHeaders }, res)
     expect(mocks.delegates.message.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({ read: true }),
     }))
@@ -94,7 +98,7 @@ describe('POST /api/messages', () => {
     mocks.delegates.property.findUnique.mockResolvedValue({ id: 'p1', ownerId: 'owner-1', title: 'Casa', isActive: true })
     mocks.delegates.message.create.mockImplementation(async ({ data }) => ({ id: 'm-new', ...data }))
     const res = mockRes()
-    await messagesHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: { propertyId: 'p1', message: 'Hola, está libre en marzo?' } }, res)
+    await messagesHandler({ query: {}, method: 'POST', headers: authHeaders, body: { propertyId: 'p1', message: 'Hola, está libre en marzo?' } }, res)
     expect(res.status).toHaveBeenCalledWith(201)
     const createArgs = mocks.delegates.message.create.mock.calls[0][0]
     expect(createArgs.data).toMatchObject({
@@ -113,7 +117,7 @@ describe('POST /api/messages', () => {
   it('faltan campos -> 400', async () => {
     authAs()
     const res = mockRes()
-    await messagesHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: { propertyId: 'p1' } }, res)
+    await messagesHandler({ query: {}, method: 'POST', headers: authHeaders, body: { propertyId: 'p1' } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
   })
 
@@ -121,7 +125,7 @@ describe('POST /api/messages', () => {
     authAs()
     mocks.delegates.property.findUnique.mockResolvedValue(null)
     const res = mockRes()
-    await messagesHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: { propertyId: 'pX', message: 'Hola' } }, res)
+    await messagesHandler({ query: {}, method: 'POST', headers: authHeaders, body: { propertyId: 'pX', message: 'Hola' } }, res)
     expect(res.status).toHaveBeenCalledWith(404)
   })
 
@@ -129,7 +133,7 @@ describe('POST /api/messages', () => {
     authAs({ uid: 'owner-1' })
     mocks.delegates.property.findUnique.mockResolvedValue({ id: 'p1', ownerId: 'owner-1', title: 'Casa', isActive: true })
     const res = mockRes()
-    await messagesHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: { propertyId: 'p1', message: 'Hola' } }, res)
+    await messagesHandler({ query: {}, method: 'POST', headers: authHeaders, body: { propertyId: 'p1', message: 'Hola' } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
   })
 })
@@ -140,7 +144,7 @@ describe('PATCH /api/messages/[id]', () => {
     mocks.delegates.message.findUnique.mockResolvedValue({ id: 'm1', ownerId: 'owner-1', guestId: 'g1' })
     mocks.delegates.message.update.mockImplementation(async ({ data }) => ({ id: 'm1', ...data }))
     const res = mockRes()
-    await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'replied' } }, res)
+    await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', headers: authHeaders, body: { status: 'replied' } }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.message.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'm1' },
@@ -152,7 +156,7 @@ describe('PATCH /api/messages/[id]', () => {
     authAs({ uid: 'guest-1', role: 'guest' })
     mocks.delegates.message.findUnique.mockResolvedValue({ id: 'm1', ownerId: 'owner-1', guestId: 'guest-1' })
     const res = mockRes()
-    await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'read' } }, res)
+    await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', headers: authHeaders, body: { status: 'read' } }, res)
     expect(res.status).toHaveBeenCalledWith(404)
   })
 
@@ -160,12 +164,12 @@ describe('PATCH /api/messages/[id]', () => {
     authAs({ uid: 'owner-1' })
     mocks.delegates.message.findUnique.mockResolvedValue(null)
     const res = mockRes()
-    await messageIdHandler({ query: { id: 'mX' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: {} }, res)
+    await messageIdHandler({ query: { id: 'mX' }, method: 'PATCH', headers: authHeaders, body: {} }, res)
     expect(res.status).toHaveBeenCalledWith(404)
 
     mocks.delegates.message.findUnique.mockResolvedValue({ id: 'm1', ownerId: 'owner-1' })
     const res2 = mockRes()
-    await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', headers: { authorization: 'Bearer tok' }, body: { status: 'spam' } }, res2)
+    await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', headers: authHeaders, body: { status: 'spam' } }, res2)
     expect(res2.status).toHaveBeenCalledWith(400)
   })
 })

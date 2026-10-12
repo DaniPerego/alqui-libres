@@ -4,6 +4,7 @@
 //   GET public visible-only by propertyId, GET owner=me scoped to own
 //   properties, POST guest with rating 1..5 (verified=false).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { makeAuthHeaders } from './helpers/auth.js'
 
 const mocks = vi.hoisted(() => {
   const delegates = {}
@@ -16,7 +17,7 @@ const mocks = vi.hoisted(() => {
       updateMany: vi.fn(), deleteMany: vi.fn(),
     }
   }
-  return { delegates, createUser: vi.fn(), $queryRaw: vi.fn() }
+  return { delegates, $queryRaw: vi.fn() }
 })
 
 vi.mock('@prisma/client', async () => {
@@ -38,8 +39,11 @@ function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
+let authHeaders = {}
+
 function authAs({ uid = 'uid-1', role = 'owner', email = 'user@test.com', displayName = 'User Test' } = {}) {
   mocks.delegates.user.findUnique.mockResolvedValue({ id: uid, role, isActive: true, displayName, email })
+  authHeaders = makeAuthHeaders({ uid, role, email })
   return { uid, role }
 }
 
@@ -65,7 +69,7 @@ describe('GET /api/reviews', () => {
   it('owner=me -> 200 scoped a propiedades propias (relation filter)', async () => {
     authAs({ uid: 'owner-1' })
     const res = mockRes()
-    await reviewsHandler({ query: { owner: 'me' }, method: 'GET', headers: { authorization: 'Bearer tok' } }, res)
+    await reviewsHandler({ query: { owner: 'me' }, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(mocks.delegates.review.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { property: { ownerId: 'owner-1' } },
@@ -97,7 +101,7 @@ describe('POST /api/reviews', () => {
     mocks.delegates.property.findUnique.mockResolvedValue({ id: 'p1', ownerId: 'owner-1', isActive: true })
     mocks.delegates.review.create.mockImplementation(async ({ data }) => ({ id: 'r-new', ...data }))
     const res = mockRes()
-    await reviewsHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: { propertyId: 'p1', rating: 4, comment: 'Muy lindo' } }, res)
+    await reviewsHandler({ query: {}, method: 'POST', headers: authHeaders, body: { propertyId: 'p1', rating: 4, comment: 'Muy lindo' } }, res)
     expect(res.status).toHaveBeenCalledWith(201)
     const createArgs = mocks.delegates.review.create.mock.calls[0][0]
     expect(createArgs.data).toMatchObject({
@@ -115,7 +119,7 @@ describe('POST /api/reviews', () => {
   it('rating fuera de rango -> 400', async () => {
     authAs()
     const res = mockRes()
-    await reviewsHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: { propertyId: 'p1', rating: 0 } }, res)
+    await reviewsHandler({ query: {}, method: 'POST', headers: authHeaders, body: { propertyId: 'p1', rating: 0 } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
   })
 
@@ -123,7 +127,7 @@ describe('POST /api/reviews', () => {
     authAs()
     mocks.delegates.property.findUnique.mockResolvedValue(null)
     const res = mockRes()
-    await reviewsHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: { propertyId: 'pX', rating: 5 } }, res)
+    await reviewsHandler({ query: {}, method: 'POST', headers: authHeaders, body: { propertyId: 'pX', rating: 5 } }, res)
     expect(res.status).toHaveBeenCalledWith(404)
   })
 
@@ -131,7 +135,7 @@ describe('POST /api/reviews', () => {
     authAs({ uid: 'owner-1' })
     mocks.delegates.property.findUnique.mockResolvedValue({ id: 'p1', ownerId: 'owner-1', isActive: true })
     const res = mockRes()
-    await reviewsHandler({ query: {}, method: 'POST', headers: { authorization: 'Bearer tok' }, body: { propertyId: 'p1', rating: 5 } }, res)
+    await reviewsHandler({ query: {}, method: 'POST', headers: authHeaders, body: { propertyId: 'p1', rating: 5 } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
   })
 })
