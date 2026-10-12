@@ -2,20 +2,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { usePropertyStore } from '@/stores/property.js'
-import { mockProperties } from '@/data/mockData'
 
 const mocks = vi.hoisted(() => ({
-  isSupabaseConfigured: vi.fn(() => false),
   apiGet: vi.fn(),
   apiPost: vi.fn(),
   apiPatch: vi.fn(),
   apiPut: vi.fn(),
   apiDelete: vi.fn()
-}))
-
-vi.mock('@/config/supabase', () => ({
-  isSupabaseConfigured: mocks.isSupabaseConfigured,
-  supabase: null
 }))
 
 vi.mock('@/services/api', () => ({
@@ -76,83 +69,9 @@ function normalizedShape(p) {
 beforeEach(() => {
   vi.clearAllMocks()
   setActivePinia(createPinia())
-  mocks.isSupabaseConfigured.mockReturnValue(false)
 })
 
-describe('property store (demo mode)', () => {
-  it('fetchUserProperties filters mock properties by owner id', async () => {
-    const store = usePropertyStore()
-    const result = await store.fetchUserProperties('user123')
-
-    expect(result.success).toBe(true)
-    expect(store.properties).toHaveLength(3)
-    expect(store.properties.map(p => p.id)).toEqual(['1', '2', '4'])
-  })
-
-  it('fetchProperty returns the matching demo property by id when no owner id is given', async () => {
-    const store = usePropertyStore()
-    const result = await store.fetchProperty(undefined, '2')
-
-    expect(result.success).toBe(true)
-    expect(store.currentProperty.id).toBe('2')
-    expect(store.currentProperty.title).toBe('Departamento Céntrico con Vista al Mar')
-  })
-
-  it('fetchProperty filters by owner id when provided', async () => {
-    const store = usePropertyStore()
-    const result = await store.fetchProperty('user456', '1')
-
-    expect(result.success).toBe(false)
-    expect(store.currentProperty).toBeNull()
-  })
-
-  it('returns not found for an unknown property id', async () => {
-    const store = usePropertyStore()
-    const result = await store.fetchProperty(undefined, 'unknown')
-
-    expect(result.success).toBe(false)
-    expect(result.error).toContain('not found')
-  })
-
-  it('createProperty adds a new demo property to local state', async () => {
-    const store = usePropertyStore()
-    const result = await store.createProperty('owner001', {
-      title: 'Nueva Demo',
-      description: 'Desc',
-      propertyType: 'casa',
-      rentalType: 'temporario'
-    })
-
-    expect(result.success).toBe(true)
-    expect(store.properties[0].title).toBe('Nueva Demo')
-    expect(store.properties[0].ownerId).toBe('owner001')
-    expect(store.properties[0].status).toBe('active')
-  })
-
-  it('updateProperty patches an existing demo property', async () => {
-    const store = usePropertyStore()
-    await store.fetchUserProperties('user123')
-    const result = await store.updateProperty('user123', '1', { title: 'Actualizada' })
-
-    expect(result.success).toBe(true)
-    expect(store.properties.find(p => p.id === '1').title).toBe('Actualizada')
-  })
-
-  it('deleteProperty removes a demo property from local state', async () => {
-    const store = usePropertyStore()
-    await store.fetchUserProperties('user123')
-    const result = await store.deleteProperty('user123', '1')
-
-    expect(result.success).toBe(true)
-    expect(store.properties.find(p => p.id === '1')).toBeUndefined()
-  })
-})
-
-describe('property store (Supabase mode)', () => {
-  beforeEach(() => {
-    mocks.isSupabaseConfigured.mockReturnValue(true)
-  })
-
+describe('property store (native API)', () => {
   it('fetchUserProperties calls the owner endpoint and normalizes the response', async () => {
     mocks.apiGet.mockResolvedValueOnce({ success: true, data: [apiProperty] })
     const store = usePropertyStore()
@@ -165,6 +84,20 @@ describe('property store (Supabase mode)', () => {
     expect(store.properties[0].location.city).toBe('Carlos Paz')
     expect(store.properties[0].capacity.bedrooms).toBe(3)
     expect(store.properties[0].pricing.basePrice).toBe(150)
+  })
+
+  it('fetchUserProperties surfaces API errors', async () => {
+    mocks.apiGet.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'INTERNAL', message: 'Boom' }
+    })
+    const store = usePropertyStore()
+
+    const result = await store.fetchUserProperties('owner001')
+
+    expect(result.success).toBe(false)
+    expect(store.error).toBe('Boom')
+    expect(store.properties).toHaveLength(0)
   })
 
   it('fetchProperty calls the public detail endpoint and normalizes the response', async () => {

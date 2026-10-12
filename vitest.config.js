@@ -9,8 +9,7 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@supabase/supabase-js': fileURLToPath(new URL('./tests/__mocks__/supabase.js', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
   test: {

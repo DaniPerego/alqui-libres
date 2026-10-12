@@ -4,18 +4,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useAdminStore } from '@/stores/admin.js'
 
 const mocks = vi.hoisted(() => ({
-  isSupabaseConfigured: vi.fn(() => false),
   apiGet: vi.fn(),
   apiPost: vi.fn(),
   apiPatch: vi.fn(),
   apiPut: vi.fn(),
-  apiDelete: vi.fn(),
-  saveMockCredentials: vi.fn()
-}))
-
-vi.mock('@/config/supabase', () => ({
-  isSupabaseConfigured: mocks.isSupabaseConfigured,
-  supabase: null
+  apiDelete: vi.fn()
 }))
 
 vi.mock('@/services/api', () => ({
@@ -27,9 +20,7 @@ vi.mock('@/services/api', () => ({
 }))
 
 vi.mock('@/stores/auth', () => ({
-  useAuthStore: vi.fn(() => ({
-    saveMockCredentials: mocks.saveMockCredentials
-  }))
+  useAuthStore: vi.fn(() => ({}))
 }))
 
 const apiUser = {
@@ -139,170 +130,13 @@ beforeEach(() => {
   vi.useFakeTimers()
   setActivePinia(createPinia())
   localStorage.clear()
-  mocks.isSupabaseConfigured.mockReturnValue(false)
 })
 
 afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('admin store (demo mode)', () => {
-  it('fetchUsers loads hardcoded demo users and computes stats', async () => {
-    const store = useAdminStore()
-
-    const result = await store.fetchUsers()
-
-    expect(result.success).toBe(true)
-    expect(store.users.length).toBeGreaterThan(0)
-    expect(store.users.some(u => u.email === 'demo@alquilubres.com')).toBe(true)
-    expect(store.stats.totalUsers).toBe(store.users.length)
-  })
-
-  it('createUser pushes a new demo user and returns a generated password', async () => {
-    const store = useAdminStore()
-    await store.fetchUsers()
-
-    const result = await store.createUser({
-      email: 'new@example.com',
-      displayName: 'New Demo',
-      role: 'owner',
-      planId: 'basic'
-    })
-
-    expect(result.success).toBe(true)
-    expect(result.password).toBeTruthy()
-    expect(store.users.some(u => u.email === 'new@example.com')).toBe(true)
-    expect(store.stats.totalUsers).toBe(4)
-  })
-
-  it('updateUserRole patches the role of a demo user', async () => {
-    const store = useAdminStore()
-    await store.fetchUsers()
-
-    const result = await store.updateUserRole('user123', 'admin')
-
-    expect(result.success).toBe(true)
-    expect(store.users.find(u => u.uid === 'user123').role).toBe('admin')
-  })
-
-  it('toggleUserStatus suspends a demo user', async () => {
-    const store = useAdminStore()
-    await store.fetchUsers()
-
-    const result = await store.toggleUserStatus('user123', false)
-
-    expect(result.success).toBe(true)
-    expect(store.users.find(u => u.uid === 'user123').isActive).toBe(false)
-  })
-
-  it('deleteUser removes a demo user from state', async () => {
-    const store = useAdminStore()
-    await store.fetchUsers()
-
-    const result = await store.deleteUser('user123')
-
-    expect(result.success).toBe(true)
-    expect(store.users.find(u => u.uid === 'user123')).toBeUndefined()
-  })
-
-  it('fetchAllProperties loads demo properties including pending ones', async () => {
-    const store = useAdminStore()
-
-    const result = await store.fetchAllProperties()
-
-    expect(result.success).toBe(true)
-    expect(store.properties.length).toBeGreaterThan(0)
-    expect(store.properties.some(p => p.status === 'pending')).toBe(true)
-    expect(store.stats.totalProperties).toBe(store.properties.length)
-  })
-
-  it('updatePropertyStatus approves a demo property', async () => {
-    const store = useAdminStore()
-    await store.fetchAllProperties()
-    const pending = store.properties.find(p => p.status === 'pending')
-
-    const result = await store.updatePropertyStatus(pending.id, 'active')
-
-    expect(result.success).toBe(true)
-    expect(store.properties.find(p => p.id === pending.id).status).toBe('active')
-  })
-
-  it('deleteProperty removes a demo property', async () => {
-    const store = useAdminStore()
-    await store.fetchAllProperties()
-    const id = store.properties[0].id
-
-    const result = await store.deleteProperty(id)
-
-    expect(result.success).toBe(true)
-    expect(store.properties.find(p => p.id === id)).toBeUndefined()
-  })
-
-  it('initPlans loads default plans when none are stored', async () => {
-    const store = useAdminStore()
-
-    const result = await store.initPlans()
-
-    expect(result.success).toBe(true)
-    expect(store.subscriptionPlans.length).toBe(3)
-    expect(store.subscriptionPlans.find(p => p.id === 'pro').recommended).toBe(true)
-  })
-
-  it('updateSubscriptionPlan updates a demo plan', async () => {
-    const store = useAdminStore()
-    await store.initPlans()
-
-    const result = await store.updateSubscriptionPlan('basic', { price: 9999 })
-
-    expect(result.success).toBe(true)
-    expect(store.subscriptionPlans.find(p => p.id === 'basic').price).toBe(9999)
-  })
-
-  it('initSubscriptions keeps an empty subscriptions array in demo mode', async () => {
-    const store = useAdminStore()
-
-    const result = await store.initSubscriptions()
-
-    expect(result.success).toBe(true)
-    expect(store.subscriptions).toEqual([])
-  })
-
-  it('updateUserSubscription updates the subscription of a demo user', async () => {
-    const store = useAdminStore()
-    await store.fetchUsers()
-
-    const result = await store.updateUserSubscription('user123', 'enterprise', 'active')
-
-    expect(result.success).toBe(true)
-    expect(store.users.find(u => u.uid === 'user123').subscription.planId).toBe('enterprise')
-  })
-
-  it('initPlatformSettings loads stored settings or defaults', async () => {
-    const store = useAdminStore()
-
-    const result = await store.initPlatformSettings()
-
-    expect(result.success).toBe(true)
-    expect(store.platformSettings.platformName).toBe('AlquiLibres')
-  })
-
-  it('updatePlatformSettings persists demo settings to localStorage', async () => {
-    const store = useAdminStore()
-    await store.initPlatformSettings()
-
-    const result = await store.updatePlatformSettings({ platformName: 'Test' })
-
-    expect(result.success).toBe(true)
-    expect(store.platformSettings.platformName).toBe('Test')
-    expect(JSON.parse(localStorage.getItem('platformSettings')).platformName).toBe('Test')
-  })
-})
-
-describe('admin store (Supabase mode)', () => {
-  beforeEach(() => {
-    mocks.isSupabaseConfigured.mockReturnValue(true)
-  })
-
+describe('admin store (native API)', () => {
   it('fetchUsers calls /api/users and normalizes the response', async () => {
     mocks.apiGet.mockResolvedValueOnce({ success: true, data: { data: [apiUser] } })
     const store = useAdminStore()
@@ -434,6 +268,17 @@ describe('admin store (Supabase mode)', () => {
     expect(store.subscriptionPlans.length).toBe(3)
   })
 
+  it('initPlans falls back to localStorage when the API fails', async () => {
+    mocks.apiGet.mockRejectedValueOnce(new Error('down'))
+    const store = useAdminStore()
+
+    const result = await store.initPlans()
+
+    expect(result.success).toBe(false)
+    // Catch fallback: default plans come from localStorage helpers.
+    expect(store.subscriptionPlans.length).toBe(3)
+  })
+
   it('updateSubscriptionPlan patches /api/plans/{id}', async () => {
     mocks.apiPatch.mockResolvedValueOnce({ success: true, data: { ...apiPlan, price: 9999 } })
     const store = useAdminStore()
@@ -484,6 +329,17 @@ describe('admin store (Supabase mode)', () => {
     expect(mocks.apiGet).toHaveBeenCalledWith('/platform-settings')
     expect(result.success).toBe(true)
     expect(store.platformSettings.platformName).toBe('AlquiLibres')
+  })
+
+  it('initPlatformSettings falls back to localStorage when the API fails', async () => {
+    localStorage.setItem('platformSettings', JSON.stringify({ platformName: 'Stored Name' }))
+    mocks.apiGet.mockRejectedValueOnce(new Error('down'))
+    const store = useAdminStore()
+
+    const result = await store.initPlatformSettings()
+
+    expect(result.success).toBe(false)
+    expect(store.platformSettings.platformName).toBe('Stored Name')
   })
 
   it('updatePlatformSettings patches /api/platform-settings', async () => {

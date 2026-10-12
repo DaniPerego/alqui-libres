@@ -198,7 +198,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-// isSupabaseConfigured removed — auth is now native JWT
 import {
   getOwnerReservations,
   confirmReservation as confirmReservationSvc,

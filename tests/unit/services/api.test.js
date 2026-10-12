@@ -4,19 +4,13 @@ vi.mock('@/stores/auth', () => ({
   useAuthStore: vi.fn(() => ({ sessionToken: 'mock-token' }))
 }))
 
-vi.mock('@/config/supabase', () => ({
-  isSupabaseConfigured: vi.fn(() => true)
-}))
-
 import { useAuthStore } from '@/stores/auth'
-import { isSupabaseConfigured } from '@/config/supabase'
 import {
   apiGet,
   apiPost,
   apiPatch,
   apiPut,
-  apiDelete,
-  isApiAvailable
+  apiDelete
 } from '@/services/api.js'
 
 describe('src/services/api', () => {
@@ -26,7 +20,6 @@ describe('src/services/api', () => {
       vi.fn(async () => new Response('{}', { status: 200 }))
     )
     useAuthStore.mockReturnValue({ sessionToken: 'mock-token' })
-    isSupabaseConfigured.mockReturnValue(true)
   })
 
   it('apiGet sends the Authorization header when a session token exists', async () => {
@@ -136,13 +129,5 @@ describe('src/services/api', () => {
 
     expect(result.success).toBe(false)
     expect(result.error.code).toBe('NETWORK_ERROR')
-  })
-
-  it('isApiAvailable reflects the Supabase configuration state', () => {
-    isSupabaseConfigured.mockReturnValue(false)
-    expect(isApiAvailable()).toBe(false)
-
-    isSupabaseConfigured.mockReturnValue(true)
-    expect(isApiAvailable()).toBe(true)
   })
 })

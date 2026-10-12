@@ -11,16 +11,10 @@ import {
 } from '@/services/reservations.js'
 
 const mocks = vi.hoisted(() => ({
-  isSupabaseConfigured: vi.fn(() => false),
   apiGet: vi.fn(),
   apiPost: vi.fn(),
   apiPatch: vi.fn(),
   apiDelete: vi.fn()
-}))
-
-vi.mock('@/config/supabase', () => ({
-  isSupabaseConfigured: mocks.isSupabaseConfigured,
-  supabase: null
 }))
 
 vi.mock('@/services/api', () => ({
@@ -54,141 +48,12 @@ const backendReservation = {
   updatedAt: '2024-01-01T00:00:00.000Z'
 }
 
-function normalizedReservation(r) {
-  return {
-    ...r,
-    property: {
-      ...r.property,
-      location: r.property.city
-    },
-    guest: {
-      name: r.guestName,
-      email: r.guestEmail,
-      phone: r.guestPhone
-    },
-    totalPrice: r.total
-  }
-}
-
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.removeItem('reservations')
-  mocks.isSupabaseConfigured.mockReturnValue(false)
 })
 
-describe('reservations service (demo mode)', () => {
-  it('creates a demo reservation and stores it in localStorage', async () => {
-    const result = await createReservation({
-      propertyId: 'p1',
-      checkIn: '2025-12-20',
-      checkOut: '2025-12-25',
-      guests: 4,
-      guestName: 'Demo Guest',
-      guestEmail: 'demo@example.com',
-      guestPhone: '+54',
-      property: { title: 'Casa Demo', city: 'Carlos Paz', image: 'img.jpg' },
-      total: 500
-    })
-
-    expect(result.success).toBe(true)
-    expect(result.reservation.status).toBe('pending')
-    expect(result.reservation.guest.name).toBe('Demo Guest')
-    expect(result.reservation.totalPrice).toBe(500)
-
-    const stored = JSON.parse(localStorage.getItem('reservations'))
-    expect(stored).toHaveLength(1)
-    expect(stored[0].guest.email).toBe('demo@example.com')
-  })
-
-  it('returns owner reservations from localStorage', async () => {
-    localStorage.setItem('reservations', JSON.stringify([
-      { id: '1', ownerId: 'owner001', status: 'pending', property: { title: 'A' }, guest: { name: 'G' }, totalPrice: 100, createdAt: Date.now() }
-    ]))
-
-    const reservations = await getOwnerReservations('owner001')
-
-    expect(reservations).toHaveLength(1)
-    expect(reservations[0].id).toBe('1')
-  })
-
-  it('filters owner reservations by status', async () => {
-    localStorage.setItem('reservations', JSON.stringify([
-      { id: '1', ownerId: 'owner001', status: 'pending', property: { title: 'A' }, guest: { name: 'G' }, totalPrice: 100, createdAt: Date.now() },
-      { id: '2', ownerId: 'owner001', status: 'confirmed', property: { title: 'B' }, guest: { name: 'G' }, totalPrice: 100, createdAt: Date.now() }
-    ]))
-
-    const reservations = await getOwnerReservations('owner001', 'confirmed')
-
-    expect(reservations).toHaveLength(1)
-    expect(reservations[0].status).toBe('confirmed')
-  })
-
-  it('returns guest reservations from localStorage', async () => {
-    localStorage.setItem('reservations', JSON.stringify([
-      { id: '1', guestId: 'guest001', status: 'pending', property: { title: 'A' }, guest: { name: 'G' }, totalPrice: 100, createdAt: Date.now() }
-    ]))
-
-    const reservations = await getGuestReservations('guest001')
-
-    expect(reservations).toHaveLength(1)
-  })
-
-  it('confirms a demo reservation', async () => {
-    localStorage.setItem('reservations', JSON.stringify([
-      { id: '1', ownerId: 'owner001', status: 'pending', property: { title: 'A' }, guest: { name: 'G' }, totalPrice: 100, createdAt: Date.now() }
-    ]))
-
-    const result = await confirmReservation('1')
-
-    expect(result.success).toBe(true)
-    expect(result.reservation.status).toBe('confirmed')
-    const stored = JSON.parse(localStorage.getItem('reservations'))
-    expect(stored[0].status).toBe('confirmed')
-  })
-
-  it('rejects a demo reservation with a reason', async () => {
-    localStorage.setItem('reservations', JSON.stringify([
-      { id: '1', ownerId: 'owner001', status: 'pending', property: { title: 'A' }, guest: { name: 'G' }, totalPrice: 100, createdAt: Date.now() }
-    ]))
-
-    const result = await rejectReservation('1', 'No disponible')
-
-    expect(result.success).toBe(true)
-    expect(result.reservation.status).toBe('rejected')
-    const stored = JSON.parse(localStorage.getItem('reservations'))
-    expect(stored[0].rejectionReason).toBe('No disponible')
-  })
-
-  it('cancels a demo reservation', async () => {
-    localStorage.setItem('reservations', JSON.stringify([
-      { id: '1', ownerId: 'owner001', status: 'confirmed', property: { title: 'A' }, guest: { name: 'G' }, totalPrice: 100, createdAt: Date.now() }
-    ]))
-
-    const result = await cancelReservation('1', 'owner')
-
-    expect(result.success).toBe(true)
-    expect(result.reservation.status).toBe('cancelled')
-    const stored = JSON.parse(localStorage.getItem('reservations'))
-    expect(stored[0].status).toBe('cancelled')
-  })
-
-  it('deletes a demo reservation from localStorage', async () => {
-    localStorage.setItem('reservations', JSON.stringify([
-      { id: '1', ownerId: 'owner001', status: 'pending', property: { title: 'A' }, guest: { name: 'G' }, totalPrice: 100, createdAt: Date.now() }
-    ]))
-
-    const result = await deleteReservation('1')
-
-    expect(result.success).toBe(true)
-    expect(JSON.parse(localStorage.getItem('reservations'))).toHaveLength(0)
-  })
-})
-
-describe('reservations service (Supabase mode)', () => {
-  beforeEach(() => {
-    mocks.isSupabaseConfigured.mockReturnValue(true)
-  })
-
+describe('reservations service (native API)', () => {
   it('creates a reservation via the API', async () => {
     mocks.apiPost.mockResolvedValueOnce({ success: true, data: backendReservation })
 
@@ -213,6 +78,18 @@ describe('reservations service (Supabase mode)', () => {
     expect(result.reservation.property.title).toBe('Casa API')
     expect(result.reservation.guest.name).toBe('API Guest')
     expect(result.reservation.totalPrice).toBe(520)
+  })
+
+  it('returns an error when the API rejects the reservation', async () => {
+    mocks.apiPost.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'VALIDATION', message: 'Property not available' }
+    })
+
+    const result = await createReservation({ propertyId: 'p1' })
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Property not available')
   })
 
   it('fetches owner reservations from the API', async () => {

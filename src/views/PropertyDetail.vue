@@ -550,7 +550,6 @@ import { useI18n } from 'vue-i18n'
 import { useSEO, generatePropertySchema } from '@/composables/useSEO'
 import { getPropertyReviews, addReview, getPropertyRating } from '@/services/reviews'
 import { createReservation, getPropertyAvailability } from '@/services/reservations'
-// isSupabaseConfigured removed — auth is now native JWT
 import DatePicker from 'vue-datepicker-next';
 import 'vue-datepicker-next/index.css';
 import { MapPin, Calendar, Star, Flame, Car, Clock, Phone, Mail, MessageSquare, Lock, Globe, ExternalLink, CheckCircle, ArrowRight, Send, X, ChevronLeft, ChevronRight, User } from '@lucide/vue'

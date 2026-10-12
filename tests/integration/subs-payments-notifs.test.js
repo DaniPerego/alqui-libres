@@ -23,10 +23,9 @@ const mocks = vi.hoisted(() => {
   const $transaction = vi.fn(async (fn) => (
     typeof fn === 'function' ? fn(delegates) : undefined
   ))
-  return { delegates, createClient: vi.fn(), createUser: vi.fn(), $queryRaw: vi.fn(), $transaction }
+  return { delegates, createUser: vi.fn(), $queryRaw: vi.fn(), $transaction }
 })
 
-vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.createClient }))
 vi.mock('@prisma/client', async () => {
   const actual = await vi.importActual('@prisma/client')
   return {
@@ -49,29 +48,17 @@ import paymentsStatusHandler from '../../api-handlers/payments/status.js'
 import notificationsHandler from '../../api-handlers/notifications.js'
 import notificationIdHandler from '../../api-handlers/notifications/[id].js'
 
-let getUserResult
-
 function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
 function authAs({ uid = 'uid-1', role = 'owner', email = 'user@test.com', displayName = 'User Test' } = {}) {
-  getUserResult = { data: { user: { id: uid, email } }, error: null }
   mocks.delegates.user.findUnique.mockResolvedValue({ id: uid, role, isActive: true, displayName, email })
   return { uid, role }
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  process.env.SUPABASE_URL = 'https://test.supabase.co'
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key'
-  getUserResult = { data: { user: null }, error: { message: 'missing token' } }
-  mocks.createClient.mockReturnValue({
-    auth: {
-      getUser: vi.fn(async () => getUserResult),
-      admin: { createUser: mocks.createUser },
-    },
-  })
   mocks.$queryRaw.mockResolvedValue([])
   mocks.delegates.subscription.findMany.mockResolvedValue([])
   mocks.delegates.subscription.count.mockResolvedValue(0)

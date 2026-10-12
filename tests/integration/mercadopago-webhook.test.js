@@ -31,14 +31,12 @@ const mocks = vi.hoisted(() => {
   return {
     delegates,
     mp,
-    createClient: vi.fn(),
     createUser: vi.fn(),
     $queryRaw: vi.fn(),
     $transaction: vi.fn(async (callback) => callback(delegates)),
   }
 })
 
-vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.createClient }))
 vi.mock('@prisma/client', async () => {
   const actual = await vi.importActual('@prisma/client')
   return {
@@ -59,8 +57,6 @@ vi.mock('mercadopago', () => ({
 }))
 
 import webhookHandler from '../../api-handlers/mercadopago/webhook.js'
-
-let getUserResult
 
 function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
@@ -86,17 +82,8 @@ function validSignature({ paymentId, requestId = 'req-1', ts = '1700000000', sec
 
 beforeEach(() => {
   vi.clearAllMocks()
-  process.env.SUPABASE_URL = 'https://test.supabase.co'
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key'
   process.env.MP_ACCESS_TOKEN = 'TEST-ACCESS-TOKEN'
   delete process.env.MP_CLIENT_SECRET
-  getUserResult = { data: { user: null }, error: { message: 'missing token' } }
-  mocks.createClient.mockReturnValue({
-    auth: {
-      getUser: vi.fn(async () => getUserResult),
-      admin: { createUser: mocks.createUser },
-    },
-  })
   mocks.$queryRaw.mockResolvedValue([])
   mocks.delegates.subscription.findUnique.mockResolvedValue(null)
   mocks.delegates.subscription.update.mockImplementation(async (args) => ({ id: 'sub-1', ...args.data }))

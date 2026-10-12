@@ -150,7 +150,6 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePaymentStore } from '@/stores/payment'
-import { isApiAvailable } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -201,10 +200,8 @@ const checkPaymentStatus = async () => {
 }
 
 // Polls the real backend every 5s (max 12 attempts) until the subscription
-// becomes active. Only meaningful when the API is available; in demo mode the
-// manual "Verificar estado" button keeps the existing behavior.
+// becomes active.
 const startPolling = () => {
-  if (!isApiAvailable()) return
   stopPolling()
   pollAttempts = 0
   pollTimer = setInterval(async () => {

@@ -32,7 +32,6 @@
     "@lucide/vue": "^1.34.0",
     "@mercadopago/sdk-js": "^0.0.3",
     "@prisma/client": "^6.19.3",
-    "@supabase/supabase-js": "^2.112.4",
     "@vercel/blob": "^2.6.1",
     "@vueuse/core": "^10.7.0",
     "bcryptjs": "^2.4.3",

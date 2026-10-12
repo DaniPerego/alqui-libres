@@ -4,15 +4,11 @@
 //   no token -> 401 | token sin fila en users -> 403 | rol incorrecto -> 403 |
 //   rol permitido -> next (req.auth poblado con rol desde DB, D7).
 //
-// @supabase/supabase-js and @prisma/client are mocked (bare specifiers, the
-// most robust interception); no network/DB. getAdminClient() caches the
-// service-role client at module level, so the mocked getUser reads the
-// mutable `getUserResult` at call time — every test controls the outcome
-// without reloading modules.
+// @prisma/client is mocked (bare specifier, the most robust interception);
+// no network/DB.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  createClient: vi.fn(),
   findUnique: vi.fn(),
   jwtVerify: vi.fn(),
 }))
@@ -26,24 +22,12 @@ vi.mock('@prisma/client', () => ({
 
 import { requireAuth, requireRole, extractBearer } from '../../api-handlers/lib/auth.js'
 
-let getUserResult
-
 function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  // getAdminClient() validates env presence before creating the client; the
-  // client itself is mocked, so any non-empty values work here.
-  process.env.SUPABASE_URL = 'https://test.supabase.co'
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
-  getUserResult = { data: { user: { id: 'uid-1', email: 'x@example.com' } }, error: null }
-  mocks.createClient.mockReturnValue({
-    auth: {
-      getUser: vi.fn(async () => getUserResult),
-    },
-  })
   mocks.findUnique.mockResolvedValue({ id: 'uid-1', role: 'admin', isActive: true })
   // Mock jwt.verify to return a valid payload for any token
   mocks.jwtVerify.mockReturnValue({ sub: 'uid-1', email: 'x@example.com', role: 'admin' })

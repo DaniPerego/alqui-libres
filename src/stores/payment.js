@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
 import { useAdminStore } from './admin'
-import { apiGet, apiPost, apiPatch, isApiAvailable } from '@/services/api'
+import { apiGet, apiPost, apiPatch } from '@/services/api'
 
 export const usePaymentStore = defineStore('payment', () => {
   const authStore = useAuthStore()
@@ -143,54 +143,23 @@ export const usePaymentStore = defineStore('payment', () => {
     }
   }
 
-  // Demo-mode mock preference (kept only when the API is unavailable).
-  function buildMockPreference(plan) {
-    return {
-      id: 'pref_' + Date.now(),
-      init_point: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=mock_' + plan.id,
-      sandbox_init_point: 'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=mock_' + plan.id,
-      items: [{
-        title: `Suscripción ${plan.name} - AlquiLibres`,
-        description: plan.features.join(', '),
-        quantity: 1,
-        unit_price: plan.price,
-        currency_id: 'ARS'
-      }],
-      back_urls: {
-        success: window.location.origin + '/panel/payment-result?status=success',
-        failure: window.location.origin + '/panel/payment-result?status=failure',
-        pending: window.location.origin + '/panel/payment-result?status=pending'
-      },
-      auto_return: 'approved',
-      statement_descriptor: 'ALQUILIBRES',
-      external_reference: `${authStore.user?.uid || 'demo'}_${plan.id}_${Date.now()}`
-    }
-  }
-
   // Actions
   const fetchCurrentSubscription = async () => {
     loading.value = true
     error.value = null
 
     try {
-      if (isApiAvailable()) {
-        const result = await apiGet('/subscriptions/mine')
-        if (result.success) {
-          const sub = result.data?.data || null
-          currentSubscription.value = normalizeSubscription(sub)
-          syncAuthSubscription(sub)
-          return { success: true, data: currentSubscription.value, error: null }
-        }
-        // API error: keep the UI alive with the demo subscription, but surface
-        // the real error so callers can distinguish demo from failure.
-        currentSubscription.value = demoSubscription()
-        return { success: false, data: currentSubscription.value, error: result.error }
+      const result = await apiGet('/subscriptions/mine')
+      if (result.success) {
+        const sub = result.data?.data || null
+        currentSubscription.value = normalizeSubscription(sub)
+        syncAuthSubscription(sub)
+        return { success: true, data: currentSubscription.value, error: null }
       }
-
-      // Demo mode: read the subscription attached to the mock user.
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // API error: keep the UI alive with the demo subscription, but surface
+      // the real error so callers can distinguish demo from failure.
       currentSubscription.value = demoSubscription()
-      return { success: true, data: currentSubscription.value, error: null }
+      return { success: false, data: currentSubscription.value, error: result.error }
     } catch (err) {
       console.error('Error fetching subscription:', err)
       error.value = 'Error al cargar suscripción'
@@ -210,24 +179,16 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      if (isApiAvailable()) {
-        const result = await apiPost('/mercadopago/preference', { planId })
-        if (!result.success) {
-          throw new Error(mapPreferenceError(result.error))
-        }
-        return {
-          id: result.data?.id,
-          init_point: result.data?.init_point,
-          sandbox_init_point: result.data?.sandbox_init_point,
-          external_reference: result.data?.external_reference
-        }
+      const result = await apiPost('/mercadopago/preference', { planId })
+      if (!result.success) {
+        throw new Error(mapPreferenceError(result.error))
       }
-
-      // Demo fallback (no API): build a local mock preference.
-      const plan = adminStore.subscriptionPlans.find(p => p.id === planId)
-      if (!plan) throw new Error('Plan no encontrado')
-      await new Promise(resolve => setTimeout(resolve, 800))
-      return buildMockPreference(plan)
+      return {
+        id: result.data?.id,
+        init_point: result.data?.init_point,
+        sandbox_init_point: result.data?.sandbox_init_point,
+        external_reference: result.data?.external_reference
+      }
     } catch (err) {
       console.error('Error creating preference:', err)
       error.value = err.message || 'Error al crear preferencia de pago'
@@ -242,20 +203,14 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      if (isApiAvailable()) {
-        const preference = await createPreference(planId)
-        // Production uses the live checkout; development uses the sandbox URL
-        // (the server already sets back_urls, so no origin is needed here).
-        const checkoutUrl = import.meta.env.PROD
-          ? preference.init_point
-          : (preference.sandbox_init_point || preference.init_point)
-        window.location.href = checkoutUrl
-        return { success: true, message: 'Redirigiendo a MercadoPago...' }
-      }
-
-      // Demo mode (no credentials): simulate a successful payment.
-      await simulatePaymentSuccess(planId)
-      return { success: true, message: 'Suscripción activada (modo desarrollo)' }
+      const preference = await createPreference(planId)
+      // Production uses the live checkout; development uses the sandbox URL
+      // (the server already sets back_urls, so no origin is needed here).
+      const checkoutUrl = import.meta.env.PROD
+        ? preference.init_point
+        : (preference.sandbox_init_point || preference.init_point)
+      window.location.href = checkoutUrl
+      return { success: true, message: 'Redirigiendo a MercadoPago...' }
     } catch (err) {
       console.error('Error subscribing:', err)
       error.value = err.message || 'Error al procesar suscripción'
@@ -286,14 +241,9 @@ export const usePaymentStore = defineStore('payment', () => {
       }
     }
 
-    // When the API is available the local simulation is kept as-is (a real
-    // subscription only appears after the webhook fires); otherwise refresh
-    // from the demo user.
-    if (isApiAvailable()) {
-      currentSubscription.value = demoSubscription()
-    } else {
-      await fetchCurrentSubscription()
-    }
+    // The local simulation is kept as-is (a real subscription only appears
+    // after the webhook fires).
+    currentSubscription.value = demoSubscription()
   }
 
   const changePlan = async (newPlanId) => {
@@ -311,7 +261,7 @@ export const usePaymentStore = defineStore('payment', () => {
         ? currentSubscription.value.id
         : null
 
-      if (isApiAvailable() && realId) {
+      if (realId) {
         const result = await apiPatch(`/subscriptions/${realId}`, {
           status: 'plan_change',
           planId: newPlanId,
@@ -356,7 +306,7 @@ export const usePaymentStore = defineStore('payment', () => {
       const realId = currentSubscription.value?.id && !currentSubscription.value.id.startsWith('sub_')
         ? currentSubscription.value.id
         : null
-      if (isApiAvailable() && realId) {
+      if (realId) {
         const result = await apiPatch(`/subscriptions/${realId}`, { status: 'cancelled' })
         if (!result.success) {
           throw new Error(result.error?.message || 'Error al cancelar suscripción')
@@ -394,7 +344,7 @@ export const usePaymentStore = defineStore('payment', () => {
         ? currentSubscription.value.id
         : null
 
-      if (isApiAvailable() && realId) {
+      if (realId) {
         const result = await apiPatch(`/subscriptions/${realId}`, { status: 'reactivate' })
         if (!result.success) {
           throw new Error(mapReactivateError(result.error))
@@ -434,35 +384,19 @@ export const usePaymentStore = defineStore('payment', () => {
     error.value = null
 
     try {
-      if (isApiAvailable()) {
-        const result = await apiGet('/payments')
-        if (!result.success) {
-          throw new Error(result.error?.message || 'Error al cargar facturas')
-        }
-        const payments = result.data?.data || []
-        invoices.value = payments.map(p => ({
-          id: p.id,
-          date: p.createdAt,
-          amount: p.amount,
-          status: mapInvoiceStatus(p.status),
-          planName: p.planName,
-          pdfUrl: '#'
-        }))
-        return { success: true, data: invoices.value, error: null }
+      const result = await apiGet('/payments')
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Error al cargar facturas')
       }
-
-      // Demo fallback.
-      await new Promise(resolve => setTimeout(resolve, 500))
-      invoices.value = [
-        {
-          id: 'inv_001',
-          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: currentPlan.value?.price || 24999,
-          status: 'paid',
-          planName: currentPlan.value?.name || 'Plan Profesional',
-          pdfUrl: '#'
-        }
-      ]
+      const payments = result.data?.data || []
+      invoices.value = payments.map(p => ({
+        id: p.id,
+        date: p.createdAt,
+        amount: p.amount,
+        status: mapInvoiceStatus(p.status),
+        planName: p.planName,
+        pdfUrl: '#'
+      }))
       return { success: true, data: invoices.value, error: null }
     } catch (err) {
       console.error('Error fetching invoices:', err)

@@ -1,5 +1,4 @@
 import { useAuthStore } from '@/stores/auth'
-import { isSupabaseConfigured } from '@/config/supabase'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -104,8 +103,4 @@ export async function apiPut(path, body, options) {
 
 export async function apiDelete(path, options) {
   return request('DELETE', path, null, options)
-}
-
-export function isApiAvailable() {
-  return isSupabaseConfigured()
 }

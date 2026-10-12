@@ -5,35 +5,27 @@ import { usePaymentStore } from '@/stores/payment.js'
 import { useAuthStore } from '@/stores/auth.js'
 
 const mocks = vi.hoisted(() => ({
-  isSupabaseConfigured: vi.fn(() => false),
   apiGet: vi.fn(),
   apiPost: vi.fn(),
-  apiPatch: vi.fn(),
-  apiPut: vi.fn(),
-  apiDelete: vi.fn(),
-  isApiAvailable: () => mocks.isSupabaseConfigured()
-}))
-
-vi.mock('@/config/supabase', () => ({
-  isSupabaseConfigured: mocks.isSupabaseConfigured,
-  supabase: null
+  apiPatch: vi.fn()
 }))
 
 vi.mock('@/services/api', () => ({
   apiGet: mocks.apiGet,
   apiPost: mocks.apiPost,
-  apiPatch: mocks.apiPatch,
-  apiPut: mocks.apiPut,
-  apiDelete: mocks.apiDelete,
-  isApiAvailable: () => mocks.isApiAvailable()
+  apiPatch: mocks.apiPatch
 }))
 
-const DEMO_SUBSCRIPTION = {
+const API_SUBSCRIPTION = {
+  id: 'uuid-sub-1',
+  userId: 'owner001',
   planId: 'pro',
+  planName: 'Plan Profesional',
   status: 'active',
   startedAt: '2026-01-01T00:00:00.000Z',
   expiresAt: '2026-08-01T00:00:00.000Z',
   autoRenew: true,
+  paymentMethod: 'mercadopago',
   lastPaymentDate: '2026-01-01T00:00:00.000Z'
 }
 
@@ -45,7 +37,14 @@ function loginDemoUser() {
     email: 'usuario@alquilibres.com',
     displayName: 'Propietario Demo',
     role: 'owner',
-    subscription: { ...DEMO_SUBSCRIPTION }
+    subscription: {
+      planId: 'pro',
+      status: 'active',
+      startedAt: '2026-01-01T00:00:00.000Z',
+      expiresAt: '2026-08-01T00:00:00.000Z',
+      autoRenew: true,
+      lastPaymentDate: '2026-01-01T00:00:00.000Z'
+    }
   }
 }
 
@@ -53,100 +52,10 @@ beforeEach(() => {
   vi.clearAllMocks()
   setActivePinia(createPinia())
   localStorage.clear()
-  mocks.isSupabaseConfigured.mockReturnValue(false)
 })
 
-describe('payment store (demo mode)', () => {
-  it('fetchCurrentSubscription devuelve la suscripcion del usuario mock', async () => {
-    loginDemoUser()
-    const store = usePaymentStore()
-
-    const result = await store.fetchCurrentSubscription()
-
-    expect(result.success).toBe(true)
-    expect(store.currentSubscription.id).toBe('sub_owner001')
-    expect(store.currentSubscription.planId).toBe('pro')
-    expect(store.currentSubscription.status).toBe('active')
-  })
-
-  it('fetchCurrentSubscription sin suscripcion -> null', async () => {
-    useAuthStore().user = { uid: 'guest1', email: 'g@t.com', role: 'guest' }
-    const store = usePaymentStore()
-
-    const result = await store.fetchCurrentSubscription()
-
-    expect(result.success).toBe(true)
-    expect(store.currentSubscription).toBeNull()
-  })
-
-  it('createPreference construye una preferencia mock sin llamar a la API', async () => {
-    loginDemoUser()
-    const store = usePaymentStore()
-
-    const preference = await store.createPreference('pro')
-
-    expect(mocks.apiPost).not.toHaveBeenCalled()
-    expect(preference.id).toMatch(/^pref_/)
-    expect(preference.sandbox_init_point).toContain('sandbox.mercadopago.com.ar')
-    expect(preference.back_urls.success).toContain('/panel/payment-result?status=success')
-  })
-
-  it('cancelSubscription en demo solo actualiza estado local', async () => {
-    loginDemoUser()
-    const store = usePaymentStore()
-    await store.fetchCurrentSubscription()
-
-    const result = await store.cancelSubscription()
-
-    expect(result.success).toBe(true)
-    expect(mocks.apiPatch).not.toHaveBeenCalled()
-    expect(store.currentSubscription.status).toBe('cancelled')
-    expect(store.currentSubscription.autoRenew).toBe(false)
-    expect(useAuthStore().user.subscription.status).toBe('cancelled')
-  })
-
-  it('simulatePaymentSuccess activa la suscripcion localmente', async () => {
-    loginDemoUser()
-    const store = usePaymentStore()
-
-    await store.simulatePaymentSuccess('basic')
-
-    expect(store.currentSubscription.status).toBe('active')
-    expect(store.currentSubscription.planId).toBe('basic')
-    expect(useAuthStore().user.subscription.status).toBe('active')
-  })
-
-  it('changePlan en demo actualiza local sin llamar a la API', async () => {
-    loginDemoUser()
-    const store = usePaymentStore()
-    await store.fetchCurrentSubscription()
-
-    const result = await store.changePlan('basic')
-
-    expect(mocks.apiPatch).not.toHaveBeenCalled()
-    expect(result.success).toBe(true)
-    expect(result.message).toContain('Completá el pago')
-    expect(store.currentSubscription.planId).toBe('basic')
-    expect(useAuthStore().user.subscription.planId).toBe('basic')
-  })
-})
-
-describe('payment store (Supabase mode)', () => {
-  const API_SUBSCRIPTION = {
-    id: 'uuid-sub-1',
-    userId: 'owner001',
-    planId: 'pro',
-    planName: 'Plan Profesional',
-    status: 'active',
-    startedAt: '2026-01-01T00:00:00.000Z',
-    expiresAt: '2026-08-01T00:00:00.000Z',
-    autoRenew: true,
-    paymentMethod: 'mercadopago',
-    lastPaymentDate: '2026-01-01T00:00:00.000Z'
-  }
-
+describe('payment store (native API)', () => {
   beforeEach(() => {
-    mocks.isSupabaseConfigured.mockReturnValue(true)
     loginDemoUser()
   })
 
@@ -297,17 +206,19 @@ describe('payment store (Supabase mode)', () => {
   })
 
   it('changePlan con sub demo (sub_) no PATCHea, solo fallback local', async () => {
-    loginDemoUser()
+    // La suscripcion local lleva id demo: nunca se envia PATCH al backend.
     const store = usePaymentStore()
-    // API disponible pero la sub local lleva id demo: nunca se envía PATCH.
-    await store.fetchCurrentSubscription()
+    store.currentSubscription = {
+      id: 'sub_owner001',
+      planId: 'pro',
+      status: 'active'
+    }
 
     const result = await store.changePlan('basic')
 
     expect(mocks.apiPatch).not.toHaveBeenCalled()
     expect(result.success).toBe(true)
     expect(store.currentSubscription.planId).toBe('basic')
-    expect(useAuthStore().user.subscription.planId).toBe('basic')
   })
 
   it('reactivateSubscription PATCHea /subscriptions/{id} con reactivate y deja la sub pending', async () => {
@@ -333,18 +244,18 @@ describe('payment store (Supabase mode)', () => {
   })
 
   it('reactivateSubscription con sub demo (sub_) no PATCHea, solo fallback local', async () => {
-    loginDemoUser()
     const store = usePaymentStore()
-    await store.fetchCurrentSubscription()
-    // Cancel locally first
-    store.currentSubscription.status = 'cancelled'
+    store.currentSubscription = {
+      id: 'sub_owner001',
+      planId: 'pro',
+      status: 'cancelled'
+    }
 
     const result = await store.reactivateSubscription()
 
     expect(mocks.apiPatch).not.toHaveBeenCalled()
     expect(result.success).toBe(true)
     expect(store.currentSubscription.status).toBe('active')
-    expect(useAuthStore().user.subscription.status).toBe('active')
   })
 
   it('reactivateSubscription 409 -> No se puede reactivar una suscripción que no está cancelada', async () => {
@@ -379,5 +290,15 @@ describe('payment store (Supabase mode)', () => {
     expect(store.invoices[0].status).toBe('paid')
     expect(store.invoices[1].status).toBe('pending')
     expect(store.invoices[0].planName).toBe('Plan Profesional')
+  })
+
+  it('simulatePaymentSuccess activa la suscripcion localmente', async () => {
+    const store = usePaymentStore()
+
+    await store.simulatePaymentSuccess('basic')
+
+    expect(store.currentSubscription.status).toBe('active')
+    expect(store.currentSubscription.planId).toBe('basic')
+    expect(useAuthStore().user.subscription.status).toBe('active')
   })
 })

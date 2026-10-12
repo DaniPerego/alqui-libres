@@ -2,7 +2,7 @@
 //
 // Unit tests for prisma/seed-data.js — pure payload builder (no DB, no network).
 // Covers D8 normalization (propertyType -> enum), ownerId remap (user123/user456/
-// owner001 -> Supabase UID), review/message participant remap, and payload
+// owner001 -> seed user IDs), review/message participant remap, and payload
 // idempotency (stable ids, no duplicates — VPD-04).
 import { describe, it, expect } from 'vitest'
 import { buildSeedPayload, normalizePropertyType } from '../../prisma/seed-data.js'
@@ -102,7 +102,7 @@ describe('buildSeedPayload', () => {
     expect(messages[0].propertyId).toBe('1')
   })
 
-  it('genera 3 usuarios con ids de Supabase (D1)', () => {
+  it('genera 3 usuarios con ids de seed (D1)', () => {
     const { users } = build()
     expect(users.map((u) => u.id)).toEqual([userIds.guest, userIds.owner, userIds.admin])
     expect(users.map((u) => u.role).sort()).toEqual(['admin', 'guest', 'owner'])

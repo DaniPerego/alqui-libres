@@ -18,10 +18,9 @@ const mocks = vi.hoisted(() => {
       updateMany: vi.fn(), deleteMany: vi.fn(),
     }
   }
-  return { delegates, createClient: vi.fn(), createUser: vi.fn(), $queryRaw: vi.fn() }
+  return { delegates, createUser: vi.fn(), $queryRaw: vi.fn() }
 })
 
-vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.createClient }))
 vi.mock('@prisma/client', async () => {
   const actual = await vi.importActual('@prisma/client')
   return {
@@ -44,15 +43,12 @@ import usersIdHandler from '../../api-handlers/users/[id].js'
 // other (the handlers do up to two findUnique calls per request).
 const state = vi.hoisted(() => ({ currentUser: null, targets: {} }))
 
-let getUserResult
-
 function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
 function authAs({ uid = 'uid-1', role = 'owner', email = 'user@test.com', displayName = 'User Test' } = {}) {
   state.currentUser = { id: uid, role, isActive: true, displayName, email }
-  getUserResult = { data: { user: { id: uid, email } }, error: null }
   mocks.delegates.user.findUnique.mockImplementation(async ({ where }) => {
     if (state.currentUser && where.id === state.currentUser.id) return state.currentUser
     return state.targets[where.id] || null
@@ -61,22 +57,14 @@ function authAs({ uid = 'uid-1', role = 'owner', email = 'user@test.com', displa
 }
 
 function anon() {
-  getUserResult = { data: { user: null }, error: { message: 'missing token' } }
+  // No authenticated user — auth lookup returns nothing.
+  state.currentUser = null
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  process.env.SUPABASE_URL = 'https://test.supabase.co'
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key'
-  getUserResult = { data: { user: null }, error: { message: 'missing token' } }
   state.currentUser = null
   state.targets = {}
-  mocks.createClient.mockReturnValue({
-    auth: {
-      getUser: vi.fn(async () => getUserResult),
-      admin: { createUser: mocks.createUser },
-    },
-  })
   mocks.$queryRaw.mockResolvedValue([])
   mocks.delegates.user.findMany.mockResolvedValue([])
   mocks.delegates.user.count.mockResolvedValue(0)
@@ -115,7 +103,7 @@ describe('POST /api/users (self materialize, AUTH-03 register flow)', () => {
 })
 
 describe('POST /api/users (admin create, service role)', () => {
-  it('admin -> 201, crea usuario Supabase + fila, devuelve temp password', async () => {
+  it('admin -> 201, crea usuario + fila, devuelve temp password', async () => {
     authAs({ uid: 'admin-1', role: 'admin', email: 'admin@test.com' })
     mocks.createUser.mockResolvedValue({ data: { user: { id: 'new-uid', email: 'nuevo@test.com' } }, error: null })
     mocks.delegates.user.create.mockImplementation(async ({ data }) => ({ id: data.id, ...data }))
@@ -133,7 +121,7 @@ describe('POST /api/users (admin create, service role)', () => {
     expect(body.tempPassword).toEqual(expect.any(String))
   })
 
-  it('email duplicado en Supabase -> 409', async () => {
+  it('email duplicado -> 409', async () => {
     authAs({ uid: 'admin-1', role: 'admin' })
     mocks.createUser.mockResolvedValue({ data: { user: null }, error: { message: 'User already registered' } })
     const res = mockRes()

@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from '@/services/api'
-import { isSupabaseConfigured } from '@/config/supabase'
 
 export const useAdminStore = defineStore('admin', () => {
   // Version para invalidar caché cuando cambien los planes
@@ -62,134 +61,6 @@ export const useAdminStore = defineStore('admin', () => {
       ],
       maxProperties: -1, // -1 = ilimitadas
       isActive: true
-    }
-  ]
-
-  // Demo mode data
-  const demoUsers = [
-    {
-      uid: 'user123',
-      email: 'demo@alquilubres.com',
-      displayName: 'Demo User',
-      role: 'owner',
-      isActive: true,
-      createdAt: new Date('2024-01-15'),
-      subscription: {
-        planId: 'pro',
-        status: 'active',
-        startDate: new Date('2024-01-15'),
-        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-      },
-      stats: { properties: 2, bookings: 10, revenue: 5000 }
-    },
-    {
-      uid: 'user456',
-      email: 'prop@alquilubres.com',
-      displayName: 'Propietario Demo',
-      role: 'owner',
-      isActive: true,
-      createdAt: new Date('2024-02-10'),
-      subscription: {
-        planId: 'basic',
-        status: 'active',
-        startDate: new Date('2024-02-10'),
-        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-      },
-      stats: { properties: 1, bookings: 5, revenue: 2000 }
-    },
-    {
-      uid: 'user789',
-      email: 'guest@alquilubres.com',
-      displayName: 'Huésped Demo',
-      role: 'guest',
-      isActive: true,
-      createdAt: new Date('2024-03-05'),
-      subscription: null,
-      stats: { properties: 0, bookings: 3, revenue: 0 }
-    }
-  ]
-
-  const demoProperties = [
-    {
-      id: 'demo-1',
-      ownerId: 'user123',
-      title: 'Casa Familiar con Parrilla',
-      description: 'Hermosa casa para familias',
-      propertyType: 'casa',
-      rentalType: 'temporario',
-      mainImage: '',
-      images: [],
-      location: {
-        city: 'Villa Carlos Paz',
-        state: 'Córdoba',
-        country: 'Argentina',
-        address: '',
-        postalCode: '',
-        coordinates: null
-      },
-      capacity: { guests: 8, bedrooms: 4, beds: 5, bathrooms: 3 },
-      pricing: { basePrice: 120, cleaningFee: 30, currency: 'ARS', weeklyDiscount: 0, monthlyDiscount: 0 },
-      amenities: ['WiFi', 'Parrilla'],
-      localFeatures: { grillType: 'carbon' },
-      rating: 4.9,
-      reviewCount: 47,
-      isActive: true,
-      status: 'active',
-      createdAt: new Date('2024-01-15')
-    },
-    {
-      id: 'demo-2',
-      ownerId: 'user123',
-      title: 'Departamento Céntrico',
-      description: 'Moderno departamento en el centro',
-      propertyType: 'apartamento',
-      rentalType: 'temporario',
-      mainImage: '',
-      images: [],
-      location: {
-        city: 'Mar del Plata',
-        state: 'Buenos Aires',
-        country: 'Argentina',
-        address: '',
-        postalCode: '',
-        coordinates: null
-      },
-      capacity: { guests: 4, bedrooms: 2, beds: 2, bathrooms: 2 },
-      pricing: { basePrice: 85, cleaningFee: 20, currency: 'ARS', weeklyDiscount: 0, monthlyDiscount: 0 },
-      amenities: ['WiFi'],
-      localFeatures: {},
-      rating: 4.7,
-      reviewCount: 32,
-      isActive: false,
-      status: 'pending',
-      createdAt: new Date('2024-03-10')
-    },
-    {
-      id: 'demo-3',
-      ownerId: 'user456',
-      title: 'Cabaña Rústica',
-      description: 'Cabaña de montaña para desconectar',
-      propertyType: 'cabana',
-      rentalType: 'temporario',
-      mainImage: '',
-      images: [],
-      location: {
-        city: 'Mina Clavero',
-        state: 'Córdoba',
-        country: 'Argentina',
-        address: '',
-        postalCode: '',
-        coordinates: null
-      },
-      capacity: { guests: 6, bedrooms: 3, beds: 4, bathrooms: 2 },
-      pricing: { basePrice: 95, cleaningFee: 25, currency: 'ARS', weeklyDiscount: 0, monthlyDiscount: 0 },
-      amenities: ['WiFi', 'Fogón'],
-      localFeatures: {},
-      rating: 4.8,
-      reviewCount: 28,
-      isActive: true,
-      status: 'active',
-      createdAt: new Date('2024-02-20')
     }
   ]
 
@@ -394,11 +265,6 @@ export const useAdminStore = defineStore('admin', () => {
 
   // Plans initialization (API-backed with localStorage fallback)
   const initPlans = async () => {
-    if (!isSupabaseConfigured()) {
-      subscriptionPlans.value = loadPlansFromStorage()
-      return { success: true }
-    }
-
     try {
       const result = await apiGet('/plans')
       if (!result.success) {
@@ -426,14 +292,6 @@ export const useAdminStore = defineStore('admin', () => {
 
   // Platform settings initialization
   const initPlatformSettings = async () => {
-    if (!isSupabaseConfigured()) {
-      const stored = localStorage.getItem('platformSettings')
-      if (stored) {
-        platformSettings.value = { ...platformSettings.value, ...JSON.parse(stored) }
-      }
-      return { success: true }
-    }
-
     try {
       const result = await apiGet('/platform-settings')
       if (!result.success) {
@@ -454,12 +312,6 @@ export const useAdminStore = defineStore('admin', () => {
   }
 
   const updatePlatformSettings = async (updates) => {
-    if (!isSupabaseConfigured()) {
-      platformSettings.value = { ...platformSettings.value, ...updates }
-      localStorage.setItem('platformSettings', JSON.stringify(platformSettings.value))
-      return { success: true }
-    }
-
     try {
       const result = await apiPatch('/platform-settings', updates)
       if (!result.success) {
@@ -477,11 +329,6 @@ export const useAdminStore = defineStore('admin', () => {
 
   // Subscriptions
   const initSubscriptions = async () => {
-    if (!isSupabaseConfigured()) {
-      subscriptions.value = []
-      return { success: true }
-    }
-
     try {
       const result = await apiGet('/subscriptions')
       if (!result.success) {
@@ -504,25 +351,6 @@ export const useAdminStore = defineStore('admin', () => {
   const fetchUsers = async () => {
     loading.value = true
     error.value = null
-
-    if (!isSupabaseConfigured()) {
-      try {
-        const stored = localStorage.getItem('adminDemoUsers')
-        if (stored) {
-          users.value = JSON.parse(stored)
-        } else {
-          users.value = demoUsers.map(u => ({ ...u }))
-          localStorage.setItem('adminDemoUsers', JSON.stringify(users.value))
-        }
-        updateStats()
-        return { success: true }
-      } catch (err) {
-        error.value = err.message
-        return { success: false, error: err.message }
-      } finally {
-        loading.value = false
-      }
-    }
 
     try {
       const result = await apiGet('/users')
@@ -549,25 +377,6 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
 
-    if (!isSupabaseConfigured()) {
-      try {
-        const stored = localStorage.getItem('adminDemoProperties')
-        if (stored) {
-          properties.value = JSON.parse(stored)
-        } else {
-          properties.value = demoProperties.map(p => ({ ...p }))
-          localStorage.setItem('adminDemoProperties', JSON.stringify(properties.value))
-        }
-        updateStats()
-        return { success: true }
-      } catch (err) {
-        error.value = err.message
-        return { success: false, error: err.message }
-      } finally {
-        loading.value = false
-      }
-    }
-
     try {
       const result = await apiGet('/properties', { scope: 'all' })
       if (!result.success) {
@@ -590,16 +399,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Actualizar estado de una propiedad (aprobar/rechazar)
    */
   const updatePropertyStatus = async (propertyId, status) => {
-    if (!isSupabaseConfigured()) {
-      const property = properties.value.find(p => p.id === propertyId)
-      if (property) {
-        property.status = status
-        property.isActive = status === 'active'
-        property.reviewedAt = new Date()
-      }
-      return { success: true }
-    }
-
     try {
       const result = await apiPatch(`/properties/${propertyId}`, {
         status,
@@ -627,15 +426,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Eliminar una propiedad
    */
   const deleteProperty = async (propertyId) => {
-    if (!isSupabaseConfigured()) {
-      const index = properties.value.findIndex(p => p.id === propertyId)
-      if (index !== -1) {
-        properties.value.splice(index, 1)
-      }
-      updateStats()
-      return { success: true }
-    }
-
     try {
       const result = await apiDelete(`/properties/${propertyId}`)
       if (!result.success) {
@@ -659,15 +449,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Actualizar rol de usuario
    */
   const updateUserRole = async (userId, role) => {
-    if (!isSupabaseConfigured()) {
-      const user = users.value.find(u => u.uid === userId || u.id === userId)
-      if (user) {
-        user.role = role
-      }
-      saveCustomUsers()
-      return { success: true }
-    }
-
     try {
       const result = await apiPatch(`/users/${userId}`, { role })
       if (!result.success) {
@@ -690,15 +471,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Suspender/activar usuario
    */
   const toggleUserStatus = async (userId, isActive) => {
-    if (!isSupabaseConfigured()) {
-      const user = users.value.find(u => u.uid === userId || u.id === userId)
-      if (user) {
-        user.isActive = isActive
-      }
-      saveCustomUsers()
-      return { success: true }
-    }
-
     try {
       const result = await apiPatch(`/users/${userId}`, { isActive })
       if (!result.success) {
@@ -721,16 +493,6 @@ export const useAdminStore = defineStore('admin', () => {
    * Eliminar un usuario
    */
   const deleteUser = async (userId) => {
-    if (!isSupabaseConfigured()) {
-      const index = users.value.findIndex(u => u.uid === userId || u.id === userId)
-      if (index !== -1) {
-        users.value.splice(index, 1)
-      }
-      saveCustomUsers()
-      updateStats()
-      return { success: true }
-    }
-
     try {
       const result = await apiDelete(`/users/${userId}`)
       if (!result.success) {
@@ -776,13 +538,6 @@ export const useAdminStore = defineStore('admin', () => {
     }
 
     try {
-      if (!isSupabaseConfigured()) {
-        users.value.push(newUser)
-        localStorage.setItem('adminDemoUsers', JSON.stringify(users.value))
-        updateStats()
-        return { success: true, user: newUser, password, message: `Usuario ${userData.displayName} creado. Contraseña temporal: ${password}` }
-      }
-
       const result = await apiPost('/users', {
         email: newUser.email,
         displayName: newUser.displayName,
@@ -831,13 +586,6 @@ export const useAdminStore = defineStore('admin', () => {
       status: status || user.subscription?.status || 'active',
       startDate: user.subscription?.startDate || new Date(),
       endDate: user.subscription?.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-    }
-
-    if (!isSupabaseConfigured()) {
-      user.subscription = subscription
-      saveCustomUsers()
-      updateStats()
-      return { success: true }
     }
 
     try {
@@ -934,14 +682,6 @@ export const useAdminStore = defineStore('admin', () => {
 
     const current = subscriptionPlans.value[planIndex]
     const merged = { ...current, ...updates }
-
-    if (!isSupabaseConfigured()) {
-      const updatedPlans = [...subscriptionPlans.value]
-      updatedPlans[planIndex] = merged
-      subscriptionPlans.value = updatedPlans
-      savePlansToStorage(subscriptionPlans.value)
-      return { success: true }
-    }
 
     try {
       const result = await apiPatch(`/plans/${planId}`, merged)

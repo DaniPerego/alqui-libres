@@ -1,5 +1,4 @@
 import { apiGet, apiPost } from '@/services/api'
-import { isSupabaseConfigured } from '@/config/supabase'
 import { mockReviews } from '@/data/mockData'
 
 const STORAGE_KEY = 'alquilibres_reviews'
@@ -27,10 +26,6 @@ function resolvePropertyId(review) {
 }
 
 export async function getPropertyReviews(propertyId) {
-  if (!isSupabaseConfigured()) {
-    const reviews = loadReviews()
-    return sortByNewest(reviews.filter(r => r.listingId === propertyId || r.propertyId === propertyId))
-  }
   const result = await apiGet('/reviews', { propertyId }, { public: true })
   if (!result.success) {
     console.warn('⚠️ Error fetching reviews, falling back to localStorage:', result.error?.message)
@@ -41,22 +36,6 @@ export async function getPropertyReviews(propertyId) {
 }
 
 export async function addReview(review) {
-  if (!isSupabaseConfigured()) {
-    const reviews = loadReviews()
-    const propertyId = resolvePropertyId(review)
-    const newReview = {
-      ...review,
-      listingId: review.listingId || propertyId,
-      propertyId,
-      id: 'r' + Date.now(),
-      verified: true,
-      createdAt: new Date().toISOString()
-    }
-    reviews.push(newReview)
-    saveReviews(reviews)
-    return newReview
-  }
-
   const payload = {
     propertyId: resolvePropertyId(review),
     rating: review.rating,
@@ -85,10 +64,6 @@ export async function addReview(review) {
 }
 
 export async function getOwnerReviews(ownerPropertyIds) {
-  if (!isSupabaseConfigured()) {
-    const reviews = loadReviews()
-    return sortByNewest(reviews.filter(r => ownerPropertyIds.includes(r.listingId) || ownerPropertyIds.includes(r.propertyId)))
-  }
   const result = await apiGet('/reviews', { owner: 'me' })
   if (!result.success) {
     console.warn('⚠️ Error fetching owner reviews, falling back to localStorage:', result.error?.message)

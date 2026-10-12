@@ -18,10 +18,9 @@ const mocks = vi.hoisted(() => {
       updateMany: vi.fn(), deleteMany: vi.fn(),
     }
   }
-  return { delegates, createClient: vi.fn(), createUser: vi.fn(), $queryRaw: vi.fn() }
+  return { delegates, createUser: vi.fn(), $queryRaw: vi.fn() }
 })
 
-vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.createClient }))
 vi.mock('@prisma/client', async () => {
   const actual = await vi.importActual('@prisma/client')
   return {
@@ -39,20 +38,16 @@ import reservationsHandler from '../../api-handlers/reservations.js'
 import reservationDetailHandler from '../../api-handlers/reservations/[id].js'
 import reservationStatusHandler from '../../api-handlers/reservations/[id]/status.js'
 
-let getUserResult
-
 function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
 function authAs({ uid = 'guest-1', role = 'guest', email = 'guest@test.com', displayName = 'Guest Test' } = {}) {
-  getUserResult = { data: { user: { id: uid, email } }, error: null }
   mocks.delegates.user.findUnique.mockResolvedValue({ id: uid, role, isActive: true, displayName, email })
   return { uid, role }
 }
 
 function anon() {
-  getUserResult = { data: { user: null }, error: { message: 'missing token' } }
 }
 
 const activeProperty = {
@@ -63,15 +58,6 @@ const activeProperty = {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  process.env.SUPABASE_URL = 'https://test.supabase.co'
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key'
-  getUserResult = { data: { user: null }, error: { message: 'missing token' } }
-  mocks.createClient.mockReturnValue({
-    auth: {
-      getUser: vi.fn(async () => getUserResult),
-      admin: { createUser: mocks.createUser },
-    },
-  })
   mocks.$queryRaw.mockResolvedValue([])
   mocks.delegates.reservation.findMany.mockResolvedValue([])
   mocks.delegates.reservation.count.mockResolvedValue(0)

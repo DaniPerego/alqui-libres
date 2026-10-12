@@ -4,13 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useSearchStore } from '@/stores/search'
 
 const mocks = vi.hoisted(() => ({
-  isSupabaseConfigured: vi.fn(() => false),
   apiGet: vi.fn()
-}))
-
-vi.mock('@/config/supabase', () => ({
-  isSupabaseConfigured: mocks.isSupabaseConfigured,
-  supabase: null
 }))
 
 vi.mock('@/services/api', () => ({
@@ -46,7 +40,6 @@ const apiListing = {
 beforeEach(() => {
   vi.clearAllMocks()
   setActivePinia(createPinia())
-  mocks.isSupabaseConfigured.mockReturnValue(false)
 })
 
 describe('search store clearFilters', () => {
@@ -60,7 +53,7 @@ describe('search store clearFilters', () => {
   })
 })
 
-describe('search store (demo mode)', () => {
+describe('search store (API failure fallback to mock listings)', () => {
   it('loads mock listings and applies client filters', async () => {
     const store = useSearchStore()
     store.updateFilters({
@@ -83,11 +76,7 @@ describe('search store (demo mode)', () => {
   })
 })
 
-describe('search store (Supabase mode)', () => {
-  beforeEach(() => {
-    mocks.isSupabaseConfigured.mockReturnValue(true)
-  })
-
+describe('search store (native API)', () => {
   it('queries the API with filter params and normalizes results', async () => {
     mocks.apiGet.mockResolvedValueOnce({ success: true, data: [apiListing] })
     const store = useSearchStore()

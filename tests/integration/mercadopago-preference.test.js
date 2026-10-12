@@ -29,14 +29,12 @@ const mocks = vi.hoisted(() => {
   return {
     delegates,
     mp,
-    createClient: vi.fn(),
     createUser: vi.fn(),
     $queryRaw: vi.fn(),
     $transaction: vi.fn(async (callback) => callback(delegates)),
   }
 })
 
-vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.createClient }))
 vi.mock('@prisma/client', async () => {
   const actual = await vi.importActual('@prisma/client')
   return {
@@ -58,14 +56,11 @@ vi.mock('mercadopago', () => ({
 
 import preferenceHandler from '../../api-handlers/mercadopago/preference.js'
 
-let getUserResult
-
 function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
 function authAs({ uid = 'uid-1', role = 'owner', email = 'user@test.com', displayName = 'User Test' } = {}) {
-  getUserResult = { data: { user: { id: uid, email } }, error: null }
   mocks.delegates.user.findUnique.mockResolvedValue({ id: uid, role, isActive: true, displayName, email })
   return { uid, role }
 }
@@ -74,17 +69,8 @@ const PLAN = { id: 'pro', name: 'Plan Pro', price: 24999, currency: 'ARS', isAct
 
 beforeEach(() => {
   vi.clearAllMocks()
-  process.env.SUPABASE_URL = 'https://test.supabase.co'
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key'
   process.env.MP_ACCESS_TOKEN = 'TEST-ACCESS-TOKEN'
   delete process.env.MP_CLIENT_SECRET
-  getUserResult = { data: { user: null }, error: { message: 'missing token' } }
-  mocks.createClient.mockReturnValue({
-    auth: {
-      getUser: vi.fn(async () => getUserResult),
-      admin: { createUser: mocks.createUser },
-    },
-  })
   mocks.$queryRaw.mockResolvedValue([])
   mocks.delegates.subscription.findFirst.mockResolvedValue(null)
   mocks.delegates.subscription.create.mockImplementation(async (args) => ({ id: 'sub-created', ...args.data }))
