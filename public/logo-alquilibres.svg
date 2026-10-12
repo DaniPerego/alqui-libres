@@ -1,9 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Roof -->
-  <polygon points="50,11 85,32 15,32" fill="#2563eb" stroke="#2563eb" stroke-width="6" stroke-linejoin="round"/>
-  <!-- 4 cubes -->
-  <rect x="19.5" y="36" width="28" height="28" rx="6" fill="#2563eb" opacity="1"/>
-  <rect x="52.5" y="36" width="28" height="28" rx="6" fill="#2563eb" opacity="0.7"/>
-  <rect x="19.5" y="69" width="28" height="28" rx="6" fill="#2563eb" opacity="0.5"/>
-  <rect x="52.5" y="69" width="28" height="28" rx="6" fill="#2563eb" opacity="0.3"/>
+  <!-- Roof with overhang -->
+  <polygon points="50,12 90,34 10,34" fill="#2563eb" stroke="#2563eb" stroke-width="6" stroke-linejoin="round"/>
+  <!-- 4 cubes as the house body -->
+  <rect x="19.5" y="37" width="29" height="29" rx="6" fill="#2563eb" opacity="1"/>
+  <rect x="51.5" y="37" width="29" height="29" rx="6" fill="#2563eb" opacity="0.7"/>
+  <rect x="19.5" y="69" width="29" height="29" rx="6" fill="#2563eb" opacity="0.5"/>
+  <rect x="51.5" y="69" width="29" height="29" rx="6" fill="#2563eb" opacity="0.3"/>
+  <!-- Door -->
+  <path d="M41 98 V86 Q41 76 50 76 Q59 76 59 86 V98 Z" fill="#fff"/>
 </svg>
