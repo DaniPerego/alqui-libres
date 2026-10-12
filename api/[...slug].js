@@ -34,6 +34,7 @@ import platformSettingsHandler from '../api-handlers/platform-settings.js'
 import propertiesHandler from '../api-handlers/properties.js'
 import propertiesMineHandler from '../api-handlers/properties/mine.js'
 import propertiesIdHandler from '../api-handlers/properties/[id].js'
+import propertiesIdAvailabilityHandler from '../api-handlers/properties/[id]/availability.js'
 import reservationsHandler from '../api-handlers/reservations.js'
 import reservationsIdHandler from '../api-handlers/reservations/[id].js'
 import reservationsIdStatusHandler from '../api-handlers/reservations/[id]/status.js'
@@ -81,6 +82,7 @@ const STATIC_ROUTES = [
 // length, so they cannot collide.
 const DYNAMIC_ROUTES = [
   { segments: ['auth', ':action'], handler: authHandler },
+  { segments: ['properties', ':id', 'availability'], handler: propertiesIdAvailabilityHandler },
   { segments: ['reservations', ':id', 'status'], handler: reservationsIdStatusHandler },
   { segments: ['messages', ':id'], handler: messagesIdHandler },
   { segments: ['notifications', ':id'], handler: notificationsIdHandler },

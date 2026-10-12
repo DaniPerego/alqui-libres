@@ -549,7 +549,7 @@ import { usePropertyStore } from '@/stores/property'
 import { useI18n } from 'vue-i18n'
 import { useSEO, generatePropertySchema } from '@/composables/useSEO'
 import { getPropertyReviews, addReview, getPropertyRating } from '@/services/reviews'
-import { createReservation } from '@/services/reservations'
+import { createReservation, getPropertyAvailability } from '@/services/reservations'
 // isSupabaseConfigured removed — auth is now native JWT
 import DatePicker from 'vue-datepicker-next';
 import 'vue-datepicker-next/index.css';
@@ -638,11 +638,9 @@ const totalPrice = computed(() => {
   return basePrice + cleaningFee
 })
 
-// Mock: Fechas reservadas (debería venir de la API)
-const reservedDates = ref([
-  '2025-11-18', '2025-11-19', '2025-11-20',
-  '2025-11-25', '2025-11-26'
-])
+// Fechas reservadas (fetch real desde la API)
+const reservedDates = ref([])
+const bookedRanges = ref([])
 
 function isDateDisabled(date) {
   const d = date instanceof Date ? date : new Date(date)
@@ -904,6 +902,11 @@ onMounted(async () => {
 
   property.value = result.data
   currentImage.value = property.value.images[0]
+
+  // Fetch real availability
+  const availability = await getPropertyAvailability(property.value.id)
+  reservedDates.value = availability.blockedDates
+  bookedRanges.value = availability.bookedRanges
 
   // Cargar perfil del propietario
   loadOwnerProfile(property.value.ownerId || 'user123')

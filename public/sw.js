@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alquilibres-v1'
+const CACHE_NAME = 'alquilibres-v2'
 const ASSETS = [
   '/',
   '/index.html',

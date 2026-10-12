@@ -14,9 +14,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mocks = vi.hoisted(() => ({
   createClient: vi.fn(),
   findUnique: vi.fn(),
+  jwtVerify: vi.fn(),
 }))
 
-vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.createClient }))
+vi.mock('jsonwebtoken', () => ({ default: { verify: mocks.jwtVerify } }))
 vi.mock('@prisma/client', () => ({
   PrismaClient: class {
     user = { findUnique: mocks.findUnique }
@@ -44,6 +45,8 @@ beforeEach(() => {
     },
   })
   mocks.findUnique.mockResolvedValue({ id: 'uid-1', role: 'admin', isActive: true })
+  // Mock jwt.verify to return a valid payload for any token
+  mocks.jwtVerify.mockReturnValue({ sub: 'uid-1', email: 'x@example.com', role: 'admin' })
 })
 
 describe('extractBearer', () => {
@@ -69,7 +72,7 @@ describe('requireAuth (AUTH-01, AUTH-02)', () => {
   })
 
   it('token invalido/vencido (getUser con error) -> 401', async () => {
-    getUserResult = { data: { user: null }, error: { message: 'JWT expired' } }
+    mocks.jwtVerify.mockImplementation(() => { throw new Error('JWT expired') })
     const res = mockRes()
     await requireAuth({ headers: { authorization: 'Bearer expirado' } }, res, vi.fn())
     expect(res.status).toHaveBeenCalledWith(401)

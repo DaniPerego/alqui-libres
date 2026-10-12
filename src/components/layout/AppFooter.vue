@@ -6,17 +6,11 @@
           <h3 class="footer-title">
             <span class="pdl-logo pdl-logo-sm">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-              <defs>
-                <clipPath id="house-footer">
-                  <path d="M16 5L5 14h3v11h6v-7h4v7h6V14h3L16 5z"/>
-                </clipPath>
-              </defs>
-              <g clip-path="url(#house-footer)">
-                <rect x="4" y="4" width="12" height="14" fill="#2563eb" opacity="1"/>
-                <rect x="16" y="4" width="12" height="14" fill="#2563eb" opacity="0.7"/>
-                <rect x="4" y="18" width="12" height="14" fill="#2563eb" opacity="0.5"/>
-                <rect x="16" y="18" width="12" height="14" fill="#2563eb" opacity="0.3"/>
-              </g>
+              <polygon points="16,3.5 27.2,10.2 4.8,10.2" fill="#2563eb" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+              <rect x="6.2" y="11.5" width="9" height="9" rx="2" fill="#2563eb" opacity="1"/>
+              <rect x="16.8" y="11.5" width="9" height="9" rx="2" fill="#2563eb" opacity="0.7"/>
+              <rect x="6.2" y="22.1" width="9" height="9" rx="2" fill="#2563eb" opacity="0.5"/>
+              <rect x="16.8" y="22.1" width="9" height="9" rx="2" fill="#2563eb" opacity="0.3"/>
             </svg>
             </span>
             AlquiLibres

@@ -1,4 +1,5 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/services/api'
+import { isSupabaseConfigured } from '@/config/supabase'
 
 const STORAGE_KEY = 'reservations'
 
@@ -53,6 +54,29 @@ function updateStoredReservation(reservationId, updater) {
 }
 
 export async function createReservation(reservationData) {
+  if (!isSupabaseConfigured()) {
+    const reservation = {
+      id: 'res_' + Date.now(),
+      propertyId: reservationData.propertyId,
+      ownerId: reservationData.ownerId || null,
+      guestId: reservationData.guestId || null,
+      property: reservationData.property || { title: '', city: '', image: '' },
+      guest: {
+        name: reservationData.guestName || '',
+        email: reservationData.guestEmail || '',
+        phone: reservationData.guestPhone || ''
+      },
+      totalPrice: reservationData.total || 0,
+      status: 'pending',
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+    const stored = loadReservations()
+    stored.unshift(reservation)
+    saveReservations(stored)
+    return { success: true, reservation }
+  }
+
   try {
     const payload = {
       propertyId: reservationData.propertyId,
@@ -82,6 +106,15 @@ export async function createReservation(reservationData) {
 }
 
 export async function getOwnerReservations(ownerId, statusFilter = null) {
+  if (!isSupabaseConfigured()) {
+    const stored = loadReservations()
+    let filtered = stored.filter(r => r.ownerId === ownerId)
+    if (statusFilter && statusFilter !== 'all') {
+      filtered = filtered.filter(r => r.status === statusFilter)
+    }
+    return filtered
+  }
+
   try {
     const params = { mine: 'owner' }
     if (statusFilter && statusFilter !== 'all') params.status = statusFilter
@@ -128,6 +161,15 @@ export async function updateReservation(reservationId, updates) {
 }
 
 export async function confirmReservation(reservationId) {
+  if (!isSupabaseConfigured()) {
+    const stored = loadReservations()
+    const index = stored.findIndex(r => r.id === reservationId)
+    if (index === -1) return { success: false, error: 'Reservation not found' }
+    stored[index] = { ...stored[index], status: 'confirmed', updatedAt: Date.now() }
+    saveReservations(stored)
+    return { success: true, reservation: stored[index] }
+  }
+
   try {
     const result = await apiPatch(`/reservations/${reservationId}/status`, { status: 'confirmed' })
     if (!result.success) {
@@ -143,6 +185,15 @@ export async function confirmReservation(reservationId) {
 }
 
 export async function rejectReservation(reservationId, reason = '') {
+  if (!isSupabaseConfigured()) {
+    const stored = loadReservations()
+    const index = stored.findIndex(r => r.id === reservationId)
+    if (index === -1) return { success: false, error: 'Reservation not found' }
+    stored[index] = { ...stored[index], status: 'rejected', rejectionReason: reason, updatedAt: Date.now() }
+    saveReservations(stored)
+    return { success: true, reservation: stored[index] }
+  }
+
   try {
     const result = await apiPatch(`/reservations/${reservationId}/status`, { status: 'rejected', reason })
     if (!result.success) {
@@ -158,6 +209,15 @@ export async function rejectReservation(reservationId, reason = '') {
 }
 
 export async function cancelReservation(reservationId, cancelledBy = 'owner') {
+  if (!isSupabaseConfigured()) {
+    const stored = loadReservations()
+    const index = stored.findIndex(r => r.id === reservationId)
+    if (index === -1) return { success: false, error: 'Reservation not found' }
+    stored[index] = { ...stored[index], status: 'cancelled', cancelledBy, updatedAt: Date.now() }
+    saveReservations(stored)
+    return { success: true, reservation: stored[index] }
+  }
+
   try {
     const result = await apiPatch(`/reservations/${reservationId}/status`, { status: 'cancelled' })
     if (!result.success) {
@@ -173,6 +233,12 @@ export async function cancelReservation(reservationId, cancelledBy = 'owner') {
 }
 
 export async function deleteReservation(reservationId) {
+  if (!isSupabaseConfigured()) {
+    const reservations = loadReservations().filter(r => r.id !== reservationId)
+    saveReservations(reservations)
+    return { success: true, data: { deleted: true, id: reservationId } }
+  }
+
   try {
     const result = await apiDelete(`/reservations/${reservationId}`)
     if (!result.success) {
@@ -188,6 +254,11 @@ export async function deleteReservation(reservationId) {
 }
 
 export async function getGuestReservations(guestId) {
+  if (!isSupabaseConfigured()) {
+    const stored = loadReservations()
+    return stored.filter(r => r.guestId === guestId)
+  }
+
   try {
     const result = await apiGet('/reservations', { mine: 'guest' })
     if (!result.success) {
@@ -198,6 +269,20 @@ export async function getGuestReservations(guestId) {
   } catch (error) {
     console.error('Error getting guest reservations:', error)
     return []
+  }
+}
+
+export async function getPropertyAvailability(propertyId) {
+  try {
+    const result = await apiGet(`/properties/${propertyId}/availability`)
+    if (!result.success) {
+      console.warn('⚠️ Error fetching property availability:', result.error?.message)
+      return { blockedDates: [], bookedRanges: [] }
+    }
+    return result.data || { blockedDates: [], bookedRanges: [] }
+  } catch (error) {
+    console.error('Error getting property availability:', error)
+    return { blockedDates: [], bookedRanges: [] }
   }
 }
 
