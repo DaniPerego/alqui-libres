@@ -62,12 +62,11 @@ async function ensureDemoUsers() {
 
     if (existing) {
       userIds[account.role] = existing.id
-      // Update password hash if needed
-      if (!existing.password) {
-        const hashed = await bcrypt.hash(account.password, 10)
-        await prisma.user.update({ where: { id: existing.id }, data: { password: hashed } })
-        console.log(`  Password actualizado: ${account.email}`)
-      }
+      // Always refresh the hash: the seed declares the canonical demo
+      // credentials, and prod may hold stale hashes from the Supabase era.
+      const hashed = await bcrypt.hash(account.password, 10)
+      await prisma.user.update({ where: { id: existing.id }, data: { password: hashed } })
+      console.log(`  Password actualizado: ${account.email}`)
       continue
     }
 
