@@ -136,7 +136,7 @@ function getRoute(segments) {
 function getSegments(req) {
   if (req.url) {
     const pathname = req.url.split('?')[0]
-    const segments = pathname
+    let segments = pathname
       .split('/')
       .filter(Boolean)
       .map((s) => {
@@ -148,6 +148,27 @@ function getSegments(req) {
       })
     // Strip the leading `api` segment: routes are defined relative to /api.
     if (segments[0] === 'api') segments.shift()
+    // The vercel.json rewrite forwards /api/* to this catch-all with a
+    // `?path=` query. If the runtime handed us the literal catch-all path
+    // (e.g. /api/[...slug]) instead of the original URL, recover the real
+    // segments from that query (or the legacy `...slug` param).
+    if (segments.length === 1 && segments[0].startsWith('[...')) {
+      const recovered = req.query?.path ?? req.query?.['...slug']
+      if (typeof recovered === 'string' && recovered) {
+        segments = recovered
+          .split('/')
+          .filter(Boolean)
+          .map((s) => {
+            try {
+              return decodeURIComponent(s)
+            } catch {
+              return s
+            }
+          })
+      } else if (Array.isArray(req.query?.slug)) {
+        segments = req.query.slug
+      }
+    }
     return segments
   }
   if (Array.isArray(req.query?.slug)) return req.query.slug
