@@ -27,26 +27,26 @@ export default async function handler(req, res) {
       const path = req.query?.action || 'login'
 
       if (path === 'register') {
-        return handleRegister(req, res, body)
+        return await handleRegister(req, res, body)
       }
       if (path === 'login') {
-        return handleLogin(req, res, body)
+        return await handleLogin(req, res, body)
       }
       if (path === 'me') {
-        return handleMe(req, res)
+        return await handleMe(req, res)
       }
       if (path === 'change-password') {
-        return handleChangePassword(req, res, body)
+        return await handleChangePassword(req, res, body)
       }
       if (path === 'reset-password') {
-        return handleResetPassword(req, res, body)
+        return await handleResetPassword(req, res, body)
       }
 
       return sendError(res, new HttpError('NOT_FOUND', 'Unknown auth action', 404))
     }
 
     if (req.method === 'GET') {
-      return handleMe(req, res)
+      return await handleMe(req, res)
     }
 
     return sendError(res, new HttpError('METHOD', 'Method not allowed', 405))
