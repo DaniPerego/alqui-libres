@@ -14,6 +14,7 @@ import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { randomUUID } from 'crypto'
+import { pathToFileURL } from 'url'
 import {
   mockProperties,
   mockPendingProperties,
@@ -95,7 +96,7 @@ async function upsertByStableId(model, rows) {
   }
 }
 
-async function main() {
+export async function main() {
   requireEnv('DATABASE_URL')
   console.log('Seed AlquiLibres — native auth (no Supabase)')
 
@@ -143,11 +144,19 @@ async function main() {
   console.log('  admin@alquilibres.com / admin123')
 }
 
-main()
-  .catch((err) => {
-    console.error('Seed falló:', err.message ?? err)
-    process.exitCode = 1
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+// Auto-run only when executed directly (`node prisma/seed.js` / `npm run
+// seed`). When imported (e.g. by the temporary serverless seed endpoint),
+// main() must be awaited explicitly by the caller.
+const isDirectRun =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (isDirectRun) {
+  main()
+    .catch((err) => {
+      console.error('Seed falló:', err.message ?? err)
+      process.exitCode = 1
+    })
+    .finally(async () => {
+      await prisma.$disconnect()
+    })
+}
