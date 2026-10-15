@@ -117,7 +117,13 @@ export async function main() {
     { userIds }
   )
 
-  await upsertByStableId(prisma.user, payload.users)
+  // Defensive: never let the user upsert carry a password field. Credentials
+  // are owned exclusively by ensureDemoUsers() above (bcrypt-hashed). A
+  // plaintext password here would silently overwrite the hash and break login.
+  await upsertByStableId(
+    prisma.user,
+    payload.users.map(({ password, ...u }) => u)
+  )
   await upsertByStableId(prisma.property, payload.properties)
   await upsertByStableId(prisma.subscriptionPlan, payload.plans)
   await prisma.platformSettings.upsert({

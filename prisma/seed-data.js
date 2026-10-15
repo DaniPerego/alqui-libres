@@ -68,12 +68,15 @@ export function buildSeedPayload(mockData, { userIds }) {
   const ownerUid = buildOwnerIdMap(userIds.owner)
   const resolveOwner = (id) => ownerUid[id] || id
 
-  // --- users rows (id = stable UUID, bcrypt password) ---
+  // --- users rows (id = stable UUID) ---
+  // NOTE: password is intentionally OMITTED. Credentials are owned exclusively
+  // by ensureDemoUsers() in seed.js (which bcrypt-hashes them). Including a
+  // plaintext password here would let the later user upsert overwrite the
+  // bcrypt hash and silently break login.
   const users = [
     {
       id: userIds.guest,
       email: mockGuestUser.email,
-      password: 'guest123', // Will be hashed by seed.js ensureDemoUsers
       displayName: mockGuestUser.displayName,
       role: 'guest',
       emailVerified: mockGuestUser.emailVerified !== false,
@@ -83,7 +86,6 @@ export function buildSeedPayload(mockData, { userIds }) {
     {
       id: userIds.owner,
       email: mockOwnerUser.email,
-      password: 'user123',
       displayName: mockOwnerUser.displayName,
       role: 'owner',
       emailVerified: mockOwnerUser.emailVerified !== false,
@@ -93,7 +95,6 @@ export function buildSeedPayload(mockData, { userIds }) {
     {
       id: userIds.admin,
       email: mockAdminUser.email,
-      password: 'admin123',
       displayName: mockAdminUser.displayName,
       role: 'admin',
       emailVerified: mockAdminUser.emailVerified !== false,
