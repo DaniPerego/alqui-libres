@@ -131,7 +131,7 @@ export async function main() {
   await upsertByStableId(prisma.notification, payload.notifications)
 
   console.log('Seed completado:')
-  console.log(`  users: ${payload.users.length} (bcrypt hashed)`)
+  console.log('  users: 3 (bcrypt hashed, por ensureDemoUsers)')
   console.log(`  properties: ${payload.properties.length}`)
   console.log(`  plans: ${payload.plans.length}, platform_settings: 1`)
   console.log(`  reviews: ${payload.reviews.length}, messages: ${payload.messages.length}`)
