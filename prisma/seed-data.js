@@ -68,40 +68,9 @@ export function buildSeedPayload(mockData, { userIds }) {
   const ownerUid = buildOwnerIdMap(userIds.owner)
   const resolveOwner = (id) => ownerUid[id] || id
 
-  // --- users rows (id = stable UUID) ---
-  // NOTE: password is intentionally OMITTED. Credentials are owned exclusively
-  // by ensureDemoUsers() in seed.js (which bcrypt-hashes them). Including a
-  // plaintext password here would let the later user upsert overwrite the
-  // bcrypt hash and silently break login.
-  const users = [
-    {
-      id: userIds.guest,
-      email: mockGuestUser.email,
-      displayName: mockGuestUser.displayName,
-      role: 'guest',
-      emailVerified: mockGuestUser.emailVerified !== false,
-      isActive: true,
-      subscription: mockGuestUser.subscription ?? null,
-    },
-    {
-      id: userIds.owner,
-      email: mockOwnerUser.email,
-      displayName: mockOwnerUser.displayName,
-      role: 'owner',
-      emailVerified: mockOwnerUser.emailVerified !== false,
-      isActive: true,
-      subscription: mockOwnerUser.subscription ?? null,
-    },
-    {
-      id: userIds.admin,
-      email: mockAdminUser.email,
-      displayName: mockAdminUser.displayName,
-      role: 'admin',
-      emailVerified: mockAdminUser.emailVerified !== false,
-      isActive: true,
-      subscription: mockAdminUser.subscription ?? null,
-    },
-  ]
+  // NOTE: demo users are NOT built here. They are owned exclusively by
+  // ensureDemoUsers() in seed.js (bcrypt password + profile + subscription).
+  // This builder only remaps the other entities onto the seeded user IDs.
 
   // --- properties (all mock data: active + pending/rejected + annual) ---
   const allProperties = [
@@ -341,7 +310,6 @@ export function buildSeedPayload(mockData, { userIds }) {
   ]
 
   return {
-    users,
     properties,
     plans,
     platformSettings,

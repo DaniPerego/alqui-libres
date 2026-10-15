@@ -39,13 +39,15 @@ function requireEnv(name) {
   return value
 }
 
-// Upsert the 3 demo accounts directly in Postgres with bcrypt hashed passwords.
-// Uses stable deterministic UUIDs so re-runs never duplicate accounts.
+// Single owner of the demo user rows. Creates/updates the full row — bcrypt
+// password, profile, AND subscription — so nothing else needs to touch User.
+// (A separate user upsert once overwrote these bcrypt hashes with plaintext
+// passwords, which silently broke login.)
 async function ensureDemoUsers() {
   const demoAccounts = [
-    { role: 'guest', email: mockGuestUser.email, password: 'guest123', displayName: mockGuestUser.displayName },
-    { role: 'owner', email: mockOwnerUser.email, password: 'user123', displayName: mockOwnerUser.displayName },
-    { role: 'admin', email: mockAdminUser.email, password: 'admin123', displayName: mockAdminUser.displayName },
+    { role: 'guest', email: mockGuestUser.email, password: 'guest123', displayName: mockGuestUser.displayName, emailVerified: mockGuestUser.emailVerified !== false, subscription: mockGuestUser.subscription ?? null },
+    { role: 'owner', email: mockOwnerUser.email, password: 'user123', displayName: mockOwnerUser.displayName, emailVerified: mockOwnerUser.emailVerified !== false, subscription: mockOwnerUser.subscription ?? null },
+    { role: 'admin', email: mockAdminUser.email, password: 'admin123', displayName: mockAdminUser.displayName, emailVerified: mockAdminUser.emailVerified !== false, subscription: mockAdminUser.subscription ?? null },
   ]
 
   // Stable UUIDs for demo users (deterministic across runs)
@@ -58,30 +60,26 @@ async function ensureDemoUsers() {
   const userIds = {}
   for (const account of demoAccounts) {
     const id = STABLE_IDS[account.role]
+    const hashed = await bcrypt.hash(account.password, 10)
+    const row = {
+      email: account.email,
+      password: hashed,
+      displayName: account.displayName,
+      role: account.role,
+      isActive: true,
+      emailVerified: account.emailVerified,
+      subscription: account.subscription,
+    }
     const existing = await prisma.user.findUnique({ where: { email: account.email } })
 
     if (existing) {
       userIds[account.role] = existing.id
-      // Always refresh the hash: the seed declares the canonical demo
-      // credentials, and prod may hold stale hashes from the Supabase era.
-      const hashed = await bcrypt.hash(account.password, 10)
-      await prisma.user.update({ where: { id: existing.id }, data: { password: hashed } })
-      console.log(`  Password actualizado: ${account.email}`)
+      await prisma.user.update({ where: { id: existing.id }, data: row })
+      console.log(`  Usuario actualizado: ${account.email}`)
       continue
     }
 
-    const hashed = await bcrypt.hash(account.password, 10)
-    await prisma.user.create({
-      data: {
-        id,
-        email: account.email,
-        password: hashed,
-        displayName: account.displayName,
-        role: account.role,
-        isActive: true,
-        emailVerified: true,
-      },
-    })
+    await prisma.user.create({ data: { id, ...row } })
     userIds[account.role] = id
     console.log(`  Usuario creado: ${account.email} (${account.role})`)
   }
@@ -117,13 +115,9 @@ export async function main() {
     { userIds }
   )
 
-  // Defensive: never let the user upsert carry a password field. Credentials
-  // are owned exclusively by ensureDemoUsers() above (bcrypt-hashed). A
-  // plaintext password here would silently overwrite the hash and break login.
-  await upsertByStableId(
-    prisma.user,
-    payload.users.map(({ password, ...u }) => u)
-  )
+  // Users are seeded solely by ensureDemoUsers() above (bcrypt password +
+  // profile + subscription). No user upsert here: a second writer once
+  // overwrote the bcrypt hashes with plaintext passwords and broke login.
   await upsertByStableId(prisma.property, payload.properties)
   await upsertByStableId(prisma.subscriptionPlan, payload.plans)
   await prisma.platformSettings.upsert({

@@ -102,10 +102,9 @@ describe('buildSeedPayload', () => {
     expect(messages[0].propertyId).toBe('1')
   })
 
-  it('genera 3 usuarios con ids de seed (D1)', () => {
-    const { users } = build()
-    expect(users.map((u) => u.id)).toEqual([userIds.guest, userIds.owner, userIds.admin])
-    expect(users.map((u) => u.role).sort()).toEqual(['admin', 'guest', 'owner'])
+  it('no construye users (los demo users los posee ensureDemoUsers en seed.js)', () => {
+    const payload = build()
+    expect(payload.users).toBeUndefined()
   })
 
   it('incluye planes basic/pro/enterprise y settings general (D3)', () => {
