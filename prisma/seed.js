@@ -125,6 +125,8 @@ export async function main() {
     update: { ...payload.platformSettings, id: undefined },
     create: payload.platformSettings,
   })
+  await upsertByStableId(prisma.subscription, payload.subscriptions)
+  await upsertByStableId(prisma.payment, payload.payments)
   await upsertByStableId(prisma.review, payload.reviews)
   await upsertByStableId(prisma.message, payload.messages)
   await upsertByStableId(prisma.reservation, payload.reservations)
@@ -134,6 +136,7 @@ export async function main() {
   console.log('  users: 3 (bcrypt hashed, por ensureDemoUsers)')
   console.log(`  properties: ${payload.properties.length}`)
   console.log(`  plans: ${payload.plans.length}, platform_settings: 1`)
+  console.log(`  subscriptions: ${payload.subscriptions.length}, payments: ${payload.payments.length}`)
   console.log(`  reviews: ${payload.reviews.length}, messages: ${payload.messages.length}`)
   console.log(`  reservations: ${payload.reservations.length}, notifications: ${payload.notifications.length}`)
   console.log('')

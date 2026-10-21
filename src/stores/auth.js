@@ -17,7 +17,19 @@ const DEMO_USERS = {
     displayName: 'Propietario Demo',
     role: 'owner',
     emailVerified: true,
-    subscription: null
+    subscription: {
+      planId: 'pro',
+      status: 'active',
+      startedAt: new Date('2026-09-21T00:00:00.000Z').toISOString(),
+      expiresAt: new Date('2026-11-21T00:00:00.000Z').toISOString(),
+      autoRenew: true,
+      lastPaymentDate: new Date('2026-10-21T00:00:00.000Z').toISOString(),
+      nextPaymentDate: new Date('2026-11-21T00:00:00.000Z').toISOString(),
+      planName: 'Plan Profesional',
+      planPrice: 24999,
+      currency: 'ARS',
+      interval: 'month'
+    }
   },
   'huesped@alquilibres.com': {
     password: 'guest123',

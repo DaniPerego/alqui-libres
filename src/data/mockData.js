@@ -40,8 +40,10 @@ export const mockProperties = [
     },
     rating: 4.9,
     reviewCount: 47,
+    viewCount: 1247,
     isActive: true,
     status: 'active',
+    featured: true,
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-10-20')
   },
@@ -84,6 +86,7 @@ export const mockProperties = [
     },
     rating: 4.7,
     reviewCount: 32,
+    viewCount: 312,
     isActive: true,
     status: 'active',
     createdAt: new Date('2024-03-10'),
@@ -128,6 +131,7 @@ export const mockProperties = [
     },
     rating: 4.8,
     reviewCount: 28,
+    viewCount: 45,
     isActive: true,
     status: 'active',
     createdAt: new Date('2024-02-20'),
@@ -171,7 +175,8 @@ export const mockProperties = [
     },
     rating: 4.6,
     reviewCount: 19,
-    isActive: true,
+    viewCount: 0,
+    isActive: false,
     status: 'active',
     createdAt: new Date('2024-05-08'),
     updatedAt: new Date('2024-10-30')
@@ -318,6 +323,8 @@ export const mockReviews = [
     rating: 5,
     comment: 'Excelente lugar, la parrilla es espectacular y la casa tiene todo lo necesario. El anfitrión fue muy atento. ¡Volveremos seguro!',
     verified: true,
+    ownerResponse: 'Muchas gracias María, fue un placer recibirlos. ¡Los esperamos cuando quieran!',
+    ownerRespondedAt: new Date('2024-10-16'),
     createdAt: new Date('2024-10-15')
   },
   {
@@ -327,6 +334,8 @@ export const mockReviews = [
     rating: 5,
     comment: 'Perfecta para familias. Los niños disfrutaron mucho la pileta y el jardín es enorme. Muy limpia y bien ubicada.',
     verified: true,
+    ownerResponse: 'Gracias Carlos, me alegra que los chicos hayan disfrutado. Un abrazo grande.',
+    ownerRespondedAt: new Date('2024-09-23'),
     createdAt: new Date('2024-09-22')
   },
   {
@@ -346,6 +355,15 @@ export const mockReviews = [
     comment: 'Un lugar mágico para desconectarse. La naturaleza, el río cerca y la tranquilidad son incomparables.',
     verified: true,
     createdAt: new Date('2024-07-05')
+  },
+  {
+    id: 'r5',
+    listingId: '4',
+    guestName: 'Valentina Torres',
+    rating: 3,
+    comment: 'El loft es lindo pero la calle era ruidosa por la noche y el wifi falló un par de veces.',
+    verified: true,
+    createdAt: new Date('2024-11-12')
   }
 ]
 
@@ -388,6 +406,37 @@ export const mockMessages = [
     checkOut: '2025-12-31',
     guests: 1,
     createdAt: new Date('2025-11-06')
+  },
+  {
+    id: 'm4',
+    propertyId: '3',
+    propertyTitle: 'Cabaña Rústica en las Sierras',
+    guestName: 'Diego Herrera',
+    guestEmail: 'diego.herrera@example.com',
+    message: 'Buenas, ¿se puede llegar con auto bajo? Y si llevo perro, ¿hay algún costo extra?',
+    status: 'replied',
+    read: true,
+    readAt: new Date('2025-11-04T10:00:00'),
+    repliedAt: new Date('2025-11-04T11:30:00'),
+    checkIn: '2025-12-20',
+    checkOut: '2025-12-27',
+    guests: 4,
+    createdAt: new Date('2025-11-03')
+  },
+  {
+    id: 'm5',
+    propertyId: '1',
+    propertyTitle: 'Casa Familiar con Parrilla y Pileta',
+    guestName: 'Lucía Méndez',
+    guestEmail: 'lucia.mendez@example.com',
+    message: 'Hola, quería saber si la pileta está climatizada en esta época del año.',
+    status: 'read',
+    read: true,
+    readAt: new Date('2025-11-05T09:00:00'),
+    checkIn: '2026-01-03',
+    checkOut: '2026-01-10',
+    guests: 5,
+    createdAt: new Date('2025-11-04')
   }
 ]
 
@@ -425,7 +474,19 @@ export const mockOwnerUser = {
   displayName: 'Propietario Demo',
   emailVerified: true,
   role: 'owner',
-  subscription: null
+  subscription: {
+    planId: 'pro',
+    status: 'active',
+    startedAt: new Date('2026-09-21T00:00:00.000Z').toISOString(),
+    expiresAt: new Date('2026-11-21T00:00:00.000Z').toISOString(),
+    autoRenew: true,
+    lastPaymentDate: new Date('2026-10-21T00:00:00.000Z').toISOString(),
+    nextPaymentDate: new Date('2026-11-21T00:00:00.000Z').toISOString(),
+    planName: 'Plan Profesional',
+    planPrice: 24999,
+    currency: 'ARS',
+    interval: 'month'
+  }
 }
 
 export const mockFeaturedProperties = [
@@ -473,6 +534,7 @@ export const mockAnnualProperty = {
   },
   rating: 4.5,
   reviewCount: 12,
+  viewCount: 89,
   isActive: true,
   status: 'active',
   createdAt: new Date('2024-04-01'),
