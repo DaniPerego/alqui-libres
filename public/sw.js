@@ -1,5 +1,7 @@
-const CACHE_NAME = 'alquilibres-v3'
-const ASSETS = [
+const CACHE_NAME = 'alquilibres-v4'
+
+// Precache the app shell so offline navigations still have a fallback page.
+const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json'
@@ -7,7 +9,7 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
   )
   self.skipWaiting()
 })
@@ -22,14 +24,35 @@ self.addEventListener('activate', (event) => {
 })
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return
+  const { request } = event
+
+  // Only intercept same-origin GET requests for static assets.
+  // API calls and non-GET methods must always reach the network.
+  if (request.method !== 'GET') return
+  const url = new URL(request.url)
+  if (url.pathname.startsWith('/api/')) return
+
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const clone = response.clone()
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
-        return response
+    fetch(request)
+      .then((networkResponse) => {
+        // Cache only successful same-origin responses.
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+          return networkResponse
+        }
+        const clone = networkResponse.clone()
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+        return networkResponse
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => {
+        // Network failed: serve a cached copy when available.
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse
+          // For navigation requests, fall back to the cached shell.
+          if (request.mode === 'navigate') {
+            return caches.match('/index.html').then((shell) => shell || Response.error())
+          }
+          return Response.error()
+        })
+      })
   )
 })
