@@ -7,7 +7,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { prisma } from './lib/prisma.js'
-import { HttpError, asyncRoute, readJsonBody, parsePagination, buildMeta } from './lib/http.js'
+import { HttpError, asyncRoute, readJsonBody, parsePagination, buildMeta, sanitizeUser } from './lib/http.js'
 import { requireAuth, requireRole } from './lib/auth.js'
 
 export const config = { runtime: 'nodejs' }
@@ -37,7 +37,7 @@ export default asyncRoute(async (req, res) => {
       skip: (page - 1) * limit,
       take: limit,
     })
-    return res.status(200).json({ data: rows, meta: buildMeta({ page, limit, total }) })
+    return res.status(200).json({ data: rows.map(sanitizeUser), meta: buildMeta({ page, limit, total }) })
   }
 
   if (req.method === 'POST') {

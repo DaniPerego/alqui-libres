@@ -4,7 +4,7 @@
 // and subscription (JSON) changes; role changes take effect on the next
 // request (D7).
 import { prisma } from '../lib/prisma.js'
-import { HttpError, asyncRoute, readJsonBody } from '../lib/http.js'
+import { HttpError, asyncRoute, readJsonBody, sanitizeUser } from '../lib/http.js'
 import { requireAuth, requireRole } from '../lib/auth.js'
 
 export const config = { runtime: 'nodejs' }
@@ -40,5 +40,5 @@ export default asyncRoute(async (req, res) => {
   if (body.subscription !== undefined) data.subscription = body.subscription
 
   const updated = await prisma.user.update({ where: { id }, data })
-  return res.status(200).json(updated)
+  return res.status(200).json(sanitizeUser(updated))
 })

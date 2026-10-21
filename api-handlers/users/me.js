@@ -5,7 +5,7 @@
 //   PATCH updates displayName/bio/city/photoURL/contact fields; role and
 //         isActive are admin-controlled and rejected with 403 (API-02).
 import { prisma } from '../lib/prisma.js'
-import { HttpError, asyncRoute, readJsonBody } from '../lib/http.js'
+import { HttpError, asyncRoute, readJsonBody, sanitizeUser } from '../lib/http.js'
 import { requireAuth } from '../lib/auth.js'
 
 export const config = { runtime: 'nodejs' }
@@ -18,7 +18,7 @@ export default asyncRoute(async (req, res) => {
   if (!authed) return
 
   if (req.method === 'GET') {
-    return res.status(200).json(req.auth.user)
+    return res.status(200).json(sanitizeUser(req.auth.user))
   }
 
   if (req.method === 'PATCH') {
@@ -37,7 +37,7 @@ export default asyncRoute(async (req, res) => {
       data[key] = value
     }
     const updated = await prisma.user.update({ where: { id: req.auth.userId }, data })
-    return res.status(200).json(updated)
+    return res.status(200).json(sanitizeUser(updated))
   }
 
   throw new HttpError('METHOD', 'Method not allowed', 405)

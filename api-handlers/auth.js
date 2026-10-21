@@ -1,5 +1,5 @@
 import { prisma } from './lib/prisma.js'
-import { HttpError, sendError, sendJson, readJsonBody } from './lib/http.js'
+import { HttpError, sendError, sendJson, readJsonBody, sanitizeUser } from './lib/http.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { randomUUID } from 'crypto'
@@ -13,11 +13,6 @@ function signToken(user) {
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   )
-}
-
-function sanitizeUser(user) {
-  const { password, ...rest } = user
-  return rest
 }
 
 export default async function handler(req, res) {

@@ -57,6 +57,16 @@ export function sendJson(res, status, data) {
   return res.status(status).json(data)
 }
 
+// Strips credential material before a user row leaves the API. Every
+// response that serializes a Prisma User MUST go through this: bcrypt
+// hashes are secrets, not payload. (Regression: GET /users and
+// /users/me used to return the full row, leaking all password hashes.)
+export function sanitizeUser(user) {
+  if (!user || typeof user !== 'object') return user
+  const { password, ...safe } = user
+  return safe
+}
+
 // D4 — offset pagination. Non-numeric, zero, or negative values fall back to
 // defaults; limit is capped at 100.
 export function parsePagination(query = {}) {

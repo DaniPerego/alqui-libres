@@ -52,8 +52,12 @@ function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
 }
 
+// Fake bcrypt hash present on every mocked user row so any response that
+// forgets to sanitize fails these tests instead of shipping a hash leak.
+const FAKE_HASH = '$2a$10$abcdefghijklmnopqrstuv'
+
 function authAs({ uid = 'uid-1', role = 'owner', email = 'user@test.com', displayName = 'User Test' } = {}) {
-  state.currentUser = { id: uid, role, isActive: true, displayName, email }
+  state.currentUser = { id: uid, role, isActive: true, displayName, email, password: FAKE_HASH }
   mocks.delegates.user.findUnique.mockImplementation(async ({ where }) => {
     if (where.email) return state.emails[where.email] || null
     if (state.currentUser && where.id === state.currentUser.id) return state.currentUser
@@ -136,7 +140,7 @@ describe('GET /api/users', () => {
 
   it('admin -> 200 con filtros role/isActive', async () => {
     authAs({ role: 'admin' })
-    mocks.delegates.user.findMany.mockResolvedValue([{ id: 'u1' }])
+    mocks.delegates.user.findMany.mockResolvedValue([{ id: 'u1', email: 'u1@test.com', password: FAKE_HASH }])
     mocks.delegates.user.count.mockResolvedValue(1)
     const res = mockRes()
     await usersHandler({ query: { role: 'owner', isActive: 'true' }, method: 'GET', headers: authHeaders }, res)
@@ -145,15 +149,34 @@ describe('GET /api/users', () => {
       where: { role: 'owner', isActive: true },
     }))
   })
+
+  it('admin -> 200, nunca filtra el hash bcrypt de password', async () => {
+    authAs({ role: 'admin' })
+    mocks.delegates.user.findMany.mockResolvedValue([
+      { id: 'u1', email: 'u1@test.com', password: FAKE_HASH },
+      { id: 'u2', email: 'u2@test.com', password: FAKE_HASH },
+    ])
+    mocks.delegates.user.count.mockResolvedValue(2)
+    const res = mockRes()
+    await usersHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    const body = res.json.mock.calls[0][0]
+    expect(body.data).toHaveLength(2)
+    for (const row of body.data) {
+      expect(row).not.toHaveProperty('password')
+    }
+  })
 })
 
 describe('GET/PATCH /api/users/me', () => {
-  it('GET devuelve perfil con rol desde DB (D7)', async () => {
+  it('GET devuelve perfil con rol desde DB (D7) y sin password', async () => {
     authAs({ role: 'owner' })
     const res = mockRes()
     await usersMeHandler({ query: {}, method: 'GET', headers: authHeaders }, res)
     expect(res.status).toHaveBeenCalledWith(200)
     expect(res.json).toHaveBeenCalledWith({ id: 'uid-1', role: 'owner', isActive: true, displayName: 'User Test', email: 'user@test.com' })
+    const body = res.json.mock.calls[0][0]
+    expect(body).not.toHaveProperty('password')
   })
 
   it('PATCH intenta role -> 403 (admin-controlled)', async () => {
@@ -164,9 +187,9 @@ describe('GET/PATCH /api/users/me', () => {
     expect(mocks.delegates.user.update).not.toHaveBeenCalled()
   })
 
-  it('PATCH displayName -> 200', async () => {
+  it('PATCH displayName -> 200 sin devolver password', async () => {
     authAs()
-    mocks.delegates.user.update.mockImplementation(async ({ data }) => ({ id: 'uid-1', ...data }))
+    mocks.delegates.user.update.mockImplementation(async ({ data }) => ({ id: 'uid-1', password: FAKE_HASH, ...data }))
     const res = mockRes()
     await usersMeHandler({ query: {}, method: 'PATCH', headers: authHeaders, body: { displayName: 'Nuevo nombre' } }, res)
     expect(res.status).toHaveBeenCalledWith(200)
@@ -174,14 +197,16 @@ describe('GET/PATCH /api/users/me', () => {
       where: { id: 'uid-1' },
       data: { displayName: 'Nuevo nombre' },
     }))
+    const body = res.json.mock.calls[0][0]
+    expect(body).not.toHaveProperty('password')
   })
 })
 
 describe('PATCH /api/users/[id]', () => {
-  it('admin actualiza rol/isActive/displayName', async () => {
+  it('admin actualiza rol/isActive/displayName sin exponer password', async () => {
     authAs({ role: 'admin' })
-    state.targets.u2 = { id: 'u2', role: 'guest', isActive: true, displayName: 'Otro', email: 'otro@test.com' }
-    mocks.delegates.user.update.mockImplementation(async ({ data }) => ({ id: 'u2', ...data }))
+    state.targets.u2 = { id: 'u2', role: 'guest', isActive: true, displayName: 'Otro', email: 'otro@test.com', password: FAKE_HASH }
+    mocks.delegates.user.update.mockImplementation(async ({ data }) => ({ id: 'u2', role: 'guest', isActive: true, displayName: 'Otro', email: 'otro@test.com', password: FAKE_HASH, ...data }))
     const res = mockRes()
     await usersIdHandler({ query: { id: 'u2' }, method: 'PATCH', headers: authHeaders, body: { role: 'owner', isActive: false } }, res)
     expect(res.status).toHaveBeenCalledWith(200)
@@ -189,6 +214,8 @@ describe('PATCH /api/users/[id]', () => {
       where: { id: 'u2' },
       data: { role: 'owner', isActive: false },
     }))
+    const body = res.json.mock.calls[0][0]
+    expect(body).not.toHaveProperty('password')
   })
 
   it('no-admin -> 403', async () => {
