@@ -30,7 +30,9 @@ export const initMercadoPagoConfig = () => {
   try {
     if (MP_CONFIG.isDemo) {
       localStorage.setItem('paymentSettings', JSON.stringify(MP_CONFIG))
-      console.log('🧪 MercadoPago en modo demo')
+      if (import.meta.env.DEV) {
+        console.log('🧪 MercadoPago en modo demo')
+      }
       return
     }
 

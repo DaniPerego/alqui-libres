@@ -99,8 +99,10 @@ export const useAdminStore = defineStore('admin', () => {
     try {
       localStorage.setItem('subscriptionPlans', JSON.stringify(plans))
       localStorage.setItem('plansVersion', PLANS_VERSION)
-      console.log('💾 Planes guardados en localStorage:', plans)
-      console.log('🔖 Versión guardada:', PLANS_VERSION)
+      if (import.meta.env.DEV) {
+        console.log('💾 Planes guardados en localStorage:', plans)
+        console.log('🔖 Versión guardada:', PLANS_VERSION)
+      }
     } catch (error) {
       console.error('❌ Error saving plans to storage:', error)
     }

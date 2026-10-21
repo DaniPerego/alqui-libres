@@ -56,8 +56,10 @@ if (isFirebaseConfigured) {
     console.log('🧪 Cambiando a modo demo con datos de prueba')
   }
 } else {
-  console.log('🧪 Firebase no configurado - Usando modo demo con datos de prueba')
-  console.log('📝 Para usar Firebase real, configura las variables en el archivo .env')
+  if (import.meta.env.DEV) {
+    console.log('🧪 Firebase no configurado - Usando modo demo con datos de prueba')
+    console.log('📝 Para usar Firebase real, configura las variables en el archivo .env')
+  }
 }
 
 export { auth, db, storage }
