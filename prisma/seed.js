@@ -2,8 +2,11 @@
 //
 // Idempotent seed (VPD-04, D9, D10):
 //   1. Creates demo users directly in Postgres with bcrypt hashed passwords:
-//      huesped@alquilibres.com/guest123, usuario@alquilibres.com/user123,
-//      admin@alquilibres.com/admin123.
+//      huesped@alquilibres.com/guest123, usuario@alquilibres.com/user123 and
+//      the admin account. The ADMIN password is private: it is only set when
+//      the row is first created (SEED_ADMIN_PASSWORD, default admin123) and is
+//      never overwritten by a later run — rotate it out-of-band and a re-seed
+//      must not restore the public value.
 //   2. Upserts rows in Postgres (users, properties, plans, platform_settings,
 //      reviews, messages, 2 demo reservations + notification rows), all keyed
 //      by stable ids — re-running leaves counts unchanged.
@@ -47,7 +50,7 @@ async function ensureDemoUsers() {
   const demoAccounts = [
     { role: 'guest', email: mockGuestUser.email, password: 'guest123', displayName: mockGuestUser.displayName, emailVerified: mockGuestUser.emailVerified !== false, subscription: mockGuestUser.subscription ?? null },
     { role: 'owner', email: mockOwnerUser.email, password: 'user123', displayName: mockOwnerUser.displayName, emailVerified: mockOwnerUser.emailVerified !== false, subscription: mockOwnerUser.subscription ?? null },
-    { role: 'admin', email: mockAdminUser.email, password: 'admin123', displayName: mockAdminUser.displayName, emailVerified: mockAdminUser.emailVerified !== false, subscription: mockAdminUser.subscription ?? null },
+    { role: 'admin', email: mockAdminUser.email, password: process.env.SEED_ADMIN_PASSWORD || 'admin123', displayName: mockAdminUser.displayName, emailVerified: mockAdminUser.emailVerified !== false, subscription: mockAdminUser.subscription ?? null },
   ]
 
   // Stable UUIDs for demo users (deterministic across runs)
@@ -74,7 +77,11 @@ async function ensureDemoUsers() {
 
     if (existing) {
       userIds[account.role] = existing.id
-      await prisma.user.update({ where: { id: existing.id }, data: row })
+      // The admin password is rotated out-of-band: never touch it on update,
+      // otherwise every re-seed would restore the public demo password.
+      const { password: _password, ...editable } = row
+      const data = account.role === 'admin' ? editable : row
+      await prisma.user.update({ where: { id: existing.id }, data })
       console.log(`  Usuario actualizado: ${account.email}`)
       continue
     }
@@ -143,7 +150,7 @@ export async function main() {
   console.log('Credenciales demo:')
   console.log('  huesped@alquilibres.com / guest123')
   console.log('  usuario@alquilibres.com / user123')
-  console.log('  admin@alquilibres.com / admin123')
+  console.log('  admin@alquilibres.com / contraseña privada (rota fuera del seed)')
 }
 
 // Auto-run only when executed directly (`node prisma/seed.js` / `npm run

@@ -2,7 +2,7 @@ import { prisma } from './lib/prisma.js'
 import { HttpError, sendError, sendJson, readJsonBody, sanitizeUser } from './lib/http.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { randomUUID } from 'crypto'
+import { randomBytes, randomUUID } from 'crypto'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'alqui-libres-dev-secret-change-in-production'
 const JWT_EXPIRES_IN = '7d'
@@ -162,23 +162,56 @@ async function handleChangePassword(req, res, body) {
   return sendJson(res, 200, { message: 'Password updated successfully' })
 }
 
+// Password recovery. There is no email channel wired into this API yet, so:
+//   * Anonymous caller ("forgot password"): must NOT mutate anything. The old
+//     behaviour swapped the hash for a random value nobody ever received,
+//     permanently locking the account out while reporting a sent link.
+//   * Admin caller (admin panel action): generates a temporary password and
+//     returns it exactly once so the platform owner can hand it over.
 async function handleResetPassword(req, res, body) {
   const { email } = body || {}
   if (!email) {
     throw new HttpError('VALIDATION', 'Email is required', 400)
   }
 
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) {
-    return sendJson(res, 200, { message: 'If the email exists, a reset link has been sent' })
+  const token = req.headers?.authorization?.split(' ')[1]
+  if (!token) {
+    return sendJson(res, 200, {
+      message: 'Password recovery by email is not enabled yet. Contact the platform administrator.'
+    })
   }
 
-  const tempPassword = 'temp' + Math.random().toString(36).slice(2, 8)
-  const hashedPassword = await bcrypt.hash(tempPassword, 10)
+  let payload
+  try {
+    payload = jwt.verify(token, JWT_SECRET)
+  } catch {
+    throw new HttpError('UNAUTHORIZED', 'Invalid or expired token', 401)
+  }
+
+  // Role is re-read from the database: a JWT issued before a demotion must
+  // not keep admin powers (same rule as every other handler).
+  const caller = await prisma.user.findUnique({ where: { id: payload.sub } })
+  if (!caller || !caller.isActive) {
+    throw new HttpError('FORBIDDEN', 'User account is inactive', 403)
+  }
+  if (caller.role !== 'admin') {
+    throw new HttpError('FORBIDDEN', 'Requires role: admin', 403)
+  }
+
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (!user) {
+    return sendJson(res, 200, { message: 'User not found', temporaryPassword: null })
+  }
+
+  const temporaryPassword = randomBytes(9).toString('base64url')
+  const hashedPassword = await bcrypt.hash(temporaryPassword, 10)
   await prisma.user.update({
     where: { id: user.id },
     data: { password: hashedPassword }
   })
 
-  return sendJson(res, 200, { message: 'If the email exists, a reset link has been sent' })
+  return sendJson(res, 200, {
+    message: `Temporary password generated for ${email}`,
+    temporaryPassword
+  })
 }

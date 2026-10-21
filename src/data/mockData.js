@@ -451,7 +451,8 @@ export const mockMessages = [
 //   Contraseña: user123
 // Administrador:
 //   Email: admin@alquilibres.com
-//   Contraseña: admin123
+//   Contraseña: PRIVADA — no se publica ni se guarda en el bundle; se rota
+//   desde el propio backend (POST /auth/change-password).
 //
 // ⚠️ Solo funcionan en modo demo (sin Firebase real)
 // =============================

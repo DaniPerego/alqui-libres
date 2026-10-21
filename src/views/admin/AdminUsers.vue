@@ -396,7 +396,12 @@ const changeUserPlan = async (userId, planId) => {
 const resetPassword = async (userId) => {
   const result = await adminStore.resetUserPassword(userId)
   if (result.success) {
-    show(result.message, 'info', 10000)
+    // The temporary password is the only recovery channel today (no email
+    // delivery), so it must be shown to the admin who requested it.
+    const detail = result.temporaryPassword
+      ? `Contraseña temporal: ${result.temporaryPassword}`
+      : (result.message || 'Blanqueo de contraseña realizado')
+    show(detail, 'info', 15000)
   } else {
     show('Error: ' + result.error, 'error')
   }

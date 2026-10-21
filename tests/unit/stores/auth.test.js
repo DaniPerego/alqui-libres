@@ -187,22 +187,21 @@ describe('auth store — native API', () => {
     expect(store.mustChangePassword).toBe(false)
   })
 
-  it('resets the password through /auth/reset-password', async () => {
+  it('resets the password through /auth/reset-password (authenticated)', async () => {
     mocks.apiPost.mockResolvedValueOnce({
       success: true,
-      data: { message: 'If the email exists, a reset link has been sent' }
+      data: { message: 'Temporary password generated for u@example.com', temporaryPassword: 'tmp-Abc123' }
     })
     const store = useAuthStore()
 
     const result = await store.resetPassword('u@example.com')
 
-    expect(mocks.apiPost).toHaveBeenCalledWith(
-      '/auth/reset-password',
-      { email: 'u@example.com' },
-      { public: true }
-    )
+    // The session token must ride along: only an admin may reset, and the
+    // temporary password comes back exactly once.
+    expect(mocks.apiPost).toHaveBeenCalledWith('/auth/reset-password', { email: 'u@example.com' })
     expect(result.success).toBe(true)
-    expect(result.message).toContain('reset link')
+    expect(result.temporaryPassword).toBe('tmp-Abc123')
+    expect(result.message).toContain('Temporary password')
   })
 
   it('updates the profile through PATCH /users/me', async () => {
@@ -253,16 +252,17 @@ describe('auth store — offline demo fallback (API unreachable)', () => {
     expect(store.user.displayName).toBe('Propietario Demo')
   })
 
-  it('logs in with hardcoded guest and admin credentials', async () => {
+  it('logs in with hardcoded guest credentials, never with admin credentials', async () => {
     const guestStore = useAuthStore()
     const guestResult = await guestStore.login('huesped@alquilibres.com', 'guest123')
     expect(guestResult.success).toBe(true)
     expect(guestStore.user.role).toBe('guest')
 
+    // The admin account must never ship inside the public bundle, so it has
+    // no offline entry: it only authenticates against the real API.
     const adminStore = useAuthStore()
     const adminResult = await adminStore.login('admin@alquilibres.com', 'admin123')
-    expect(adminResult.success).toBe(true)
-    expect(adminStore.user.role).toBe('admin')
+    expect(adminResult.success).toBe(false)
   })
 
   it('logs in with dynamic mock credentials stored in localStorage', async () => {

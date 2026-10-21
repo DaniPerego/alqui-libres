@@ -39,23 +39,10 @@ const DEMO_USERS = {
     role: 'guest',
     emailVerified: true,
     subscription: null
-  },
-  'admin@alquilibres.com': {
-    password: 'admin123',
-    uid: 'admin001',
-    email: 'admin@alquilibres.com',
-    displayName: 'Administrador',
-    role: 'admin',
-    emailVerified: true,
-    subscription: {
-      planId: 'enterprise',
-      status: 'active',
-      startedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-      autoRenew: true,
-      lastPaymentDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
-    }
   }
+  // NOTE: the admin account is deliberately absent. This map ships inside
+  // the public bundle, so any credential here is readable by anyone; the
+  // platform owner authenticates against the real API instead.
 }
 
 function getToken() {
@@ -356,12 +343,16 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async resetPassword(email) {
-      const result = await apiPost('/auth/reset-password', { email }, { public: true })
+      // The session token is sent on purpose: the API only performs a reset
+      // for an authenticated admin and hands back the temporary password
+      // exactly once. An anonymous call is a no-op (no email channel yet).
+      const result = await apiPost('/auth/reset-password', { email })
 
       if (result.success) {
         return {
           success: true,
-          message: result.data?.message || 'Si el email existe, se envió un enlace de restablecimiento'
+          message: result.data?.message || 'Blanqueo de contraseña realizado',
+          temporaryPassword: result.data?.temporaryPassword || null
         }
       }
 
