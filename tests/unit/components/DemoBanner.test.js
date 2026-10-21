@@ -9,14 +9,19 @@ describe('DemoBanner.vue', () => {
     localStorage.removeItem('demoBannerDismissed')
   })
 
-  it('displays the demo credentials that match the auth store mock users', async () => {
+  it('advertises only the public demo credentials — never the admin account', async () => {
     const wrapper = mount(DemoBanner)
     await nextTick()
     const text = wrapper.text()
 
+    expect(text).toContain('huesped@alquilibres.com')
+    expect(text).toContain('guest123')
     expect(text).toContain('usuario@alquilibres.com')
     expect(text).toContain('user123')
-    expect(text).toContain('admin@alquilibres.com')
-    expect(text).toContain('admin123')
+
+    // The admin account belongs to the platform owner only: the published
+    // app must not advertise it anywhere.
+    expect(text).not.toContain('admin@alquilibres.com')
+    expect(text).not.toContain('admin123')
   })
 })

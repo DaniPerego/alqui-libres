@@ -22,11 +22,6 @@
               <code class="demo-value">usuario@alquilibres.com / user123</code>
               <button @click="autofillDemo('usuario@alquilibres.com','user123')" class="copy-btn" title="Autocompletar"><Zap :size="16" /></button>
             </div>
-            <div class="demo-credential-item">
-              <span class="demo-label">{{ t('auth.admin') }}</span>
-              <code class="demo-value">admin@alquilibres.com / admin123</code>
-              <button @click="autofillDemo('admin@alquilibres.com','admin123')" class="copy-btn" title="Autocompletar"><Zap :size="16" /></button>
-            </div>
           </div>
           <p class="demo-warning"><AlertTriangle :size="16" /> {{ t('auth.demoWarning') }}</p>
         </div>
@@ -35,16 +30,21 @@
           <h1 class="auth-title">{{ t('auth.loginTitle') }}</h1>
           <p class="auth-subtitle">{{ t('auth.loginSubtitle') }}</p>
           
-          <form @submit.prevent="handleSubmit" class="auth-form">
+          <form @submit.prevent="handleSubmit" class="auth-form" autocomplete="off">
             <div class="form-group">
               <label for="email" class="label"><Mail :size="18" /> {{ t('auth.email') }}</label>
               <input 
                 id="email"
+                ref="emailInput"
                 v-model="formData.email" 
                 type="email" 
                 class="input" 
                 placeholder="tu@email.com"
+                name="alqui-user"
+                autocomplete="off"
                 required
+                @focus="disarmAutofillGuard"
+                @keydown="disarmAutofillGuard"
               />
             </div>
             
@@ -52,11 +52,16 @@
               <label for="password" class="label"><Lock :size="18" /> {{ t('auth.password') }}</label>
               <input 
                 id="password"
+                ref="passwordInput"
                 v-model="formData.password" 
                 type="password" 
                 class="input" 
                 placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
+                name="alqui-pass"
+                autocomplete="off"
                 required
+                @focus="disarmAutofillGuard"
+                @keydown="disarmAutofillGuard"
               />
             </div>
             
@@ -88,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
@@ -108,8 +113,41 @@ const loading = ref(false)
 const error = ref('')
 const isDemoMode = computed(() => !auth)
 
+const emailInput = ref(null)
+const passwordInput = ref(null)
+
+// The browser's password/address manager drops saved values into the fields
+// right after load. The form must always start empty, so a short-lived guard
+// clears anything the browser injected — and steps aside the moment the user
+// focuses or types (never fight the user's own input).
+const autofillGuard = ref(true)
+const disarmAutofillGuard = () => {
+  autofillGuard.value = false
+}
+
+const clearBrowserAutofill = () => {
+  if (!autofillGuard.value) return
+  for (const el of [emailInput.value, passwordInput.value]) {
+    if (el && el.value && document.activeElement !== el) {
+      el.value = ''
+    }
+  }
+  if (formData.value.email || formData.value.password) {
+    formData.value.email = ''
+    formData.value.password = ''
+  }
+}
+
+onMounted(async () => {
+  await nextTick()
+  clearBrowserAutofill()
+  requestAnimationFrame(clearBrowserAutofill)
+  setTimeout(clearBrowserAutofill, 300)
+})
+
 // Autocompletar credenciales demo
 const autofillDemo = (email, password) => {
+  autofillGuard.value = false
   formData.value.email = email
   formData.value.password = password
 }
