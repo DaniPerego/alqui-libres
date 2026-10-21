@@ -53,9 +53,14 @@
         <div class="metric-content">
           <h3 class="metric-value">{{ stats.totalViews }}</h3>
           <p class="metric-label">{{ t('dashboard.totalViews') }}</p>
-          <p class="metric-trend">
-            <span class="trend-up">↑ +{{ stats.viewsThisWeek }}</span> {{ t('dashboard.thisWeek') }}
-          </p>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon reservations"><Calendar :size="24" /></div>
+        <div class="metric-content">
+          <h3 class="metric-value">{{ stats.pendingReservations }}</h3>
+          <p class="metric-label">{{ t('dashboard.pendingReservations') }}</p>
         </div>
       </div>
     </div>
@@ -114,6 +119,8 @@
             <Home v-else-if="activity.type === 'property'" :size="18" />
             <CreditCard v-else-if="activity.type === 'subscription'" :size="18" />
             <User v-else-if="activity.type === 'profile'" :size="18" />
+            <Calendar v-else-if="activity.type === 'reservation'" :size="18" />
+            <Bell v-else-if="activity.type === 'notification'" :size="18" />
             <Pin v-else :size="18" />
           </div>
           <div class="activity-content">
@@ -175,8 +182,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useAdminStore } from '@/stores/admin'
+import { usePaymentStore } from '@/stores/payment'
+import { usePropertyStore } from '@/stores/property'
 import { useI18n } from 'vue-i18n'
+import { getMessages } from '@/services/messages'
+import { getNotifications } from '@/services/notifications'
+import { getOwnerReservations } from '@/services/reservations'
+import { mockProperties } from '@/data/mockData'
 import {
   Plus,
   Home,
@@ -191,12 +203,15 @@ import {
   ClipboardList,
   Lightbulb,
   Camera,
-  Zap
+  Zap,
+  Calendar,
+  Bell
 } from '@lucide/vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const authStore = useAuthStore()
-const adminStore = useAdminStore()
+const paymentStore = usePaymentStore()
+const propertyStore = usePropertyStore()
 
 const stats = ref({
   totalProperties: 0,
@@ -205,79 +220,179 @@ const stats = ref({
   unreadMessages: 0,
   subscriptionDays: 0,
   totalViews: 0,
-  viewsThisWeek: 0,
+  pendingReservations: 0,
   hasProfileComplete: false
 })
 
 const recentActivity = ref([])
+const isLoading = ref(false)
 
 const userName = computed(() => {
-  return authStore.user?.displayName?.split(' ')[0] || 'Usuario'
+  return authStore.user?.displayName?.split(' ')[0] || t('dashboard.userFallback')
 })
 
 const subscriptionStatus = computed(() => {
   if (stats.value.subscriptionDays > 10) return 'active'
   if (stats.value.subscriptionDays > 5) return 'warning'
-  return 'expiring'
+  if (stats.value.subscriptionDays > 0) return 'expiring'
+  return 'expired'
 })
 
 const subscriptionStatusText = computed(() => {
-  if (stats.value.subscriptionDays > 10) return 'Activa'
-  if (stats.value.subscriptionDays > 5) return 'Por vencer'
-  if (stats.value.subscriptionDays > 0) return 'Próxima a vencer'
-  return 'Vencida'
+  const key = `dashboard.subscriptionStatus.${subscriptionStatus.value}`
+  return t(key)
 })
 
-const loadStats = () => {
-  const profile = localStorage.getItem(`profile_${authStore.user?.uid}`)
-  const hasProfile = !!profile
-  
-  if (hasProfile) {
-    const profileData = JSON.parse(profile)
-    stats.value.hasProfileComplete = !!(
-      profileData.displayName &&
-      profileData.contactoPrincipal?.telefono &&
-      profileData.contactoPrincipal?.whatsapp
-    )
+function isActiveProperty(property) {
+  return property.status === 'active' && property.isActive !== false
+}
+
+function derivePropertyStats(properties) {
+  const total = properties.length
+  const active = properties.filter(isActiveProperty).length
+  const totalViews = properties.reduce((sum, p) => sum + (Number(p.viewCount) || 0), 0)
+  return { total, active, inactive: total - active, totalViews }
+}
+
+async function loadProperties() {
+  const result = await propertyStore.fetchUserProperties(authStore.userId)
+  if (result.success) {
+    return propertyStore.properties
   }
 
-  stats.value = {
-    ...stats.value,
-    totalProperties: 3,
-    activeProperties: 3,
-    inactiveProperties: 0,
-    unreadMessages: 2,
-    subscriptionDays: 23,
-    totalViews: 156,
-    viewsThisWeek: 28
-  }
+  // Offline fallback: keep the UI alive with the mock catalog when the API is unreachable.
+  console.warn('⚠️ Error fetching dashboard properties, falling back to mock data:', result.error)
+  return [...mockProperties]
+}
 
-  recentActivity.value = [
-    {
-      id: 1,
-      type: 'view',
-      text: 'Tu propiedad "Casa con Parrilla" recibió 5 nuevas visitas',
-      timestamp: Date.now() - 2 * 60 * 60 * 1000
-    },
-    {
-      id: 2,
-      type: 'message',
-      text: 'Nuevo mensaje de María sobre "Departamento Céntrico"',
-      timestamp: Date.now() - 5 * 60 * 60 * 1000
-    },
-    {
-      id: 3,
-      type: 'property',
-      text: 'Editaste la propiedad "Cabaña en las Sierras"',
-      timestamp: Date.now() - 24 * 60 * 60 * 1000
-    },
-    {
-      id: 4,
-      type: 'subscription',
-      text: 'Tu suscripción se renovó exitosamente',
-      timestamp: Date.now() - 3 * 24 * 60 * 60 * 1000
-    }
+async function loadMessages() {
+  const messages = await getMessages()
+  const unread = messages.filter(m => m.status === 'unread' || m.read === false).length
+  return { messages, unread }
+}
+
+async function loadSubscription() {
+  const result = await paymentStore.fetchCurrentSubscription()
+  return paymentStore.daysUntilRenewal || 0
+}
+
+async function loadReservations() {
+  const reservations = await getOwnerReservations(authStore.userId, 'all')
+  const pending = reservations.filter(r => r.status === 'pending').length
+  return { reservations, pending }
+}
+
+async function loadNotifications() {
+  return getNotifications()
+}
+
+function resolvePropertyTitle(item) {
+  if (item.propertyTitle) return item.propertyTitle
+  if (item.property?.title) return item.property.title
+  return t('dashboard.activity.untitledProperty')
+}
+
+function buildMessageActivity(message) {
+  return {
+    id: `msg-${message.id}`,
+    type: 'message',
+    text: t('dashboard.activity.newMessage', {
+      guest: message.guestName,
+      property: resolvePropertyTitle(message)
+    }),
+    timestamp: new Date(message.createdAt).getTime()
+  }
+}
+
+function buildReservationActivity(reservation) {
+  const propertyTitle = resolvePropertyTitle(reservation)
+  const keyMap = {
+    pending: 'dashboard.activity.newReservation',
+    confirmed: 'dashboard.activity.reservationConfirmed',
+    rejected: 'dashboard.activity.reservationRejected',
+    cancelled: 'dashboard.activity.reservationCancelled'
+  }
+  return {
+    id: `res-${reservation.id}`,
+    type: 'reservation',
+    text: t(keyMap[reservation.status] || keyMap.pending, {
+      guest: reservation.guestName,
+      property: propertyTitle
+    }),
+    timestamp: new Date(reservation.createdAt).getTime()
+  }
+}
+
+function buildNotificationActivity(notification) {
+  const typeMap = {
+    reservation: 'reservation',
+    message: 'message',
+    payment: 'subscription',
+    property: 'property',
+    system: 'system'
+  }
+  return {
+    id: `notif-${notification.id}`,
+    type: typeMap[notification.type] || 'system',
+    text: `${notification.title}: ${notification.body}`,
+    timestamp: new Date(notification.createdAt).getTime()
+  }
+}
+
+async function buildRecentActivity(messages, reservations, notifications) {
+  const activities = [
+    ...messages.map(buildMessageActivity),
+    ...reservations.map(buildReservationActivity),
+    ...notifications.map(buildNotificationActivity)
   ]
+
+  return activities
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 8)
+}
+
+const loadStats = async () => {
+  isLoading.value = true
+
+  try {
+    const profile = localStorage.getItem(`profile_${authStore.user?.uid}`)
+    if (profile) {
+      const profileData = JSON.parse(profile)
+      stats.value.hasProfileComplete = !!(
+        profileData.displayName &&
+        profileData.contactoPrincipal?.telefono &&
+        profileData.contactoPrincipal?.whatsapp
+      )
+    }
+
+    const [properties, { messages, unread }, subscriptionDays, { reservations, pending }, notifications] =
+      await Promise.all([
+        loadProperties(),
+        loadMessages(),
+        loadSubscription(),
+        loadReservations(),
+        loadNotifications()
+      ])
+
+    const propertyStats = derivePropertyStats(properties)
+
+    stats.value = {
+      ...stats.value,
+      totalProperties: propertyStats.total,
+      activeProperties: propertyStats.active,
+      inactiveProperties: propertyStats.inactive,
+      unreadMessages: unread,
+      subscriptionDays,
+      totalViews: propertyStats.totalViews,
+      pendingReservations: pending
+    }
+
+    recentActivity.value = await buildRecentActivity(messages, reservations, notifications)
+  } catch (error) {
+    console.error('Error loading dashboard stats:', error)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const formatRelativeTime = (timestamp) => {
@@ -287,14 +402,14 @@ const formatRelativeTime = (timestamp) => {
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
 
-  if (minutes < 1) return 'Hace un momento'
-  if (minutes < 60) return `Hace ${minutes} minuto${minutes > 1 ? 's' : ''}`
-  if (hours < 24) return `Hace ${hours} hora${hours > 1 ? 's' : ''}`
-  if (days === 1) return 'Ayer'
-  if (days < 7) return `Hace ${days} días`
-  return new Date(timestamp).toLocaleDateString('es-ES', { 
-    day: 'numeric', 
-    month: 'short' 
+  if (minutes < 1) return t('dashboard.time.justNow')
+  if (minutes < 60) return t('dashboard.time.minutesAgo', minutes)
+  if (hours < 24) return t('dashboard.time.hoursAgo', hours)
+  if (days === 1) return t('dashboard.time.yesterday')
+  if (days < 7) return t('dashboard.time.daysAgo', days)
+  return new Date(timestamp).toLocaleDateString(locale.value || 'es', {
+    day: 'numeric',
+    month: 'short'
   })
 }
 
@@ -376,6 +491,10 @@ onMounted(() => {
 
 .metric-icon.views {
   background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.metric-icon.reservations {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
 }
 
 .metric-content {
@@ -585,6 +704,16 @@ onMounted(() => {
 .activity-icon.subscription {
   background: #d1fae5;
   color: #065f46;
+}
+
+.activity-icon.reservation {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.activity-icon.notification {
+  background: #ecfeff;
+  color: #155e75;
 }
 
 .activity-content {

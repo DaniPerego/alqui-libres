@@ -110,6 +110,29 @@ export default {
     subscriptionDays: 'Dias de Assinatura',
     totalViews: 'Visualizações Totais',
     thisWeek: 'esta semana',
+    pendingReservations: 'Reservas Pendentes',
+    subscriptionStatus: {
+      active: 'Ativa',
+      warning: 'Prestes a vencer',
+      expiring: 'Próxima a vencer',
+      expired: 'Vencida'
+    },
+    time: {
+      justNow: 'Agora há pouco',
+      minutesAgo: 'Há {n} minuto | Há {n} minutos',
+      hoursAgo: 'Há {n} hora | Há {n} horas',
+      yesterday: 'Ontem',
+      daysAgo: 'Há {n} dia | Há {n} dias'
+    },
+    activity: {
+      newMessage: 'Nova mensagem de {guest} sobre "{property}"',
+      newReservation: '{guest} quer reservar "{property}"',
+      reservationConfirmed: 'Reserva confirmada para "{property}"',
+      reservationRejected: 'Reserva rejeitada para "{property}"',
+      reservationCancelled: 'Reserva cancelada para "{property}"',
+      untitledProperty: 'Sem título'
+    },
+    userFallback: 'Usuário',
     quickActions: 'Ações Rápidas',
     publishProperty: 'Publicar Imóvel',
     publishDesc: 'Adicione um novo imóvel ao seu catálogo',
@@ -137,6 +160,32 @@ export default {
     qualityPhotosDesc: 'Imóveis com 5 ou mais fotos profissionais recebem 40% mais consultas.',
     respondFast: 'Responda Rápido',
     respondFastDesc: 'Responda mensagens em menos de 1 hora para aumentar suas chances de reserva.'
+  },
+  messages: {
+    title: 'Mensagens',
+    empty: {
+      title: 'Você não tem mensagens',
+      description: 'Quando os hóspedes entrarem em contato, você verá as mensagens deles aqui'
+    },
+    propertyLabel: 'Imóvel',
+    noTitle: 'Sem título',
+    checkIn: 'Check-in',
+    checkOut: 'Check-out',
+    guests: 'Hóspedes',
+    reply: 'Responder',
+    send: 'Enviar',
+    cancel: 'Cancelar',
+    replyPlaceholder: 'Escreva sua resposta...',
+    markAsRead: 'Marcar como lido',
+    quickResponses: 'Modelos de Resposta Rápida',
+    template: {
+      confirmAvailability: 'Confirmar Disponibilidade',
+      confirmAvailabilityDesc: 'Olá! Confirmo que o imóvel está disponível para essas datas...',
+      requestInfo: 'Solicitar Informações',
+      requestInfoDesc: 'Obrigado pelo seu interesse. Precisaria de alguns dados adicionais...',
+      sendInstructions: 'Enviar Instruções',
+      sendInstructionsDesc: 'Reserva confirmada! Aqui estão as instruções de chegada...'
+    }
   },
   footer: {
     description: 'Plataforma hiper-local de aluguéis temporários sem comissões por reserva. Assinatura fixa para proprietários.',
@@ -201,7 +250,9 @@ export default {
     demoDescription: 'Use uma dessas credenciais para testar o sistema:',
     guest: 'Hóspede (aluga):',
     owner: 'Proprietário (publica):',
-    admin: 'Administrador:',
     demoWarning: 'Só funcionam no modo demo (sem Firebase real)'
+  },
+  common: {
+    loading: 'Carregando...'
   }
 }

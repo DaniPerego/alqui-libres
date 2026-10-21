@@ -110,6 +110,29 @@ export default {
     subscriptionDays: 'Subscription Days',
     totalViews: 'Total Views',
     thisWeek: 'this week',
+    pendingReservations: 'Pending Reservations',
+    subscriptionStatus: {
+      active: 'Active',
+      warning: 'Expiring soon',
+      expiring: 'About to expire',
+      expired: 'Expired'
+    },
+    time: {
+      justNow: 'Just now',
+      minutesAgo: '{n} minute ago | {n} minutes ago',
+      hoursAgo: '{n} hour ago | {n} hours ago',
+      yesterday: 'Yesterday',
+      daysAgo: '{n} day ago | {n} days ago'
+    },
+    activity: {
+      newMessage: 'New message from {guest} about "{property}"',
+      newReservation: '{guest} wants to book "{property}"',
+      reservationConfirmed: 'Reservation confirmed for "{property}"',
+      reservationRejected: 'Reservation rejected for "{property}"',
+      reservationCancelled: 'Reservation cancelled for "{property}"',
+      untitledProperty: 'Untitled'
+    },
+    userFallback: 'User',
     quickActions: 'Quick Actions',
     publishProperty: 'Publish Property',
     publishDesc: 'Add a new property to your catalog',
@@ -137,6 +160,32 @@ export default {
     qualityPhotosDesc: 'Properties with 5 or more professional photos receive 40% more inquiries.',
     respondFast: 'Respond Fast',
     respondFastDesc: 'Reply to messages in less than 1 hour to increase your booking chances.'
+  },
+  messages: {
+    title: 'Messages',
+    empty: {
+      title: 'You have no messages',
+      description: 'When guests get in touch, you will see their messages here'
+    },
+    propertyLabel: 'Property',
+    noTitle: 'No title',
+    checkIn: 'Check-in',
+    checkOut: 'Check-out',
+    guests: 'Guests',
+    reply: 'Reply',
+    send: 'Send',
+    cancel: 'Cancel',
+    replyPlaceholder: 'Write your reply...',
+    markAsRead: 'Mark as read',
+    quickResponses: 'Quick Reply Templates',
+    template: {
+      confirmAvailability: 'Confirm Availability',
+      confirmAvailabilityDesc: 'Hi! I confirm the property is available for those dates...',
+      requestInfo: 'Request Information',
+      requestInfoDesc: 'Thank you for your interest. I would need some additional details...',
+      sendInstructions: 'Send Instructions',
+      sendInstructionsDesc: 'Booking confirmed! Here are the check-in instructions...'
+    }
   },
   footer: {
     description: 'Hyper-local short-term rental platform with no booking commissions. Fixed subscription for owners.',
@@ -201,7 +250,9 @@ export default {
     demoDescription: 'Use any of these credentials to test the system:',
     guest: 'Guest (rents):',
     owner: 'Owner (lists):',
-    admin: 'Admin:',
     demoWarning: 'Only work in demo mode (no real Firebase)'
+  },
+  common: {
+    loading: 'Loading...'
   }
 }
