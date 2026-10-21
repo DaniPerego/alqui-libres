@@ -4,6 +4,7 @@ import {
   createReservation,
   getOwnerReservations,
   getGuestReservations,
+  getPropertyReservations,
   confirmReservation,
   rejectReservation,
   cancelReservation,
@@ -17,7 +18,8 @@ const mocks = vi.hoisted(() => ({
   apiDelete: vi.fn()
 }))
 
-vi.mock('@/services/api', () => ({
+vi.mock('@/services/api', async (importOriginal) => ({
+  ...(await importOriginal()),
   apiGet: mocks.apiGet,
   apiPost: mocks.apiPost,
   apiPatch: mocks.apiPatch,
@@ -93,7 +95,10 @@ describe('reservations service (native API)', () => {
   })
 
   it('fetches owner reservations from the API', async () => {
-    mocks.apiGet.mockResolvedValueOnce({ success: true, data: [backendReservation] })
+    mocks.apiGet.mockResolvedValueOnce({
+      success: true,
+      data: { data: [backendReservation], meta: { page: 1, limit: 20, total: 1 } }
+    })
 
     const reservations = await getOwnerReservations('owner001')
 
@@ -103,7 +108,10 @@ describe('reservations service (native API)', () => {
   })
 
   it('passes a status filter to the owner endpoint', async () => {
-    mocks.apiGet.mockResolvedValueOnce({ success: true, data: [backendReservation] })
+    mocks.apiGet.mockResolvedValueOnce({
+      success: true,
+      data: { data: [backendReservation], meta: { page: 1, limit: 20, total: 1 } }
+    })
 
     await getOwnerReservations('owner001', 'confirmed')
 
@@ -111,12 +119,28 @@ describe('reservations service (native API)', () => {
   })
 
   it('fetches guest reservations from the API', async () => {
-    mocks.apiGet.mockResolvedValueOnce({ success: true, data: [backendReservation] })
+    mocks.apiGet.mockResolvedValueOnce({
+      success: true,
+      data: { data: [backendReservation], meta: { page: 1, limit: 20, total: 1 } }
+    })
 
     const reservations = await getGuestReservations('guest001')
 
     expect(mocks.apiGet).toHaveBeenCalledWith('/reservations', { mine: 'guest' })
     expect(reservations).toHaveLength(1)
+  })
+
+  it('fetches property reservations from the API', async () => {
+    mocks.apiGet.mockResolvedValueOnce({
+      success: true,
+      data: { data: [backendReservation], meta: { page: 1, limit: 20, total: 1 } }
+    })
+
+    const reservations = await getPropertyReservations('p1')
+
+    expect(mocks.apiGet).toHaveBeenCalledWith('/reservations', { propertyId: 'p1' })
+    expect(reservations).toHaveLength(1)
+    expect(reservations[0].property.title).toBe('Casa API')
   })
 
   it('confirms a reservation via the API', async () => {

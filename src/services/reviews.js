@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from '@/services/api'
+import { apiGet, apiPost, toList } from '@/services/api'
 import { mockReviews } from '@/data/mockData'
 
 const STORAGE_KEY = 'alquilibres_reviews'
@@ -32,7 +32,7 @@ export async function getPropertyReviews(propertyId) {
     const reviews = loadReviews()
     return sortByNewest(reviews.filter(r => r.listingId === propertyId || r.propertyId === propertyId))
   }
-  return sortByNewest(result.data || [])
+  return sortByNewest(toList(result.data))
 }
 
 export async function addReview(review) {
@@ -70,7 +70,7 @@ export async function getOwnerReviews(ownerPropertyIds) {
     const reviews = loadReviews()
     return sortByNewest(reviews.filter(r => ownerPropertyIds.includes(r.listingId) || ownerPropertyIds.includes(r.propertyId)))
   }
-  return sortByNewest(result.data || [])
+  return sortByNewest(toList(result.data))
 }
 
 export function getPropertyRating(propertyId) {

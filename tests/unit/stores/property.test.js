@@ -11,7 +11,8 @@ const mocks = vi.hoisted(() => ({
   apiDelete: vi.fn()
 }))
 
-vi.mock('@/services/api', () => ({
+vi.mock('@/services/api', async (importOriginal) => ({
+  ...(await importOriginal()),
   apiGet: mocks.apiGet,
   apiPost: mocks.apiPost,
   apiPatch: mocks.apiPatch,
@@ -73,7 +74,10 @@ beforeEach(() => {
 
 describe('property store (native API)', () => {
   it('fetchUserProperties calls the owner endpoint and normalizes the response', async () => {
-    mocks.apiGet.mockResolvedValueOnce({ success: true, data: [apiProperty] })
+    mocks.apiGet.mockResolvedValueOnce({
+      success: true,
+      data: { data: [apiProperty], meta: { page: 1, limit: 20, total: 1 } }
+    })
     const store = usePropertyStore()
 
     const result = await store.fetchUserProperties('owner001')

@@ -10,7 +10,8 @@ import {
   apiPost,
   apiPatch,
   apiPut,
-  apiDelete
+  apiDelete,
+  toList
 } from '@/services/api.js'
 
 describe('src/services/api', () => {
@@ -129,5 +130,24 @@ describe('src/services/api', () => {
 
     expect(result.success).toBe(false)
     expect(result.error.code).toBe('NETWORK_ERROR')
+  })
+})
+
+describe('toList', () => {
+  it('unwraps the paginated API envelope { data: [...], meta: {...} }', () => {
+    const envelope = { data: [{ id: 1 }, { id: 2 }], meta: { page: 1 } }
+    expect(toList(envelope)).toEqual([{ id: 1 }, { id: 2 }])
+  })
+
+  it('returns a bare array unchanged', () => {
+    const bare = [{ id: 1 }, { id: 2 }]
+    expect(toList(bare)).toEqual(bare)
+  })
+
+  it('returns an empty array for null, undefined, or missing data', () => {
+    expect(toList(null)).toEqual([])
+    expect(toList(undefined)).toEqual([])
+    expect(toList({})).toEqual([])
+    expect(toList({ meta: { page: 1 } })).toEqual([])
   })
 })

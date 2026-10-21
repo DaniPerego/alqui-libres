@@ -20,7 +20,8 @@ const mocks = vi.hoisted(() => ({
   apiDelete: vi.fn()
 }))
 
-vi.mock('@/services/api', () => ({
+vi.mock('@/services/api', async (importOriginal) => ({
+  ...(await importOriginal()),
   apiGet: mocks.apiGet,
   apiPost: mocks.apiPost,
   apiPatch: mocks.apiPatch,

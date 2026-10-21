@@ -85,6 +85,21 @@ async function request(method, path, body = null, options = {}) {
   }
 }
 
+/**
+ * Unwrap a list response into an array.
+ *
+ * Collection endpoints return a paginated envelope `{ data: [...], meta: {...} }`,
+ * while offline/demo fallbacks and some legacy handlers return a bare array.
+ * This helper accepts either shape and always returns an array so consumers can
+ * safely call `.map()` without crashing on the envelope object.
+ */
+export function toList(result) {
+  if (!result) return []
+  if (Array.isArray(result)) return result
+  if (Array.isArray(result.data)) return result.data
+  return []
+}
+
 export async function apiGet(path, params, options) {
   return request('GET', path, null, { ...options, params })
 }

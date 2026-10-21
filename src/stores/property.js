@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { apiGet, apiPost, apiPatch, apiDelete } from '@/services/api'
+import { apiGet, apiPost, apiPatch, apiDelete, toList } from '@/services/api'
 
 function normalizeProperty(row) {
   if (!row) return null
@@ -99,7 +99,7 @@ export const usePropertyStore = defineStore('property', {
           return { success: false, error: this.error }
         }
 
-        this.properties = (result.data || []).map(normalizeProperty)
+        this.properties = toList(result.data).map(normalizeProperty)
         return { success: true, data: this.properties }
       } catch (error) {
         console.warn('⚠️ Error fetching properties:', error.message)

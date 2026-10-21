@@ -7,7 +7,8 @@ const mocks = vi.hoisted(() => ({
   apiGet: vi.fn()
 }))
 
-vi.mock('@/services/api', () => ({
+vi.mock('@/services/api', async (importOriginal) => ({
+  ...(await importOriginal()),
   apiGet: mocks.apiGet
 }))
 
@@ -78,7 +79,10 @@ describe('search store (API failure fallback to mock listings)', () => {
 
 describe('search store (native API)', () => {
   it('queries the API with filter params and normalizes results', async () => {
-    mocks.apiGet.mockResolvedValueOnce({ success: true, data: [apiListing] })
+    mocks.apiGet.mockResolvedValueOnce({
+      success: true,
+      data: { data: [apiListing], meta: { page: 1, limit: 20, total: 1 } }
+    })
     const store = useSearchStore()
     store.updateFilters({
       city: 'Carlos Paz',
@@ -105,7 +109,10 @@ describe('search store (native API)', () => {
   })
 
   it('applies client-side filters on top of API results', async () => {
-    mocks.apiGet.mockResolvedValueOnce({ success: true, data: [apiListing] })
+    mocks.apiGet.mockResolvedValueOnce({
+      success: true,
+      data: { data: [apiListing], meta: { page: 1, limit: 20, total: 1 } }
+    })
     const store = useSearchStore()
     store.updateFilters({
       minBedrooms: 5,

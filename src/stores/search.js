@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { apiGet } from '@/services/api'
+import { apiGet, toList } from '@/services/api'
 import { mockProperties } from '@/data/mockData'
 
 function normalizeListing(row) {
@@ -88,7 +88,7 @@ export const useSearchStore = defineStore('search', {
           return { success: true, data: this.filteredListings }
         }
 
-        this.listings = (result.data || []).map(normalizeListing)
+        this.listings = toList(result.data).map(normalizeListing)
         this.applyClientFilters()
         return { success: true, data: this.filteredListings }
       } catch (error) {

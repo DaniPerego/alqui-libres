@@ -12,7 +12,8 @@ const mocks = vi.hoisted(() => ({
   apiPost: vi.fn()
 }))
 
-vi.mock('@/services/api', () => ({
+vi.mock('@/services/api', async (importOriginal) => ({
+  ...(await importOriginal()),
   apiGet: mocks.apiGet,
   apiPost: mocks.apiPost
 }))
@@ -26,10 +27,13 @@ describe('reviews service (native API)', () => {
   it('fetches property reviews from the API sorted newest first', async () => {
     mocks.apiGet.mockResolvedValueOnce({
       success: true,
-      data: [
-        { id: 'rx2', propertyId: 'p1', rating: 5, comment: 'Latest', createdAt: '2024-09-01T00:00:00.000Z' },
-        { id: 'rx1', propertyId: 'p1', rating: 4, comment: 'Older', createdAt: '2024-08-01T00:00:00.000Z' }
-      ]
+      data: {
+        data: [
+          { id: 'rx2', propertyId: 'p1', rating: 5, comment: 'Latest', createdAt: '2024-09-01T00:00:00.000Z' },
+          { id: 'rx1', propertyId: 'p1', rating: 4, comment: 'Older', createdAt: '2024-08-01T00:00:00.000Z' }
+        ],
+        meta: { page: 1, limit: 20, total: 2 }
+      }
     })
 
     const reviews = await getPropertyReviews('p1')
@@ -69,9 +73,12 @@ describe('reviews service (native API)', () => {
   it('fetches owner reviews from the API', async () => {
     mocks.apiGet.mockResolvedValueOnce({
       success: true,
-      data: [
-        { id: 'rx1', propertyId: 'p1', rating: 5, comment: 'Owner review' }
-      ]
+      data: {
+        data: [
+          { id: 'rx1', propertyId: 'p1', rating: 5, comment: 'Owner review' }
+        ],
+        meta: { page: 1, limit: 20, total: 1 }
+      }
     })
 
     const reviews = await getOwnerReviews(['p1', 'p2'])

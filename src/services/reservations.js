@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, apiDelete } from '@/services/api'
+import { apiGet, apiPost, apiPatch, apiDelete, toList } from '@/services/api'
 
 const STORAGE_KEY = 'reservations'
 
@@ -91,7 +91,7 @@ export async function getOwnerReservations(ownerId, statusFilter = null) {
       console.warn('⚠️ Error fetching owner reservations:', result.error?.message)
       return []
     }
-    return (result.data || []).map(normalizeReservation)
+    return toList(result.data).map(normalizeReservation)
   } catch (error) {
     console.error('Error getting owner reservations:', error)
     return []
@@ -194,7 +194,7 @@ export async function getGuestReservations(guestId) {
       console.warn('⚠️ Error fetching guest reservations:', result.error?.message)
       return []
     }
-    return (result.data || []).map(normalizeReservation)
+    return toList(result.data).map(normalizeReservation)
   } catch (error) {
     console.error('Error getting guest reservations:', error)
     return []
@@ -222,7 +222,7 @@ export async function getPropertyReservations(propertyId) {
       console.warn('⚠️ Error fetching property reservations:', result.error?.message)
       return []
     }
-    return (result.data || []).map(normalizeReservation)
+    return toList(result.data).map(normalizeReservation)
   } catch (error) {
     console.error('Error getting property reservations:', error)
     return []
