@@ -8,7 +8,10 @@
 import jwt from 'jsonwebtoken'
 
 export function makeAuthToken({ uid = 'uid-1', role = 'owner', email = 'user@test.com' } = {}) {
-  const secret = process.env.JWT_SECRET || 'alqui-libres-dev-secret-change-in-production'
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required for tests')
+  }
   return jwt.sign({ sub: uid, email, role }, secret, { expiresIn: '1h' })
 }
 

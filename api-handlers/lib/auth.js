@@ -2,7 +2,10 @@ import jwt from 'jsonwebtoken'
 import { prisma } from './prisma.js'
 import { HttpError, sendError } from './http.js'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'alqui-libres-dev-secret-change-in-production'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
 
 export function extractBearer(req) {
   const header = req.headers?.authorization || ''

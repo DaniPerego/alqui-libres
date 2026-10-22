@@ -4,7 +4,10 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { randomBytes, randomUUID } from 'crypto'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'alqui-libres-dev-secret-change-in-production'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
 const JWT_EXPIRES_IN = '7d'
 
 function signToken(user) {
