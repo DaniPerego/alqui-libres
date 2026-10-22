@@ -30,9 +30,10 @@ AlquiLibres es una plataforma de alquileres temporarios que compite en nichos hi
 - **Vite** - Build tool ultra-rápido
 
 ### Backend
-- **Firebase Authentication** - Sistema de autenticación
-- **Firestore** - Base de datos NoSQL
-- **Firebase Storage** - Almacenamiento de imágenes
+- **Autenticación JWT nativa** - Tokens firmados en el servidor, sin dependencias de terceros
+- **API serverless en Vercel** - Handlers Node.js bajo `api-handlers/`
+- **PostgreSQL + Prisma** - Base de datos relacional con ORM tipado
+- **Vercel Blob** - Almacenamiento de imágenes con `POST /api/upload`
 
 ### Estilo
 - **CSS Variables** - Sistema de diseño personalizado
@@ -50,10 +51,9 @@ alqui-libres/
 │   │   └── layout/
 │   │       ├── AppHeader.vue     # Header con navegación
 │   │       └── AppFooter.vue     # Footer
-│   ├── config/
-│   │   ├── firebase.js           # Configuración de Firebase
-│   │   └── firestore-structure.js # Documentación de colecciones
-│   ├── router/
+  │   ├── config/
+  │   │   └── mercadopago.js        # Configuración de MercadoPago
+  │   ├── router/
 │   │   └── index.js              # Rutas de la aplicación
 │   ├── stores/
 │   │   ├── auth.js               # Estado de autenticación
@@ -88,26 +88,15 @@ alqui-libres/
 npm install
 ```
 
-### 2. Configurar Firebase
+### 2. Configurar Variables de Entorno
 
-1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com/)
-2. Habilita Authentication (Email/Password)
-3. Crea una base de datos Firestore
-4. Habilita Storage para imágenes
-5. Copia las credenciales de configuración
-
-### 3. Configurar Variables de Entorno
-
-Copia el archivo `.env.example` a `.env` y completa con tus credenciales de Firebase:
+Copia el archivo `.env.example` a `.env` y completá los valores reales:
 
 ```env
-VITE_FIREBASE_API_KEY=tu_api_key
-VITE_FIREBASE_AUTH_DOMAIN=tu_proyecto.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=tu_proyecto_id
-VITE_FIREBASE_STORAGE_BUCKET=tu_proyecto.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=tu_sender_id
-VITE_FIREBASE_APP_ID=tu_app_id
-VITE_PAYMENT_PUBLIC_KEY=tu_clave_de_pago
+DATABASE_URL=postgresql://user:password@host:port/database?sslmode=require
+BLOB_READ_WRITE_TOKEN=your_blob_read_write_token
+VITE_PAYMENT_PUBLIC_KEY=your_payment_public_key
+JWT_SECRET=un_secreto_largo_y_aleatorio_para_firmar_tokens
 ```
 
 ### 4. Iniciar el Servidor de Desarrollo
@@ -126,46 +115,25 @@ npm run build
 
 Los archivos compilados estarán en la carpeta `dist/`
 
-## 🗄️ Estructura de Base de Datos (Firestore)
+## 🗄️ Estructura de Base de Datos (PostgreSQL / Prisma)
 
-### Colecciones Privadas (Propietarios)
+El esquema relacional se define en `prisma/schema.prisma`. Las tablas principales son:
 
-```
-/artifacts/{appId}/users/{userId}/properties/{propertyId}
-```
-- Información completa de la propiedad
-- Datos privados (dirección completa, reglas internas)
-- Calendario de disponibilidad
-- Configuración de precios
+- **User** - Cuentas, roles (`owner`, `guest`, `admin`), contraseñas hasheadas y estado
+- **Property** - Propiedades publicadas, ubicación, precios, reglas y características locales
+- **Reservation** - Reservas solicitadas con fechas y estado
+- **Message** - Mensajes entre huéspedes y propietarios
+- **Review** - Reseñas verificadas y calificaciones
+- **Subscription / SubscriptionPlan** - Planes de suscripción y pagos
+- **Payment / Notification** - Pagos y notificaciones del sistema
 
-```
-/artifacts/{appId}/users/{userId}/messages/{messageId}
-```
-- Mensajes de huéspedes
-- Estado (leído/no leído)
-- Información de la reserva solicitada
+Las migraciones se manejan con Prisma:
 
+```powershell
+npx prisma migrate dev
+npx prisma generate
+npx prisma db seed
 ```
-/artifacts/{appId}/users/{userId}/subscription
-```
-- Plan de suscripción activo
-- Estado de pago
-- Fecha de renovación
-
-### Colecciones Públicas (Búsquedas)
-
-```
-/artifacts/{appId}/public/data/listings/{listingId}
-```
-- Información pública de propiedades
-- Optimizada para búsquedas rápidas
-- Sin datos sensibles
-
-```
-/artifacts/{appId}/public/data/reviews/{reviewId}
-```
-- Reseñas verificadas
-- Calificaciones de huéspedes
 
 ## 🎨 Características de Diseño
 
@@ -189,10 +157,11 @@ Los archivos compilados estarán en la carpeta `dist/`
 
 ## 🔐 Seguridad
 
-- Autenticación con Firebase Auth
-- Reglas de seguridad en Firestore
+- Autenticación con JWT firmado en el servidor (`JWT_SECRET`)
+- Contraseñas hasheadas con bcrypt
 - Validación de datos en cliente y servidor
-- Protección de rutas privadas
+- Protección de rutas privadas por rol
+- Subida de imágenes restringida a tipos de imagen y 5MB máximo
 
 ## 💳 Integración de Pagos
 
@@ -209,19 +178,13 @@ La integración se configura mediante la variable `VITE_PAYMENT_PUBLIC_KEY` en e
 
 ### Opciones de Hosting
 
-1. **Firebase Hosting** (Recomendado)
-```powershell
-npm run build
-firebase deploy
-```
-
-2. **Vercel**
+1. **Vercel** (Recomendado)
 ```powershell
 npm run build
 vercel deploy
 ```
 
-3. **Netlify**
+2. **Netlify**
 ```powershell
 npm run build
 netlify deploy

@@ -6,7 +6,6 @@ import { createPinia } from 'pinia'
 import Login from '@/views/auth/Login.vue'
 import es from '@/i18n/es.js'
 
-vi.mock('@/config/firebase', () => ({ auth: null }))
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn(), currentRoute: { value: { query: {} } } })
 }))

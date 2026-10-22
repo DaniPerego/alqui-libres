@@ -428,6 +428,7 @@ const handleImageUpload = async (event) => {
     } catch (err) {
       console.error('Error al subir imagen:', err)
       uploadEntry.error = true
+      alert(`No se pudo subir ${file.name}. Revisá que sea una imagen válida y no supere 5MB.`)
     }
   })
 

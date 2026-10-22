@@ -97,7 +97,6 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
-import { auth } from '@/config/firebase'
 import { FlaskConical, Zap, AlertTriangle, Mail, Lock } from '@lucide/vue'
 
 const { t } = useI18n()
@@ -111,7 +110,7 @@ const formData = ref({
 
 const loading = ref(false)
 const error = ref('')
-const isDemoMode = computed(() => !auth)
+const isDemoMode = ref(true)
 
 const emailInput = ref(null)
 const passwordInput = ref(null)

@@ -528,6 +528,9 @@ const handleFileUpload = async (event) => {
     URL.revokeObjectURL(localPreview)
   } catch (err) {
     console.error('Error al subir foto de perfil:', err)
+    alert('No se pudo subir la foto de perfil. Intentá de nuevo.')
+    profile.value.photoURL = authStore.user?.photoURL || ''
+    URL.revokeObjectURL(localPreview)
   }
 }
 

@@ -10,8 +10,6 @@
           <span class="separator">|</span>
           <strong>Propietario:</strong> <code>usuario@alquilibres.com</code> / <code>user123</code>
         </span>
-        <br v-if="!hasFunctions" />
-        <small v-if="!hasFunctions" style="opacity: .85">⚙️ Functions no configuradas. Las acciones se ejecutan en modo demo.</small>
       </p>
       <button @click="dismiss" class="demo-close" aria-label="Cerrar banner">
         ×
@@ -22,15 +20,13 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { auth } from '@/config/firebase'
 
 const isDemo = ref(false)
-const hasFunctions = !!import.meta.env.VITE_FIREBASE_FUNCTIONS_URL
 
 onMounted(() => {
-  // Mostrar banner si Firebase no está configurado
-  isDemo.value = !auth || !hasFunctions
-  
+  // Mostrar banner en entornos de prueba; el usuario puede cerrarlo.
+  isDemo.value = true
+
   // No mostrar si el usuario ya lo cerró
   if (localStorage.getItem('demoBannerDismissed')) {
     isDemo.value = false
