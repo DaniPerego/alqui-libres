@@ -101,3 +101,19 @@ export async function markMessageAsReplied(messageId) {
     return { success: false, error: error.message }
   }
 }
+
+export async function replyToMessage(messageId, text) {
+  try {
+    const result = await apiPatch(`/messages/${messageId}`, { reply: text })
+    if (!result.success) {
+      return { success: false, error: result.error?.message || 'Failed to send reply' }
+    }
+
+    const updated = normalizeMessage(result.data)
+    updateStoredMessage(messageId, () => updated)
+    return { success: true, message: updated }
+  } catch (error) {
+    console.error('Error replying to message:', error)
+    return { success: false, error: error.message }
+  }
+}

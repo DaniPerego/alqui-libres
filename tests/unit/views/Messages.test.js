@@ -15,13 +15,13 @@ const i18n = createI18n({
 const mocks = vi.hoisted(() => ({
   getMessages: vi.fn(),
   markMessageAsRead: vi.fn(),
-  markMessageAsReplied: vi.fn()
+  replyToMessage: vi.fn()
 }))
 
 vi.mock('@/services/messages', () => ({
   getMessages: mocks.getMessages,
   markMessageAsRead: mocks.markMessageAsRead,
-  markMessageAsReplied: mocks.markMessageAsReplied
+  replyToMessage: mocks.replyToMessage
 }))
 
 function mountMessages() {
@@ -90,5 +90,50 @@ describe('Messages.vue', () => {
     await flushPromises()
 
     expect(mocks.markMessageAsRead).toHaveBeenCalledWith('m1')
+  })
+
+  it('sends a reply through the service and updates the message', async () => {
+    mocks.getMessages.mockResolvedValue([
+      {
+        id: 'm1',
+        guestName: 'Ana Martínez',
+        guestEmail: 'ana@example.com',
+        propertyTitle: 'Casa Familiar',
+        message: '¿Está disponible?',
+        status: 'unread',
+        checkIn: '2025-12-15',
+        checkOut: '2025-12-20',
+        guests: 4,
+        createdAt: Date.now()
+      }
+    ])
+    mocks.replyToMessage.mockResolvedValue({
+      success: true,
+      message: {
+        id: 'm1',
+        reply: 'Sí, tenemos disponibilidad.',
+        status: 'replied',
+        read: true
+      }
+    })
+
+    const wrapper = mountMessages()
+    await flushPromises()
+
+    const replyButton = wrapper.findAll('button').find(b => b.text().includes('Responder'))
+    expect(replyButton).toBeDefined()
+    await replyButton.trigger('click')
+    await flushPromises()
+
+    const textarea = wrapper.find('textarea.reply-textarea')
+    await textarea.setValue('Sí, tenemos disponibilidad.')
+
+    const sendButton = wrapper.findAll('button').find(b => b.text().includes('Enviar'))
+    expect(sendButton).toBeDefined()
+    await sendButton.trigger('click')
+    await flushPromises()
+
+    expect(mocks.replyToMessage).toHaveBeenCalledWith('m1', 'Sí, tenemos disponibilidad.')
+    expect(wrapper.text()).toContain('Sí, tenemos disponibilidad.')
   })
 })

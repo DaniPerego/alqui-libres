@@ -9,6 +9,9 @@
     </div>
 
     <div v-else class="messages-container card">
+      <div v-if="errorMessage" class="error-message" role="alert">
+        {{ errorMessage }}
+      </div>
       <div v-if="messages.length === 0" class="empty-state">
         <div class="empty-icon">💬</div>
         <h2>{{ t('messages.empty.title') }}</h2>
@@ -101,7 +104,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getMessages, markMessageAsRead, markMessageAsReplied } from '@/services/messages'
+import { getMessages, markMessageAsRead, replyToMessage } from '@/services/messages'
 
 const { t, locale } = useI18n()
 
@@ -109,6 +112,7 @@ const messages = ref([])
 const loading = ref(false)
 const replyText = ref('')
 const replyingToId = ref(null)
+const errorMessage = ref('')
 
 const quickTemplates = computed(() => [
   {
@@ -158,16 +162,21 @@ const cancelReply = () => {
 }
 
 const sendReply = async (messageId) => {
-  const result = await markMessageAsReplied(messageId)
+  const text = replyText.value.trim()
+  if (!text) {
+    errorMessage.value = 'La respuesta no puede estar vacía.'
+    cancelReply()
+    return
+  }
+  const result = await replyToMessage(messageId, text)
   if (result.success) {
     const message = messages.value.find(m => m.id === messageId)
     if (message) {
-      message.status = 'replied'
-      message.read = true
-      if (replyText.value.trim()) {
-        message.reply = replyText.value.trim()
-      }
+      Object.assign(message, result.message)
     }
+    errorMessage.value = ''
+  } else {
+    errorMessage.value = result.error || 'No se pudo enviar la respuesta. Intentelo de nuevo.'
   }
   cancelReply()
 }
@@ -370,5 +379,15 @@ onMounted(() => {
   font-size: 0.875rem;
   color: var(--gray-600);
   margin: 0;
+}
+
+.error-message {
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  color: #b91c1c;
+  font-size: 0.875rem;
 }
 </style>

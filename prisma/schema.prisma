@@ -240,6 +240,7 @@ model Message {
   read     Boolean @default(false)
   readAt   DateTime?
   repliedAt DateTime?
+  reply    String? // Owner's text response to the guest inquiry
   createdAt DateTime @default(now())
 
   property Property @relation(fields: [propertyId], references: [id])

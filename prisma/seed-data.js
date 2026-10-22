@@ -165,6 +165,7 @@ export function buildSeedPayload(mockData, { userIds }) {
       read: m.status === 'read' || m.read === true,
       readAt: m.status === 'read' && m.readAt ? toDate(m.readAt) : null,
       repliedAt: m.repliedAt ? toDate(m.repliedAt) : null,
+      reply: m.reply ?? null,
       createdAt: toDate(m.createdAt),
     }
   })

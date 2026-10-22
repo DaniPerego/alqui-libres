@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getMessages, markMessageAsRead, markMessageAsReplied, sendMessage } from '@/services/messages.js'
+import { getMessages, markMessageAsRead, markMessageAsReplied, replyToMessage, sendMessage } from '@/services/messages.js'
 
 const mocks = vi.hoisted(() => ({
   apiGet: vi.fn(),
@@ -75,5 +75,16 @@ describe('messages service (native API)', () => {
     expect(mocks.apiPost).toHaveBeenCalledWith('/messages', { propertyId: 'p1', message: 'Hola' })
     expect(result.success).toBe(true)
     expect(result.message.id).toBe('m2')
+  })
+
+  it('sends a reply via PATCH /messages/:id with the reply text', async () => {
+    mocks.apiPatch.mockResolvedValueOnce({ success: true, data: { id: 'm1', status: 'replied', read: true, reply: 'Gracias por escribir.' } })
+
+    const result = await replyToMessage('m1', 'Gracias por escribir.')
+
+    expect(mocks.apiPatch).toHaveBeenCalledWith('/messages/m1', { reply: 'Gracias por escribir.' })
+    expect(result.success).toBe(true)
+    expect(result.message.reply).toBe('Gracias por escribir.')
+    expect(JSON.parse(localStorage.getItem('alquilibres_messages'))[0].reply).toBe('Gracias por escribir.')
   })
 })

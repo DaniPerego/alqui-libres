@@ -418,6 +418,7 @@ export const mockMessages = [
     read: true,
     readAt: new Date('2025-11-04T10:00:00'),
     repliedAt: new Date('2025-11-04T11:30:00'),
+    reply: 'Hola Diego, sí se llega con auto bajo por el camino pavimentado. Aceptamos perros sin costo extra, solo pedimos que cuiden el jardín. Saludos.',
     checkIn: '2025-12-20',
     checkOut: '2025-12-27',
     guests: 4,

@@ -174,4 +174,45 @@ describe('PATCH /api/messages/[id]', () => {
     await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', headers: authHeaders, body: { status: 'spam' } }, res2)
     expect(res2.status).toHaveBeenCalledWith(400)
   })
+
+  it('owner envia reply -> 200 con reply, status replied y repliedAt', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.message.findUnique.mockResolvedValue({ id: 'm1', ownerId: 'owner-1', guestId: 'g1' })
+    mocks.delegates.message.update.mockImplementation(async ({ data }) => ({ id: 'm1', ...data }))
+    const res = mockRes()
+    await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', headers: authHeaders, body: { reply: 'Gracias por escribir, está disponible.' } }, res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(mocks.delegates.message.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'm1' },
+      data: expect.objectContaining({
+        read: true,
+        status: 'replied',
+        reply: 'Gracias por escribir, está disponible.',
+        repliedAt: expect.any(Date),
+      }),
+    }))
+  })
+
+  it('reply demasiado largo -> 400', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.message.findUnique.mockResolvedValue({ id: 'm1', ownerId: 'owner-1', guestId: 'g1' })
+    const res = mockRes()
+    await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', headers: authHeaders, body: { reply: 'x'.repeat(2001) } }, res)
+    expect(res.status).toHaveBeenCalledWith(400)
+  })
+
+  it('no-owner (guest) -> 404', async () => {
+    authAs({ uid: 'guest-1', role: 'guest' })
+    mocks.delegates.message.findUnique.mockResolvedValue({ id: 'm1', ownerId: 'owner-1', guestId: 'guest-1' })
+    const res = mockRes()
+    await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', headers: authHeaders, body: { reply: 'Hola' } }, res)
+    expect(res.status).toHaveBeenCalledWith(404)
+  })
+
+  it('anonimo -> 401', async () => {
+    mocks.delegates.message.findUnique.mockResolvedValue({ id: 'm1', ownerId: 'owner-1', guestId: 'g1' })
+    const res = mockRes()
+    await messageIdHandler({ query: { id: 'm1' }, method: 'PATCH', body: { reply: 'Hola' } }, res)
+    expect(res.status).toHaveBeenCalledWith(401)
+  })
 })
