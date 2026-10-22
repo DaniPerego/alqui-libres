@@ -34,6 +34,7 @@ vi.mock('@prisma/client', async () => {
 })
 
 import reviewsHandler from '../../api-handlers/reviews.js'
+import reviewIdHandler from '../../api-handlers/reviews/[id].js'
 
 function mockRes() {
   const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
@@ -139,5 +140,68 @@ describe('POST /api/reviews', () => {
     const res = mockRes()
     await reviewsHandler({ query: {}, method: 'POST', headers: authHeaders, body: { propertyId: 'p1', rating: 5 } }, res)
     expect(res.status).toHaveBeenCalledWith(400)
+  })
+})
+
+describe('PATCH /api/reviews/[id]', () => {
+  function mockReview(ownerId = 'owner-1') {
+    return {
+      id: 'r1',
+      propertyId: 'p1',
+      guestId: 'guest-1',
+      property: { ownerId },
+    }
+  }
+
+  it('owner responde -> 200 con ownerResponse y ownerRespondedAt', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.review.findUnique.mockResolvedValue(mockReview('owner-1'))
+    mocks.delegates.review.update.mockImplementation(async ({ data }) => ({ id: 'r1', ...data }))
+    const res = mockRes()
+    await reviewIdHandler({ query: { id: 'r1' }, method: 'PATCH', headers: authHeaders, body: { response: 'Gracias por tu comentario.' } }, res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(mocks.delegates.review.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'r1' },
+      data: expect.objectContaining({
+        ownerResponse: 'Gracias por tu comentario.',
+        ownerRespondedAt: expect.any(Date),
+      }),
+    }))
+  })
+
+  it('respuesta vacia -> 400', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.review.findUnique.mockResolvedValue(mockReview('owner-1'))
+    const res = mockRes()
+    await reviewIdHandler({ query: { id: 'r1' }, method: 'PATCH', headers: authHeaders, body: { response: '' } }, res)
+    expect(res.status).toHaveBeenCalledWith(400)
+  })
+
+  it('guest/owner extranjero -> 403', async () => {
+    authAs({ uid: 'guest-1', role: 'guest' })
+    mocks.delegates.review.findUnique.mockResolvedValue(mockReview('owner-1'))
+    const res = mockRes()
+    await reviewIdHandler({ query: { id: 'r1' }, method: 'PATCH', headers: authHeaders, body: { response: 'Hola' } }, res)
+    expect(res.status).toHaveBeenCalledWith(403)
+
+    authAs({ uid: 'owner-2' })
+    const res2 = mockRes()
+    await reviewIdHandler({ query: { id: 'r1' }, method: 'PATCH', headers: authHeaders, body: { response: 'Hola' } }, res2)
+    expect(res2.status).toHaveBeenCalledWith(403)
+  })
+
+  it('review inexistente -> 404', async () => {
+    authAs({ uid: 'owner-1' })
+    mocks.delegates.review.findUnique.mockResolvedValue(null)
+    const res = mockRes()
+    await reviewIdHandler({ query: { id: 'rX' }, method: 'PATCH', headers: authHeaders, body: { response: 'Hola' } }, res)
+    expect(res.status).toHaveBeenCalledWith(404)
+  })
+
+  it('anonimo -> 401', async () => {
+    mocks.delegates.review.findUnique.mockResolvedValue(mockReview('owner-1'))
+    const res = mockRes()
+    await reviewIdHandler({ query: { id: 'r1' }, method: 'PATCH', body: { response: 'Hola' } }, res)
+    expect(res.status).toHaveBeenCalledWith(401)
   })
 })

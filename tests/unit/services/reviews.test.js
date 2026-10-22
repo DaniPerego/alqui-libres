@@ -4,18 +4,21 @@ import {
   getPropertyReviews,
   addReview,
   getOwnerReviews,
+  replyToReview,
   getPropertyRating
 } from '@/services/reviews.js'
 
 const mocks = vi.hoisted(() => ({
   apiGet: vi.fn(),
-  apiPost: vi.fn()
+  apiPost: vi.fn(),
+  apiPatch: vi.fn()
 }))
 
 vi.mock('@/services/api', async (importOriginal) => ({
   ...(await importOriginal()),
   apiGet: mocks.apiGet,
-  apiPost: mocks.apiPost
+  apiPost: mocks.apiPost,
+  apiPatch: mocks.apiPatch
 }))
 
 beforeEach(() => {
@@ -86,6 +89,37 @@ describe('reviews service (native API)', () => {
     expect(mocks.apiGet).toHaveBeenCalledWith('/reviews', { owner: 'me' })
     expect(reviews.length).toBe(1)
     expect(reviews[0].propertyId).toBe('p1')
+  })
+
+  it('exposes ownerResponse as reply in fetched reviews', async () => {
+    mocks.apiGet.mockResolvedValueOnce({
+      success: true,
+      data: {
+        data: [
+          { id: 'rx1', propertyId: 'p1', rating: 5, comment: 'Great', ownerResponse: 'Gracias', ownerRespondedAt: '2024-09-02T00:00:00.000Z' }
+        ],
+        meta: { page: 1, limit: 20, total: 1 }
+      }
+    })
+
+    const reviews = await getOwnerReviews(['p1'])
+
+    expect(reviews[0].reply).toBe('Gracias')
+    expect(reviews[0].ownerResponse).toBe('Gracias')
+    expect(reviews[0].ownerRespondedAt).toBe('2024-09-02T00:00:00.000Z')
+  })
+
+  it('replies to a review via PATCH /reviews/:id', async () => {
+    mocks.apiPatch.mockResolvedValueOnce({
+      success: true,
+      data: { id: 'rx1', ownerResponse: 'Gracias por tu visita.', ownerRespondedAt: '2024-10-02T00:00:00.000Z' }
+    })
+
+    const result = await replyToReview('rx1', 'Gracias por tu visita.')
+
+    expect(mocks.apiPatch).toHaveBeenCalledWith('/reviews/rx1', { response: 'Gracias por tu visita.' })
+    expect(result.success).toBe(true)
+    expect(result.review.reply).toBe('Gracias por tu visita.')
   })
 })
 

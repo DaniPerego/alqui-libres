@@ -8,6 +8,10 @@
       </div>
     </div>
 
+    <div v-if="errorMessage" class="error-message" role="alert">
+      {{ errorMessage }}
+    </div>
+
     <div v-if="allReviews.length" class="reviews-list">
       <div v-for="review in allReviews" :key="review.id" class="review-card">
         <div class="review-main">
@@ -41,13 +45,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePropertyStore } from '@/stores/property'
-import { getOwnerReviews } from '@/services/reviews'
+import { getOwnerReviews, replyToReview } from '@/services/reviews'
 
 const authStore = useAuthStore()
 const propertyStore = usePropertyStore()
 
 const allReviews = ref([])
 const replyText = ref({})
+const errorMessage = ref('')
 
 const avgRating = computed(() => {
   if (!allReviews.value.length) return 0
@@ -61,16 +66,18 @@ function formatDate(date) {
   return d.toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function submitReply(reviewId) {
+async function submitReply(reviewId) {
   const text = replyText.value[reviewId]?.trim()
   if (!text) return
-  const review = allReviews.value.find(r => r.id === reviewId)
-  if (review) {
-    review.reply = text
-    const stored = JSON.parse(localStorage.getItem('alquilibres_reviews') || '[]')
-    const storedReview = stored.find(r => r.id === reviewId)
-    if (storedReview) storedReview.reply = text
-    localStorage.setItem('alquilibres_reviews', JSON.stringify(stored))
+  const result = await replyToReview(reviewId, text)
+  if (result.success) {
+    const review = allReviews.value.find(r => r.id === reviewId)
+    if (review && result.review) {
+      Object.assign(review, result.review)
+    }
+    errorMessage.value = ''
+  } else {
+    errorMessage.value = result.error || 'No se pudo guardar la respuesta. Intentelo de nuevo.'
   }
   replyText.value[reviewId] = ''
 }
@@ -218,5 +225,15 @@ h1 {
   background: white;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
+}
+
+.error-message {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #b91c1c;
+  font-size: 0.875rem;
 }
 </style>

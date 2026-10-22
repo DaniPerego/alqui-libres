@@ -39,6 +39,7 @@ import reservationsHandler from '../api-handlers/reservations.js'
 import reservationsIdHandler from '../api-handlers/reservations/[id].js'
 import reservationsIdStatusHandler from '../api-handlers/reservations/[id]/status.js'
 import reviewsHandler from '../api-handlers/reviews.js'
+import reviewsIdHandler from '../api-handlers/reviews/[id].js'
 import subscriptionsHandler from '../api-handlers/subscriptions.js'
 import subscriptionsIdHandler from '../api-handlers/subscriptions/[id].js'
 import subscriptionsMineHandler from '../api-handlers/subscriptions/mine.js'
@@ -87,6 +88,7 @@ const DYNAMIC_ROUTES = [
   { segments: ['messages', ':id'], handler: messagesIdHandler },
   { segments: ['notifications', ':id'], handler: notificationsIdHandler },
   { segments: ['plans', ':id'], handler: plansIdHandler },
+  { segments: ['reviews', ':id'], handler: reviewsIdHandler },
   { segments: ['properties', ':id'], handler: propertiesIdHandler },
   { segments: ['reservations', ':id'], handler: reservationsIdHandler },
   { segments: ['subscriptions', ':id'], handler: subscriptionsIdHandler },
