@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { apiGet, toList } from '@/services/api'
+import { apiGet, toList, isDemoMode } from '@/services/api'
 import { mockProperties } from '@/data/mockData'
 
 function normalizeListing(row) {
@@ -83,9 +83,11 @@ export const useSearchStore = defineStore('search', {
         const result = await apiGet('/properties', params, { public: true })
         if (!result.success) {
           this.error = result.error?.message || 'Search failed'
-          this.listings = mockProperties
+          this.listings = isDemoMode() && result.error?.code === 'NETWORK_ERROR'
+            ? mockProperties
+            : []
           this.applyClientFilters()
-          return { success: true, data: this.filteredListings }
+          return { success: false, error: this.error }
         }
 
         this.listings = toList(result.data).map(normalizeListing)
@@ -93,9 +95,10 @@ export const useSearchStore = defineStore('search', {
         return { success: true, data: this.filteredListings }
       } catch (error) {
         console.warn('⚠️ Error en API:', error.message)
-        this.listings = mockProperties
+        this.error = error.message || 'Search failed'
+        this.listings = isDemoMode() ? mockProperties : []
         this.applyClientFilters()
-        return { success: true, data: this.filteredListings }
+        return { success: false, error: this.error }
       } finally {
         this.loading = false
       }

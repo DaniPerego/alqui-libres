@@ -1,6 +1,28 @@
 import { useAuthStore } from '@/stores/auth'
 
+// Offline demo rule for the whole SPA:
+//
+// The localStorage / mockData fallbacks in services and stores exist ONLY so
+// the app can run as a static SPA with no backend at all (e.g. local preview
+// or Vercel deploys without DATABASE_URL). They MUST NOT be presented as real
+// data when the API is reachable but failing.
+//
+// Rule: a service/store may fall back to localStorage or mock data ONLY when
+//   1. the request failed with code NETWORK_ERROR (fetch threw or no response),
+//   2. AND the app is explicitly in demo/offline mode (VITE_DEMO_MODE=true).
+//
+// Any other failure (4xx, 5xx, UNAUTHORIZED, etc.) must surface an explicit
+// error to the user and leave the affected list empty / untouched.
+//
+// Auth keeps its own offline demo fallback (src/stores/auth.js) and is
+// intentionally excluded from this rule because login is the entry point
+// into demo mode.
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+
+export function isDemoMode() {
+  return import.meta.env.VITE_DEMO_MODE === 'true'
+}
 
 export function getAuthToken() {
   return useAuthStore().sessionToken

@@ -81,18 +81,23 @@ export async function createReservation(reservationData) {
   }
 }
 
-export async function getOwnerReservations(ownerId, statusFilter = null) {
+export async function getOwnerReservations(ownerId, statusFilter = null, options = {}) {
+  const { throwOnError = false } = options
+
   try {
     const params = { mine: 'owner' }
     if (statusFilter && statusFilter !== 'all') params.status = statusFilter
 
     const result = await apiGet('/reservations', params)
     if (!result.success) {
+      const error = new Error(result.error?.message || 'Failed to fetch owner reservations')
+      if (throwOnError) throw error
       console.warn('⚠️ Error fetching owner reservations:', result.error?.message)
       return []
     }
     return toList(result.data).map(normalizeReservation)
   } catch (error) {
+    if (throwOnError) throw error
     console.error('Error getting owner reservations:', error)
     return []
   }

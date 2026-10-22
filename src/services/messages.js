@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch } from '@/services/api'
+import { apiGet, apiPost, apiPatch, isDemoMode } from '@/services/api'
 import { mockMessages } from '@/data/mockData'
 
 const STORAGE_KEY = 'alquilibres_messages'
@@ -8,7 +8,7 @@ function loadMessages() {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) return JSON.parse(stored)
   } catch {}
-  return [...mockMessages]
+  return isDemoMode() ? [...mockMessages] : []
 }
 
 function saveMessages(messages) {
@@ -35,20 +35,39 @@ function normalizeMessage(row) {
   }
 }
 
-export async function getMessages() {
+function isNetworkError(resultOrError) {
+  if (resultOrError && typeof resultOrError === 'object') {
+    return resultOrError.code === 'NETWORK_ERROR' || resultOrError.code === 'NETWORK'
+  }
+  return false
+}
+
+export async function getMessages(options = {}) {
+  const { throwOnError = false } = options
+
   try {
     const result = await apiGet('/messages')
     if (!result.success) {
-      console.warn('⚠️ Error fetching messages, falling back to localStorage:', result.error?.message)
-      return loadMessages().map(normalizeMessage)
+      if (isDemoMode() && isNetworkError(result.error)) {
+        console.warn('⚠️ Error fetching messages, using offline demo data:', result.error?.message)
+        return loadMessages().map(normalizeMessage)
+      }
+      const error = new Error(result.error?.message || 'Failed to fetch messages')
+      if (throwOnError) throw error
+      console.error('Error fetching messages:', error)
+      return []
     }
 
     const messages = result.data?.data || []
     saveMessages(messages)
     return messages.map(normalizeMessage)
   } catch (error) {
+    if (isDemoMode() && isNetworkError(error)) {
+      return loadMessages().map(normalizeMessage)
+    }
+    if (throwOnError) throw error
     console.error('Error fetching messages:', error)
-    return loadMessages().map(normalizeMessage)
+    return []
   }
 }
 

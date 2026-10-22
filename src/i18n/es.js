@@ -64,6 +64,10 @@ export default {
     text: 'Únete a AlquiLibres y ahorra hasta 25% en comisiones.\nSuscripción desde 5000/mes. Sin costos ocultos.',
     button: 'Publicar Mi Propiedad'
   },
+  home: {
+    error: 'No se pudieron cargar las propiedades destacadas. Intentá de nuevo.',
+    retry: 'Reintentar'
+  },
   search: {
     title: 'propiedades encontradas',
     cleanFilters: 'Limpiar Filtros',
@@ -93,6 +97,8 @@ export default {
     searching: 'Buscando propiedades...',
     noResults: 'No se encontraron propiedades',
     adjustFilters: 'Intenta ajustar tus filtros de búsqueda',
+    error: 'No se pudieron cargar las propiedades. Intentá de nuevo.',
+    retry: 'Reintentar',
     guests: 'huéspedes',
     beds: 'camas',
     viewDetails: 'Ver Detalles',
@@ -151,6 +157,13 @@ export default {
     noActivity: 'No hay actividad reciente',
     noActivityHint: 'Las acciones que realices aparecerán aquí',
     tips: 'Consejos para Mejorar',
+    loadError: 'No se pudieron cargar algunos datos del panel. Intentá de nuevo.',
+    propertiesError: 'No se pudieron cargar las propiedades',
+    messagesError: 'No se pudieron cargar los mensajes',
+    subscriptionError: 'No se pudo cargar la suscripción',
+    reservationsError: 'No se pudieron cargar las reservas',
+    notificationsError: 'No se pudieron cargar las notificaciones',
+    retry: 'Reintentar',
     completeProfile: 'Completa tu Perfil',
     completeProfileDesc: 'Agrega tus datos de contacto y redes sociales para generar más confianza con los huéspedes.',
     completeNow: 'Completar ahora',
@@ -257,7 +270,9 @@ export default {
     verified: 'Verificado',
     propertyNotFound: 'Propiedad no encontrada',
     notFoundDesc: 'La propiedad que buscás no existe o fue eliminada.',
-    viewOther: 'Ver otras propiedades'
+    viewOther: 'Ver otras propiedades',
+    reviewError: 'No se pudieron cargar las reseñas. Intentá de nuevo.',
+    retry: 'Reintentar'
   },
   auth: {
     loginTitle: 'Iniciar Sesión',

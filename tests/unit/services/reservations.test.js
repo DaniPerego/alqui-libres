@@ -118,6 +118,15 @@ describe('reservations service (native API)', () => {
     expect(mocks.apiGet).toHaveBeenCalledWith('/reservations', { mine: 'owner', status: 'confirmed' })
   })
 
+  it('throws on owner reservation errors when throwOnError is enabled', async () => {
+    mocks.apiGet.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'INTERNAL', message: 'Boom' }
+    })
+
+    await expect(getOwnerReservations('owner001', 'all', { throwOnError: true })).rejects.toThrow('Boom')
+  })
+
   it('fetches guest reservations from the API', async () => {
     mocks.apiGet.mockResolvedValueOnce({
       success: true,

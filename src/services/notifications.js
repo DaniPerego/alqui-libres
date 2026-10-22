@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, toList } from '@/services/api'
+import { apiGet, apiPatch, toList, isDemoMode } from '@/services/api'
 
 const STORAGE_KEY = 'alquilibres_notifications'
 
@@ -33,6 +33,13 @@ function normalizeNotification(row) {
   }
 }
 
+function isNetworkError(resultOrError) {
+  if (resultOrError && typeof resultOrError === 'object') {
+    return resultOrError.code === 'NETWORK_ERROR' || resultOrError.code === 'NETWORK'
+  }
+  return false
+}
+
 /**
  * List the current user's notifications.
  *
@@ -41,18 +48,19 @@ function normalizeNotification(row) {
  *   Response: { data: Notification[], meta: { page, limit, total, totalPages } }
  *
  * @param {Object} params - Query filters (read, type, page, limit).
- * @param {Object} options - { fallback?: boolean } fallback=true keeps the old
- *   offline behavior for DashboardHome; consumers that need to surface API
- *   failures should pass { fallback: false }.
+ * @param {Object} options - { fallback?: boolean } fallback=true allows offline
+ *   demo data when the request fails with NETWORK_ERROR and VITE_DEMO_MODE is
+ *   enabled. Consumers that need to surface API failures should pass
+ *   { fallback: false }.
  */
 export async function getNotifications(params = {}, options = {}) {
-  const { fallback = true } = options
+  const { fallback = isDemoMode() } = options
 
   try {
     const result = await apiGet('/notifications', params)
     if (!result.success) {
-      if (fallback) {
-        console.warn('⚠️ Error fetching notifications, falling back to localStorage:', result.error?.message)
+      if (fallback && isNetworkError(result.error)) {
+        console.warn('⚠️ Error fetching notifications, using offline demo data:', result.error?.message)
         return loadNotifications().map(normalizeNotification)
       }
       throw new Error(result.error?.message || 'Failed to fetch notifications')
@@ -62,7 +70,7 @@ export async function getNotifications(params = {}, options = {}) {
     saveNotifications(rows)
     return rows.map(normalizeNotification)
   } catch (error) {
-    if (fallback) {
+    if (fallback && isNetworkError(error)) {
       console.error('Error fetching notifications:', error)
       return loadNotifications().map(normalizeNotification)
     }

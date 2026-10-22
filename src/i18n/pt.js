@@ -64,6 +64,10 @@ export default {
     text: 'Junte-se ao AlquiLibres e economize até 25% em comissões.\nAssinatura a partir de 5000/mês. Sem custos ocultos.',
     button: 'Publicar Meu Imóvel'
   },
+  home: {
+    error: 'Não foi possível carregar os imóveis em destaque. Tente novamente.',
+    retry: 'Tentar novamente'
+  },
   search: {
     title: 'imóveis encontrados',
     cleanFilters: 'Limpar Filtros',
@@ -93,6 +97,8 @@ export default {
     searching: 'Buscando imóveis...',
     noResults: 'Nenhum imóvel encontrado',
     adjustFilters: 'Tente ajustar seus filtros de busca',
+    error: 'Não foi possível carregar os imóveis. Tente novamente.',
+    retry: 'Tentar novamente',
     guests: 'hóspedes',
     beds: 'camas',
     viewDetails: 'Ver Detalhes',
@@ -151,6 +157,13 @@ export default {
     noActivity: 'Sem atividade recente',
     noActivityHint: 'Suas ações aparecerão aqui',
     tips: 'Dicas para Melhorar',
+    loadError: 'Não foi possível carregar alguns dados do painel. Tente novamente.',
+    propertiesError: 'Não foi possível carregar os imóveis',
+    messagesError: 'Não foi possível carregar as mensagens',
+    subscriptionError: 'Não foi possível carregar a assinatura',
+    reservationsError: 'Não foi possível carregar as reservas',
+    notificationsError: 'Não foi possível carregar as notificações',
+    retry: 'Tentar novamente',
     completeProfile: 'Complete Seu Perfil',
     completeProfileDesc: 'Adicione suas informações de contato e redes sociais para gerar mais confiança com os hóspedes.',
     completeNow: 'Completar agora',
@@ -257,7 +270,9 @@ export default {
     verified: 'Verificado',
     propertyNotFound: 'Imóvel não encontrado',
     notFoundDesc: 'O imóvel que você procura não existe ou foi removido.',
-    viewOther: 'Ver outros imóveis'
+    viewOther: 'Ver outros imóveis',
+    reviewError: 'Não foi possível carregar as avaliações. Tente novamente.',
+    retry: 'Tentar novamente'
   },
   auth: {
     loginTitle: 'Entrar',

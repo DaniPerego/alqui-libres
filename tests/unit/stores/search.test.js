@@ -54,26 +54,36 @@ describe('search store clearFilters', () => {
   })
 })
 
-describe('search store (API failure fallback to mock listings)', () => {
-  it('loads mock listings and applies client filters', async () => {
-    const store = useSearchStore()
-    store.updateFilters({
-      city: '',
-      guests: 1,
-      priceMin: 0,
-      priceMax: 100000,
-      minBedrooms: 3,
-      amenities: ['WiFi', 'Parrilla']
+describe('search store (API failure surfaces error, no mock rows)', () => {
+  it('returns an error and leaves listings empty when the API fails', async () => {
+    mocks.apiGet.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'INTERNAL', message: 'Boom' }
     })
+    const store = useSearchStore()
 
     const result = await store.searchListings()
 
-    expect(result.success).toBe(true)
-    expect(store.filteredListings.length).toBeGreaterThan(0)
-    expect(store.filteredListings.every(l => l.capacity.bedrooms >= 3)).toBe(true)
-    expect(store.filteredListings.every(l =>
-      store.filters.amenities.every(a => l.amenities.includes(a))
-    )).toBe(true)
+    expect(result.success).toBe(false)
+    expect(store.error).toBe('Boom')
+    expect(store.listings).toEqual([])
+    expect(store.filteredListings).toEqual([])
+  })
+
+  it('only uses mock listings in demo mode when the failure is a network error', async () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'true')
+    mocks.apiGet.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'offline' }
+    })
+    const store = useSearchStore()
+
+    const result = await store.searchListings()
+
+    expect(result.success).toBe(false)
+    expect(store.error).toBe('offline')
+    expect(store.listings.length).toBeGreaterThan(0)
+    vi.unstubAllEnvs()
   })
 })
 

@@ -27,6 +27,10 @@ const storeMocks = vi.hoisted(() => ({
   fetchCurrentSubscription: vi.fn()
 }))
 
+vi.mock('@/composables/useToast', () => ({
+  useToast: () => ({ show: vi.fn(), toasts: { value: [] } })
+}))
+
 vi.mock('@/services/messages', () => ({
   getMessages: serviceMocks.getMessages
 }))
@@ -121,12 +125,12 @@ describe('DashboardHome.vue', () => {
 
     expect(storeMocks.fetchUserProperties).toHaveBeenCalledWith('owner001')
     expect(storeMocks.fetchCurrentSubscription).toHaveBeenCalled()
-    expect(serviceMocks.getMessages).toHaveBeenCalled()
-    expect(serviceMocks.getOwnerReservations).toHaveBeenCalledWith('owner001', 'all')
-    expect(serviceMocks.getNotifications).toHaveBeenCalled()
+    expect(serviceMocks.getMessages).toHaveBeenCalledWith({ throwOnError: true })
+    expect(serviceMocks.getOwnerReservations).toHaveBeenCalledWith('owner001', 'all', { throwOnError: true })
+    expect(serviceMocks.getNotifications).toHaveBeenCalledWith({}, { fallback: false })
   })
 
-  it('falls back to mock properties when the property API is unreachable', async () => {
+  it('shows an inline error when the property API fails and keeps metrics honest', async () => {
     const authStore = useAuthStore()
     authStore.user = {
       uid: 'owner001',
@@ -148,9 +152,13 @@ describe('DashboardHome.vue', () => {
     const wrapper = mountDashboardHome()
     await flushPromises()
 
-    // mockProperties has 4 rows; totalViews from mock = 1247 + 312 + 45 + 0 = 1604
+    expect(wrapper.find('.error-banner').exists()).toBe(true)
+    expect(wrapper.text()).toContain('No se pudieron cargar las propiedades')
+
+    // No mock rows: property metrics must be 0, not the 4 mock rows.
     const values = wrapper.findAll('.metric-value').map(el => el.text())
-    expect(values).toContain('4')
-    expect(values).toContain('1604')
+    expect(values).toContain('0')
+    expect(values).not.toContain('4')
+    expect(values).not.toContain('1604')
   })
 })

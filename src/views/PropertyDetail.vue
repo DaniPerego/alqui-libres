@@ -486,6 +486,17 @@
       <!-- Reseñas -->
       <section class="reviews-section">
         <h2 class="section-title">{{ t('property.reviews') }} <span v-if="reviews.length">({{ reviews.length }})</span></h2>
+
+        <div v-if="reviewError" class="error-banner" role="alert">
+          <AlertTriangle :size="20" />
+          <div class="error-content">
+            <p>{{ reviewError }}</p>
+            <button @click="loadReviews" class="btn btn-outline btn-sm retry-btn">
+              {{ t('property.retry') }}
+            </button>
+          </div>
+        </div>
+
         <div class="reviews-grid" v-if="reviews.length">
           <div v-for="review in reviews" :key="review.id" class="review-card">
             <div class="review-header">
@@ -552,7 +563,7 @@ import { getPropertyReviews, addReview, getPropertyRating } from '@/services/rev
 import { createReservation, getPropertyAvailability } from '@/services/reservations'
 import DatePicker from 'vue-datepicker-next';
 import 'vue-datepicker-next/index.css';
-import { MapPin, Calendar, Star, Flame, Car, Clock, Phone, Mail, MessageSquare, Lock, Globe, ExternalLink, CheckCircle, ArrowRight, Send, X, ChevronLeft, ChevronRight, User } from '@lucide/vue'
+import { MapPin, Calendar, Star, Flame, Car, Clock, Phone, Mail, MessageSquare, Lock, Globe, ExternalLink, CheckCircle, ArrowRight, Send, X, ChevronLeft, ChevronRight, User, AlertTriangle } from '@lucide/vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -570,13 +581,14 @@ const bookingDates = ref({
   checkOut: '',
   guests: 2
 })
-const reviews = ref([])
-const newRating = ref(0)
-const newComment = ref('')
-const showReservationModal = ref(false)
-const submittingReservation = ref(false)
-const showToast = ref(false)
-const toastMessage = ref('')
+  const reviews = ref([])
+  const newRating = ref(0)
+  const newComment = ref('')
+  const reviewError = ref(null)
+  const showReservationModal = ref(false)
+  const submittingReservation = ref(false)
+  const showToast = ref(false)
+  const toastMessage = ref('')
 const reservationForm = ref({
   checkIn: '',
   checkOut: '',
@@ -877,16 +889,34 @@ const formatDate = (date) => {
 
 const submitReview = async () => {
   if (!newRating.value || !newComment.value.trim()) return
-  await addReview({
+  reviewError.value = null
+
+  const result = await addReview({
     propertyId: property.value.id,
     guestName: authStore.user?.displayName || authStore.user?.email || 'Usuario',
     rating: newRating.value,
     comment: newComment.value.trim(),
     verified: true
   })
-  reviews.value = await getPropertyReviews(property.value.id)
+
+  if (!result.success) {
+    reviewError.value = result.error || t('property.reviewError')
+    return
+  }
+
+  await loadReviews()
   newRating.value = 0
   newComment.value = ''
+}
+
+async function loadReviews() {
+  reviewError.value = null
+  try {
+    reviews.value = await getPropertyReviews(property.value.id, { throwOnError: true })
+  } catch (error) {
+    reviews.value = []
+    reviewError.value = error.message || t('property.reviewError')
+  }
 }
 
 // Lifecycle
@@ -924,7 +954,7 @@ onMounted(async () => {
   addStructuredData(generatePropertySchema(property.value))
 
   // Reseñas desde el servicio
-  reviews.value = await getPropertyReviews(property.value.id)
+  await loadReviews()
   const ratingInfo = getPropertyRating(property.value.id)
   if (ratingInfo.count > 0) {
     property.value.rating = ratingInfo.rating
@@ -1281,6 +1311,37 @@ onMounted(async () => {
   margin-top: var(--spacing-2xl);
   padding-top: var(--spacing-2xl);
   border-top: 1px solid var(--gray-200);
+}
+
+.error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg);
+  color: #b91c1c;
+}
+
+.error-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.error-content p {
+  margin: 0;
+}
+
+.retry-btn {
+  align-self: flex-start;
 }
 
 .reviews-grid {

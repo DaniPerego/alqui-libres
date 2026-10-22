@@ -131,4 +131,36 @@ describe('PropertyDetail.vue', () => {
 
     expect(wrapper.text().toLowerCase()).toContain('no encontrada')
   })
+
+  it('shows a review error banner when the reviews API fails', async () => {
+    routeParams.id = '2'
+    mocks.apiGet.mockImplementation(async (path) => {
+      if (path === '/properties/2') {
+        return { success: true, data: apiProperty }
+      }
+      if (path === '/properties/2/availability') {
+        return { success: true, data: { blockedDates: [], bookedRanges: [] } }
+      }
+      if (path === '/reviews') {
+        return { success: false, error: { code: 'INTERNAL', message: 'Reviews down' } }
+      }
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Missing' } }
+    })
+
+    const wrapper = shallowMount(PropertyDetail, {
+      global: {
+        plugins: [i18n],
+        stubs: {
+          'router-link': { template: '<a><slot /></a>' },
+          'router-view': true
+        }
+      }
+    })
+    await flushPromises()
+    vi.advanceTimersByTime(500)
+    await flushPromises()
+
+    expect(wrapper.find('.error-banner').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Reviews down')
+  })
 })

@@ -11,7 +11,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/services/api', () => ({
   apiGet: mocks.apiGet,
   apiPost: mocks.apiPost,
-  apiPatch: mocks.apiPatch
+  apiPatch: mocks.apiPatch,
+  isDemoMode: () => import.meta.env.VITE_DEMO_MODE === 'true'
 }))
 
 beforeEach(() => {
@@ -34,7 +35,19 @@ describe('messages service (native API)', () => {
     expect(JSON.parse(localStorage.getItem('alquilibres_messages'))).toEqual(apiMessages)
   })
 
-  it('falls back to mock messages when the API is unreachable', async () => {
+  it('returns an empty array instead of mock messages when the API fails in production', async () => {
+    mocks.apiGet.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'INTERNAL', message: 'Boom' }
+    })
+
+    const messages = await getMessages()
+
+    expect(messages).toEqual([])
+  })
+
+  it('falls back to mock messages only in demo mode when the API has a network error', async () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'true')
     mocks.apiGet.mockResolvedValueOnce({
       success: false,
       error: { code: 'NETWORK_ERROR', message: 'Network error. Please try again.' }
@@ -44,6 +57,7 @@ describe('messages service (native API)', () => {
 
     expect(messages.length).toBeGreaterThan(0)
     expect(messages[0]).toHaveProperty('guestName')
+    vi.unstubAllEnvs()
   })
 
   it('marks a message as read via PATCH /messages/:id', async () => {
@@ -78,6 +92,7 @@ describe('messages service (native API)', () => {
   })
 
   it('sends a reply via PATCH /messages/:id with the reply text', async () => {
+    localStorage.setItem('alquilibres_messages', JSON.stringify([{ id: 'm1', guestName: 'Ana', status: 'unread' }]))
     mocks.apiPatch.mockResolvedValueOnce({ success: true, data: { id: 'm1', status: 'replied', read: true, reply: 'Gracias por escribir.' } })
 
     const result = await replyToMessage('m1', 'Gracias por escribir.')

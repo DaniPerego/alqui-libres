@@ -10,6 +10,16 @@
       </router-link>
     </header>
 
+    <div v-if="loadError" class="error-banner" role="alert">
+      <AlertTriangle :size="20" />
+      <div class="error-content">
+        <p>{{ loadError }}</p>
+        <button @click="loadStats" class="btn btn-outline btn-sm retry-btn">
+          {{ t('dashboard.retry') }}
+        </button>
+      </div>
+    </div>
+
     <!-- Tarjetas de Métricas -->
     <div class="metrics-grid">
       <div class="metric-card">
@@ -186,10 +196,10 @@ import { usePaymentStore } from '@/stores/payment'
 import { usePropertyStore } from '@/stores/property'
 import { useI18n } from 'vue-i18n'
 import { useRelativeTime } from '@/composables/useRelativeTime'
+import { useToast } from '@/composables/useToast'
 import { getMessages } from '@/services/messages'
 import { getNotifications } from '@/services/notifications'
 import { getOwnerReservations } from '@/services/reservations'
-import { mockProperties } from '@/data/mockData'
 import {
   Plus,
   Home,
@@ -206,7 +216,8 @@ import {
   Camera,
   Zap,
   Calendar,
-  Bell
+  Bell,
+  AlertTriangle
 } from '@lucide/vue'
 
 const { t } = useI18n()
@@ -228,6 +239,8 @@ const stats = ref({
 
 const recentActivity = ref([])
 const isLoading = ref(false)
+const loadError = ref(null)
+const { show: showToast } = useToast()
 
 const userName = computed(() => {
   return authStore.user?.displayName?.split(' ')[0] || t('dashboard.userFallback')
@@ -258,34 +271,34 @@ function derivePropertyStats(properties) {
 
 async function loadProperties() {
   const result = await propertyStore.fetchUserProperties(authStore.userId)
-  if (result.success) {
-    return propertyStore.properties
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to load properties')
   }
-
-  // Offline fallback: keep the UI alive with the mock catalog when the API is unreachable.
-  console.warn('⚠️ Error fetching dashboard properties, falling back to mock data:', result.error)
-  return [...mockProperties]
+  return propertyStore.properties
 }
 
 async function loadMessages() {
-  const messages = await getMessages()
+  const messages = await getMessages({ throwOnError: true })
   const unread = messages.filter(m => m.status === 'unread' || m.read === false).length
   return { messages, unread }
 }
 
 async function loadSubscription() {
   const result = await paymentStore.fetchCurrentSubscription()
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to load subscription')
+  }
   return paymentStore.daysUntilRenewal || 0
 }
 
 async function loadReservations() {
-  const reservations = await getOwnerReservations(authStore.userId, 'all')
+  const reservations = await getOwnerReservations(authStore.userId, 'all', { throwOnError: true })
   const pending = reservations.filter(r => r.status === 'pending').length
   return { reservations, pending }
 }
 
 async function loadNotifications() {
-  return getNotifications()
+  return getNotifications({}, { fallback: false })
 }
 
 function resolvePropertyTitle(item) {
@@ -355,6 +368,7 @@ async function buildRecentActivity(messages, reservations, notifications) {
 
 const loadStats = async () => {
   isLoading.value = true
+  loadError.value = null
 
   try {
     const profile = localStorage.getItem(`profile_${authStore.user?.uid}`)
@@ -367,14 +381,67 @@ const loadStats = async () => {
       )
     }
 
-    const [properties, { messages, unread }, subscriptionDays, { reservations, pending }, notifications] =
-      await Promise.all([
-        loadProperties(),
-        loadMessages(),
-        loadSubscription(),
-        loadReservations(),
-        loadNotifications()
-      ])
+    const [
+      propertiesResult,
+      messagesResult,
+      subscriptionResult,
+      reservationsResult,
+      notificationsResult
+    ] = await Promise.allSettled([
+      loadProperties(),
+      loadMessages(),
+      loadSubscription(),
+      loadReservations(),
+      loadNotifications()
+    ])
+
+    const errors = []
+
+    const properties = propertiesResult.status === 'fulfilled'
+      ? propertiesResult.value
+      : []
+    if (propertiesResult.status === 'rejected') {
+      errors.push(t('dashboard.propertiesError'))
+    }
+
+    const messages = messagesResult.status === 'fulfilled'
+      ? messagesResult.value.messages
+      : []
+    const unread = messagesResult.status === 'fulfilled'
+      ? messagesResult.value.unread
+      : 0
+    if (messagesResult.status === 'rejected') {
+      errors.push(t('dashboard.messagesError'))
+    }
+
+    const subscriptionDays = subscriptionResult.status === 'fulfilled'
+      ? subscriptionResult.value
+      : 0
+    if (subscriptionResult.status === 'rejected') {
+      errors.push(t('dashboard.subscriptionError'))
+    }
+
+    const reservations = reservationsResult.status === 'fulfilled'
+      ? reservationsResult.value.reservations
+      : []
+    const pending = reservationsResult.status === 'fulfilled'
+      ? reservationsResult.value.pending
+      : 0
+    if (reservationsResult.status === 'rejected') {
+      errors.push(t('dashboard.reservationsError'))
+    }
+
+    const notifications = notificationsResult.status === 'fulfilled'
+      ? notificationsResult.value
+      : []
+    if (notificationsResult.status === 'rejected') {
+      errors.push(t('dashboard.notificationsError'))
+    }
+
+    if (errors.length) {
+      loadError.value = errors.join('. ') + '.'
+      showToast(loadError.value, 'error')
+    }
 
     const propertyStats = derivePropertyStats(properties)
 
@@ -392,6 +459,8 @@ const loadStats = async () => {
     recentActivity.value = await buildRecentActivity(messages, reservations, notifications)
   } catch (error) {
     console.error('Error loading dashboard stats:', error)
+    loadError.value = t('dashboard.loadError')
+    showToast(loadError.value, 'error')
   } finally {
     isLoading.value = false
   }
@@ -415,6 +484,36 @@ onMounted(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--spacing-lg);
+}
+
+.error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg);
+  color: #b91c1c;
+}
+
+.error-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.error-content p {
+  margin: 0;
+}
+
+.retry-btn {
+  align-self: flex-start;
 }
 
 .dashboard-header h1 {

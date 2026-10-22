@@ -172,11 +172,21 @@
           </button>
         </div>
         
+        <div v-if="searchStore.error" class="error-banner" role="alert">
+          <AlertTriangle :size="20" />
+          <div class="error-content">
+            <p>{{ searchStore.error }}</p>
+            <button @click="handleSearch" class="btn btn-outline btn-sm retry-btn">
+              {{ t('search.retry') }}
+            </button>
+          </div>
+        </div>
+
         <div v-if="searchStore.loading" class="loading-container">
           <div class="spinner"></div>
           <p>{{ t('search.searching') }}</p>
         </div>
-        
+
         <div v-else-if="searchStore.filteredListings.length === 0" class="empty-results">
           <div class="empty-icon-wrapper">
             <SearchIcon :size="48" class="empty-search-icon" />
@@ -268,7 +278,8 @@ import {
   Car,
   X,
   SlidersHorizontal,
-  ArrowRight
+  ArrowRight,
+  AlertTriangle
 } from '@lucide/vue'
 
 const { t } = useI18n()
@@ -396,6 +407,37 @@ onMounted(() => {
 .empty-results {
   text-align: center;
   padding: var(--spacing-2xl);
+}
+
+.error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg);
+  color: #b91c1c;
+}
+
+.error-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.error-content p {
+  margin: 0;
+}
+
+.retry-btn {
+  align-self: flex-start;
 }
 
 .empty-icon-wrapper {

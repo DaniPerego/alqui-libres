@@ -18,7 +18,8 @@ vi.mock('@/services/api', async (importOriginal) => ({
   ...(await importOriginal()),
   apiGet: mocks.apiGet,
   apiPost: mocks.apiPost,
-  apiPatch: mocks.apiPatch
+  apiPatch: mocks.apiPatch,
+  isDemoMode: () => import.meta.env.VITE_DEMO_MODE === 'true'
 }))
 
 beforeEach(() => {
@@ -58,7 +59,7 @@ describe('reviews service (native API)', () => {
     }
     mocks.apiPost.mockResolvedValueOnce({ success: true, data: created })
 
-    const review = await addReview({
+    const result = await addReview({
       propertyId: 'p1',
       guestName: 'API Guest',
       rating: 5,
@@ -70,7 +71,8 @@ describe('reviews service (native API)', () => {
       rating: 5,
       comment: 'API review'
     }))
-    expect(review.id).toBe('rx3')
+    expect(result.success).toBe(true)
+    expect(result.review.id).toBe('rx3')
   })
 
   it('fetches owner reviews from the API', async () => {
@@ -123,8 +125,20 @@ describe('reviews service (native API)', () => {
   })
 })
 
-describe('reviews service (localStorage fallback when the API fails)', () => {
-  it('falls back to stored reviews sorted newest first for a property', async () => {
+describe('reviews service (offline demo fallback only)', () => {
+  it('returns an empty array for a property when the API fails in production', async () => {
+    mocks.apiGet.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'INTERNAL', message: 'Boom' }
+    })
+
+    const reviews = await getPropertyReviews('1')
+
+    expect(reviews).toEqual([])
+  })
+
+  it('falls back to stored reviews sorted newest first for a property only in demo mode', async () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'true')
     mocks.apiGet.mockResolvedValueOnce({
       success: false,
       error: { code: 'NETWORK_ERROR', message: 'Network error. Please try again.' }
@@ -136,36 +150,65 @@ describe('reviews service (localStorage fallback when the API fails)', () => {
     expect(new Date(reviews[0].createdAt).getTime()).toBeGreaterThanOrEqual(
       new Date(reviews[1].createdAt).getTime()
     )
+    vi.unstubAllEnvs()
   })
 
-  it('returns an empty array when a property has no reviews', async () => {
+  it('returns an empty array when a property has no reviews even in demo mode', async () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'true')
     mocks.apiGet.mockResolvedValueOnce({
       success: false,
       error: { code: 'NETWORK_ERROR', message: 'Network error. Please try again.' }
     })
 
     expect(await getPropertyReviews('unknown')).toEqual([])
+    vi.unstubAllEnvs()
   })
 
-  it('adds a review locally and persists it to localStorage when the API rejects it', async () => {
-    const apiFailure = { success: false, error: { code: 'INTERNAL', message: 'Boom' } }
-    mocks.apiPost.mockResolvedValueOnce(apiFailure)
-    mocks.apiGet.mockResolvedValue(apiFailure)
+  it('returns an error when adding a review fails in production', async () => {
+    mocks.apiPost.mockResolvedValueOnce({ success: false, error: { code: 'INTERNAL', message: 'Boom' } })
 
-    const review = await addReview({
+    const result = await addReview({
       listingId: '2',
       guestName: 'Test Guest',
       rating: 4,
       comment: 'Great place'
     })
 
-    expect(review.listingId).toBe('2')
-    expect(review.rating).toBe(4)
-    expect(review.verified).toBe(true)
-    expect(await getPropertyReviews('2')).toContainEqual(expect.objectContaining({ id: review.id }))
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Boom')
   })
 
-  it('aggregates reviews for an owner properties when the API fails', async () => {
+  it('adds a review locally only in demo mode when the API has a network error', async () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'true')
+    const apiFailure = { success: false, error: { code: 'NETWORK_ERROR', message: 'offline' } }
+    mocks.apiPost.mockResolvedValueOnce(apiFailure)
+    mocks.apiGet.mockResolvedValue(apiFailure)
+
+    const result = await addReview({
+      listingId: '2',
+      guestName: 'Test Guest',
+      rating: 4,
+      comment: 'Great place'
+    })
+
+    expect(result.success).toBe(true)
+    expect(result.review.listingId).toBe('2')
+    expect(await getPropertyReviews('2')).toContainEqual(expect.objectContaining({ id: result.review.id }))
+    vi.unstubAllEnvs()
+  })
+
+  it('returns an empty array for owner reviews when the API fails in production', async () => {
+    mocks.apiGet.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'INTERNAL', message: 'Boom' }
+    })
+
+    const reviews = await getOwnerReviews(['1', '2'])
+    expect(reviews).toEqual([])
+  })
+
+  it('aggregates reviews for owner properties only in demo mode', async () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'true')
     mocks.apiGet.mockResolvedValueOnce({
       success: false,
       error: { code: 'NETWORK_ERROR', message: 'Network error. Please try again.' }
@@ -173,14 +216,20 @@ describe('reviews service (localStorage fallback when the API fails)', () => {
 
     const reviews = await getOwnerReviews(['1', '2'])
     expect(reviews.length).toBe(3)
+    vi.unstubAllEnvs()
   })
 })
 
 describe('getPropertyRating', () => {
-  it('computes rating and count for a property', () => {
+  it('computes rating and count from cached reviews in production', () => {
+    localStorage.setItem('alquilibres_reviews', JSON.stringify([
+      { id: 'r1', listingId: '1', propertyId: '1', rating: 5, createdAt: '2024-01-01T00:00:00.000Z' },
+      { id: 'r2', listingId: '1', propertyId: '1', rating: 5, createdAt: '2024-02-01T00:00:00.000Z' }
+    ]))
     const { rating, count } = getPropertyRating('1')
     expect(count).toBe(2)
     expect(rating).toBe(5)
+    localStorage.removeItem('alquilibres_reviews')
   })
 
   it('returns zero rating when there are no reviews', () => {

@@ -10,7 +10,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/services/api', () => ({
   apiGet: mocks.apiGet,
   apiPatch: mocks.apiPatch,
-  toList: (result) => (Array.isArray(result?.data) ? result.data : [])
+  toList: (result) => (Array.isArray(result?.data) ? result.data : []),
+  isDemoMode: () => import.meta.env.VITE_DEMO_MODE === 'true'
 }))
 
 beforeEach(() => {
@@ -41,7 +42,8 @@ describe('notifications service (native API)', () => {
     expect(mocks.apiGet).toHaveBeenCalledWith('/notifications', { read: 'false', type: 'reservation', page: 2 })
   })
 
-  it('falls back to localStorage when the API is unreachable by default', async () => {
+  it('falls back to localStorage when the API is unreachable in demo mode', async () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'true')
     localStorage.setItem('alquilibres_notifications', JSON.stringify([{ id: 'n2', type: 'system', title: 'Cache', body: 'X', read: true, createdAt: '2025-11-05T00:00:00.000Z' }]))
     mocks.apiGet.mockResolvedValueOnce({
       success: false,
@@ -52,6 +54,17 @@ describe('notifications service (native API)', () => {
 
     expect(notifications).toHaveLength(1)
     expect(notifications[0].title).toBe('Cache')
+    vi.unstubAllEnvs()
+  })
+
+  it('does not fall back by default in production', async () => {
+    localStorage.setItem('alquilibres_notifications', JSON.stringify([{ id: 'n2', type: 'system', title: 'Cache', body: 'X', read: true, createdAt: '2025-11-05T00:00:00.000Z' }]))
+    mocks.apiGet.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Network error. Please try again.' }
+    })
+
+    await expect(getNotifications()).rejects.toThrow('Network error. Please try again.')
   })
 
   it('surfaces API errors when fallback is disabled', async () => {

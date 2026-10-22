@@ -64,6 +64,10 @@ export default {
     text: 'Join AlquiLibres and save up to 25% on commissions.\nSubscription from 5000/month. No hidden costs.',
     button: 'List My Property'
   },
+  home: {
+    error: 'Could not load featured properties. Please try again.',
+    retry: 'Retry'
+  },
   search: {
     title: 'properties found',
     cleanFilters: 'Clear Filters',
@@ -93,6 +97,8 @@ export default {
     searching: 'Searching properties...',
     noResults: 'No properties found',
     adjustFilters: 'Try adjusting your search filters',
+    error: 'Could not load properties. Please try again.',
+    retry: 'Retry',
     guests: 'guests',
     beds: 'beds',
     viewDetails: 'View Details',
@@ -151,6 +157,13 @@ export default {
     noActivity: 'No recent activity',
     noActivityHint: 'Your actions will appear here',
     tips: 'Tips to Improve',
+    loadError: 'Some dashboard data could not be loaded. Please try again.',
+    propertiesError: 'Could not load properties',
+    messagesError: 'Could not load messages',
+    subscriptionError: 'Could not load subscription',
+    reservationsError: 'Could not load reservations',
+    notificationsError: 'Could not load notifications',
+    retry: 'Retry',
     completeProfile: 'Complete Your Profile',
     completeProfileDesc: 'Add your contact info and social media to build more trust with guests.',
     completeNow: 'Complete now',
@@ -257,7 +270,9 @@ export default {
     verified: 'Verified',
     propertyNotFound: 'Property not found',
     notFoundDesc: 'The property you\'re looking for doesn\'t exist or was removed.',
-    viewOther: 'View other properties'
+    viewOther: 'View other properties',
+    reviewError: 'Could not load reviews. Please try again.',
+    retry: 'Retry'
   },
   auth: {
     loginTitle: 'Sign In',

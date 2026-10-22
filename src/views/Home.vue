@@ -113,6 +113,22 @@
       <div class="container">
         <p class="section-label">{{ t('featured.label') }}</p>
         <h2 class="section-heading">{{ t('featured.title') }}</h2>
+
+        <div v-if="featuredError" class="error-banner" role="alert">
+          <AlertTriangle :size="20" />
+          <div class="error-content">
+            <p>{{ featuredError }}</p>
+            <button @click="loadFeaturedProperties" class="btn btn-outline btn-sm retry-btn">
+              {{ t('home.retry') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-else-if="featuredLoading" class="featured-loading">
+          <div class="spinner"></div>
+          <p>{{ t('common.loading') }}</p>
+        </div>
+
         <div class="featured-grid">
           <div
             v-for="property in filteredFeatured"
@@ -206,12 +222,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSearchStore } from '@/stores/search'
 import { useI18n } from 'vue-i18n'
+import { apiGet, toList, isDemoMode } from '@/services/api'
 import { mockProperties, mockAnnualProperty } from '@/data/mockData'
-import { Clock, Calendar, Search, MapPin, Star, Wallet, Zap, Shield, ArrowRight } from '@lucide/vue'
+import { Clock, Calendar, Search, MapPin, Star, Wallet, Zap, Shield, ArrowRight, AlertTriangle } from '@lucide/vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -228,11 +245,70 @@ const searchFilters = ref({
   priceMax: 100000
 })
 
-const featuredProperties = ref([...mockProperties.slice(0, 3), mockAnnualProperty])
+const featuredProperties = ref([])
+const featuredLoading = ref(false)
+const featuredError = ref(null)
 
 const filteredFeatured = computed(() =>
   featuredProperties.value.filter(p => p.isActive)
 )
+
+function normalizeFeaturedProperty(row) {
+  if (!row) return null
+  return {
+    ...row,
+    location: {
+      city: row.locationCity || '',
+      state: row.locationState || '',
+      country: row.locationCountry || 'Argentina',
+      postalCode: row.locationPostalCode || '',
+      coordinates: row.locationCoordinates || null
+    },
+    pricing: {
+      basePrice: row.pricingBasePrice ?? 0,
+      cleaningFee: row.pricingCleaningFee ?? 0,
+      currency: row.pricingCurrency || 'USD',
+      weeklyDiscount: row.pricingWeeklyDiscount ?? 0,
+      monthlyDiscount: row.pricingMonthlyDiscount ?? 0
+    }
+  }
+}
+
+async function loadFeaturedProperties() {
+  featuredLoading.value = true
+  featuredError.value = null
+
+  try {
+    const result = await apiGet('/properties', { limit: 20 }, { public: true })
+    if (!result.success) {
+      if (isDemoMode() && result.error?.code === 'NETWORK_ERROR') {
+        featuredProperties.value = [...mockProperties.slice(0, 3), mockAnnualProperty]
+        return
+      }
+      throw new Error(result.error?.message || 'Failed to load featured properties')
+    }
+
+    const rows = toList(result.data)
+    const temporario = rows.filter(r => r.rentalType === 'temporario').slice(0, 3)
+    const annual = rows.find(r => r.rentalType === 'anual')
+    featuredProperties.value = [
+      ...temporario.map(normalizeFeaturedProperty),
+      annual ? normalizeFeaturedProperty(annual) : mockAnnualProperty
+    ].filter(Boolean)
+  } catch (error) {
+    if (isDemoMode()) {
+      featuredProperties.value = [...mockProperties.slice(0, 3), mockAnnualProperty]
+      return
+    }
+    featuredError.value = error.message || t('home.error')
+  } finally {
+    featuredLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadFeaturedProperties()
+})
 
 const handleSearch = () => {
   searchStore.clearFilters()
@@ -365,6 +441,56 @@ const viewProperty = (id) => {
 /* ===== Featured Properties ===== */
 .featured {
   padding: var(--spacing-2xl) 0;
+}
+
+.error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg);
+  color: #b91c1c;
+}
+
+.error-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.error-content p {
+  margin: 0;
+}
+
+.retry-btn {
+  align-self: flex-start;
+}
+
+.featured-loading {
+  text-align: center;
+  padding: var(--spacing-2xl);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto var(--spacing-md);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .featured-grid {
