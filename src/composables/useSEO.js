@@ -1,9 +1,13 @@
 import { watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+// Must match the production deployment domain.
+export const SITE_URL = 'https://alqui-libres.vercel.app'
+
+const DEFAULT_OG_IMAGE = `${SITE_URL}/icon-192.png`
+
 /**
- * Composable para actualizar meta tags dinámicamente
- * según la ruta actual
+ * Composable to update meta tags dynamically based on the current route.
  */
 export function useSEO() {
   const route = useRoute()
@@ -48,13 +52,14 @@ export function useSEO() {
   }
 
   const updateMetaTag = (name, content) => {
-    // Buscar por name o property
-    let element = document.querySelector(`meta[name="${name}"]`) || 
+    // Search existing meta by name or property.
+    let element = document.querySelector(`meta[name="${name}"]`) ||
                   document.querySelector(`meta[property="${name}"]`)
-    
+
     if (!element) {
       element = document.createElement('meta')
-      const isProperty = name.includes(':')
+      // Open Graph uses `property`; Twitter and standard tags use `name`.
+      const isProperty = name.startsWith('og:')
       if (isProperty) {
         element.setAttribute('property', name)
       } else {
@@ -62,7 +67,7 @@ export function useSEO() {
       }
       document.head.appendChild(element)
     }
-    
+
     element.setAttribute('content', content)
   }
 
@@ -109,41 +114,80 @@ export function useSEO() {
 }
 
 /**
- * Helper para generar structured data de propiedades
+ * Converts a relative asset path into an absolute URL using the production domain.
+ */
+export function toAbsoluteUrl(pathOrUrl) {
+  if (!pathOrUrl || typeof pathOrUrl !== 'string') return DEFAULT_OG_IMAGE
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl
+  const path = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`
+  return `${SITE_URL}${path}`
+}
+
+/**
+ * Builds a complete SEO meta object for a property detail page.
+ */
+export function buildPropertyMeta(property) {
+  const title = property?.title ? `${property.title} | AlquiLibres` : 'AlquiLibres'
+  const rawDescription = property?.description || ''
+  const description = rawDescription.trim().slice(0, 160) ||
+    `${title}. Alquiler temporario en ${property?.location?.city || 'Argentina'}.`
+
+  const rawImage = property?.images?.[0] || property?.mainImage || ''
+  const imageBase = toAbsoluteUrl(rawImage)
+  const image = imageBase.includes('?')
+    ? `${imageBase}&w=1200&h=630&fit=crop`
+    : `${imageBase}?w=1200&h=630&fit=crop`
+
+  const url = `${SITE_URL}/propiedad/${property?.id}`
+
+  const keywords = [
+    property?.propertyType,
+    property?.location?.city,
+    `alquiler ${property?.rentalType || 'temporario'}`,
+    ...(property?.amenities || [])
+  ].filter(Boolean).join(', ')
+
+  return { title, description, url, image, keywords, type: 'product' }
+}
+
+/**
+ * Generates Schema.org structured data for a property.
  */
 export function generatePropertySchema(property) {
-  const baseUrl = 'https://alquilibres.com'
-  
+  const images = Array.isArray(property?.images) && property.images.length > 0
+    ? property.images
+    : [property?.mainImage].filter(Boolean)
+
   return {
     '@context': 'https://schema.org',
     '@type': 'Accommodation',
-    name: property.title,
-    description: property.description,
-    image: property.images || [property.mainImage],
+    name: property?.title,
+    description: property?.description,
+    image: images.map(toAbsoluteUrl),
     address: {
       '@type': 'PostalAddress',
-      addressLocality: property.location?.city,
-      addressRegion: property.location?.state,
-      addressCountry: property.location?.country || 'AR'
+      addressLocality: property?.location?.city,
+      addressRegion: property?.location?.state,
+      addressCountry: property?.location?.country || 'AR'
     },
-    geo: property.location?.coordinates ? {
+    geo: property?.location?.coordinates ? {
       '@type': 'GeoCoordinates',
       latitude: property.location.coordinates.lat,
       longitude: property.location.coordinates.lng
     } : undefined,
-    numberOfRooms: property.capacity?.bedrooms,
+    numberOfRooms: property?.capacity?.bedrooms,
     occupancy: {
       '@type': 'QuantitativeValue',
-      value: property.capacity?.guests
+      value: property?.capacity?.guests
     },
-    amenityFeature: property.amenities?.map(amenity => ({
+    amenityFeature: property?.amenities?.map(amenity => ({
       '@type': 'LocationFeatureSpecification',
       name: amenity,
       value: true
     })),
-    priceRange: property.pricing ? `${property.pricing.currency} ${property.pricing.basePrice}` : undefined,
-    url: `${baseUrl}/propiedad/${property.id}`,
-    aggregateRating: property.rating ? {
+    priceRange: property?.pricing ? `${property.pricing.currency} ${property.pricing.basePrice}` : undefined,
+    url: `${SITE_URL}/propiedad/${property?.id}`,
+    aggregateRating: property?.rating ? {
       '@type': 'AggregateRating',
       ratingValue: property.rating,
       reviewCount: property.reviewCount || 0,
@@ -154,36 +198,39 @@ export function generatePropertySchema(property) {
 }
 
 /**
- * Metadatos predefinidos por ruta
+ * Predefined metadata for static routes.
  */
 export const routeMetadata = {
   home: {
     title: 'AlquiLibres - Alquileres Temporarios Sin Comisiones | Suscripción Fija',
     description: 'Publica tus propiedades sin comisiones por reserva. Suscripción fija mensual vs 15-25% de Airbnb/Booking. Filtros hiperlocales únicos.',
     keywords: 'alquiler temporario, sin comisiones, alquiler vacacional, cabañas, departamentos',
-    url: 'https://alquilibres.com/',
-    image: 'https://alquilibres.com/og-image.jpg'
+    url: `${SITE_URL}/`,
+    image: DEFAULT_OG_IMAGE
   },
   search: {
     title: 'Buscar Alojamiento | AlquiLibres',
     description: 'Encuentra el alojamiento perfecto con nuestros filtros hiperlocales: tipo de parrilla, tamaño de estacionamiento y más.',
     keywords: 'buscar alojamiento, casas vacacionales, parrilla, estacionamiento',
-    url: 'https://alquilibres.com/buscar',
-    image: 'https://alquilibres.com/og-search.jpg'
+    url: `${SITE_URL}/buscar`,
+    image: DEFAULT_OG_IMAGE
   },
   login: {
     title: 'Iniciar Sesión | AlquiLibres',
     description: 'Accede a tu cuenta de AlquiLibres para gestionar tus propiedades sin comisiones.',
-    url: 'https://alquilibres.com/login'
+    url: `${SITE_URL}/login`,
+    image: DEFAULT_OG_IMAGE
   },
   register: {
     title: 'Registrarse | AlquiLibres',
     description: 'Crea tu cuenta y comienza a publicar propiedades sin comisiones por reserva.',
-    url: 'https://alquilibres.com/registro'
+    url: `${SITE_URL}/registro`,
+    image: DEFAULT_OG_IMAGE
   },
   dashboard: {
     title: 'Mi Panel | AlquiLibres',
     description: 'Gestiona tus propiedades, reservas y suscripción.',
-    url: 'https://alquilibres.com/panel'
+    url: `${SITE_URL}/panel`,
+    image: DEFAULT_OG_IMAGE
   }
 }

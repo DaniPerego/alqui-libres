@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 import i18n from '@/i18n'
 import PropertyDetail from '@/views/PropertyDetail.vue'
+import { SITE_URL } from '@/composables/useSEO'
 
 const routeParams = { id: '2' }
 
@@ -79,6 +80,18 @@ function mockApiFor(propertyId) {
   })
 }
 
+function mountPropertyDetail() {
+  return shallowMount(PropertyDetail, {
+    global: {
+      plugins: [i18n],
+      stubs: {
+        'router-link': { template: '<a><slot /></a>' },
+        'router-view': true
+      }
+    }
+  })
+}
+
 describe('PropertyDetail.vue', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -86,6 +99,7 @@ describe('PropertyDetail.vue', () => {
     setActivePinia(createPinia())
     const authStore = useAuthStore()
     authStore.user = null
+    document.head.innerHTML = ''
   })
 
   afterEach(() => {
@@ -162,5 +176,47 @@ describe('PropertyDetail.vue', () => {
 
     expect(wrapper.find('.error-banner').exists()).toBe(true)
     expect(wrapper.text()).toContain('Reviews down')
+  })
+
+  it('sets absolute SEO meta tags after the property loads', async () => {
+    routeParams.id = '2'
+    mockApiFor('2')
+    mountPropertyDetail()
+    await flushPromises()
+    vi.advanceTimersByTime(500)
+    await flushPromises()
+
+    expect(document.title).toBe(`${apiProperty.title} | AlquiLibres`)
+    expect(document.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe(`${apiProperty.title} | AlquiLibres`)
+    expect(document.querySelector('meta[property="og:description"]')?.getAttribute('content')).toContain('Moderno departamento')
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(`${SITE_URL}/propiedad/2`)
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(`${SITE_URL}/propiedad/2`)
+    expect(document.querySelector('meta[property="og:image"]')?.getAttribute('content')).toMatch(/^https:\/\//)
+    expect(document.querySelector('meta[name="twitter:title"]')?.getAttribute('content')).toBe(`${apiProperty.title} | AlquiLibres`)
+    expect(document.querySelector('meta[name="twitter:url"]')?.getAttribute('content')).toBe(`${SITE_URL}/propiedad/2`)
+  })
+
+  it('turns a relative property image into an absolute og:image URL', async () => {
+    routeParams.id = 'rel'
+    const relativeProperty = { ...apiProperty, id: 'rel', images: ['/uploads/photo.jpg'] }
+    mocks.apiGet.mockImplementation(async (path) => {
+      if (path === '/properties/rel') {
+        return { success: true, data: relativeProperty }
+      }
+      if (path === '/properties/rel/availability') {
+        return { success: true, data: { blockedDates: [], bookedRanges: [] } }
+      }
+      if (path === '/reviews') {
+        return { success: true, data: [] }
+      }
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Missing' } }
+    })
+
+    mountPropertyDetail()
+    await flushPromises()
+    vi.advanceTimersByTime(500)
+    await flushPromises()
+
+    expect(document.querySelector('meta[property="og:image"]')?.getAttribute('content')).toBe(`${SITE_URL}/uploads/photo.jpg?w=1200&h=630&fit=crop`)
   })
 })

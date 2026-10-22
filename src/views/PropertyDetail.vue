@@ -558,7 +558,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePropertyStore } from '@/stores/property'
 import { useI18n } from 'vue-i18n'
-import { useSEO, generatePropertySchema } from '@/composables/useSEO'
+import { useSEO, generatePropertySchema, buildPropertyMeta } from '@/composables/useSEO'
 import { getPropertyReviews, addReview, getPropertyRating } from '@/services/reviews'
 import { createReservation, getPropertyAvailability } from '@/services/reservations'
 import DatePicker from 'vue-datepicker-next';
@@ -940,15 +940,8 @@ onMounted(async () => {
   // Cargar perfil del propietario
   loadOwnerProfile(property.value.ownerId || 'user123')
 
-  // Actualizar meta tags SEO para esta propiedad
-  updateMetaTags({
-    title: `${property.value.title} | AlquiLibres`,
-    description: property.value.description.substring(0, 160),
-    url: `https://alquilibres.com/propiedad/${property.value.id}`,
-    image: property.value.images[0] + '?w=1200&h=630&fit=crop',
-    keywords: `${property.value.propertyType}, ${property.value.location.city}, alquiler ${property.value.rentalType || 'temporario'}, ${property.value.amenities.join(', ')}`,
-    type: 'product'
-  })
+  // Update SEO meta tags for this property.
+  updateMetaTags(buildPropertyMeta(property.value))
 
   // Agregar Schema.org structured data
   addStructuredData(generatePropertySchema(property.value))

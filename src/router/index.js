@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { routeMetadata } from '@/composables/useSEO'
+import { routeMetadata, SITE_URL } from '@/composables/useSEO'
 
 // Importar vistas lazy loading para optimización
 const Home = () => import('@/views/Home.vue')
@@ -319,7 +319,7 @@ const routes = [
     meta: {
       title: 'Términos y Condiciones | AlquiLibres',
       description: 'Términos y condiciones de uso de la plataforma AlquiLibres',
-      url: 'https://alquilibres.com/terminos',
+      url: 'https://alqui-libres.vercel.app/terminos',
       keywords: 'términos, condiciones, legal, contrato'
     }
   },
@@ -330,7 +330,7 @@ const routes = [
     meta: {
       title: 'Política de Privacidad | AlquiLibres',
       description: 'Política de privacidad y protección de datos personales de AlquiLibres',
-      url: 'https://alquilibres.com/privacidad',
+      url: 'https://alqui-libres.vercel.app/privacidad',
       keywords: 'privacidad, protección de datos, GDPR, datos personales'
     }
   },
@@ -341,7 +341,7 @@ const routes = [
     meta: {
       title: 'Modelo de Contrato | AlquiLibres',
       description: 'Modelo de contrato de alquiler temporario sugerido por AlquiLibres',
-      url: 'https://alquilibres.com/contrato',
+      url: 'https://alqui-libres.vercel.app/contrato',
       keywords: 'contrato, alquiler temporario, modelo, legal'
     }
   },
@@ -352,7 +352,7 @@ const routes = [
     meta: {
       title: 'Preguntas Frecuentes | AlquiLibres',
       description: 'Respuestas a las preguntas más frecuentes sobre AlquiLibres',
-      url: 'https://alquilibres.com/faq',
+      url: 'https://alqui-libres.vercel.app/faq',
       keywords: 'faq, preguntas frecuentes, ayuda, alquiler'
     }
   },
@@ -363,7 +363,7 @@ const routes = [
     meta: {
       title: 'Sobre Nosotros | AlquiLibres',
       description: 'Conocé la historia, misión y valores de AlquiLibres',
-      url: 'https://alquilibres.com/nosotros',
+      url: 'https://alqui-libres.vercel.app/nosotros',
       keywords: 'nosotros, equipo, misión, valores, alquilibres'
     }
   },
@@ -374,7 +374,7 @@ const routes = [
     meta: {
       title: '¿Cómo Funciona? | AlquiLibres',
       description: 'Guía completa para usar AlquiLibres: cómo buscar, reservar y publicar propiedades',
-      url: 'https://alquilibres.com/como-funciona',
+      url: 'https://alqui-libres.vercel.app/como-funciona',
       keywords: 'cómo funciona, guía, tutorial, alquiler, reserva'
     }
   },
@@ -385,7 +385,7 @@ const routes = [
     meta: {
       title: 'Contacto | AlquiLibres',
       description: 'Comunicate con el equipo de AlquiLibres para consultas y soporte',
-      url: 'https://alquilibres.com/contacto',
+      url: 'https://alqui-libres.vercel.app/contacto',
       keywords: 'contacto, soporte, ayuda, email'
     }
   },
@@ -396,7 +396,7 @@ const routes = [
     meta: {
       title: 'Política de Cookies | AlquiLibres',
       description: 'Política de cookies de AlquiLibres y cómo gestionarlas',
-      url: 'https://alquilibres.com/cookies',
+      url: 'https://alqui-libres.vercel.app/cookies',
       keywords: 'cookies, privacidad, datos, navegación'
     }
   }
@@ -434,9 +434,8 @@ router.beforeEach(async (to, from, next) => {
     updateMetaTag('twitter:url', fullUrl)
     updateCanonicalUrl(fullUrl)
   } else {
-    // Generar URL desde la ruta actual
-    const baseUrl = 'https://alquilibres.com'
-    const fullUrl = baseUrl + to.fullPath
+    // Generate the full URL from the current route.
+    const fullUrl = SITE_URL + to.fullPath
     updateMetaTag('og:url', fullUrl)
     updateMetaTag('twitter:url', fullUrl)
     updateCanonicalUrl(fullUrl)
@@ -510,7 +509,8 @@ function updateMetaTag(name, content) {
 
   if (!element) {
     element = document.createElement('meta')
-    const isProperty = name.includes(':')
+    // Open Graph uses `property`; Twitter and standard tags use `name`.
+    const isProperty = name.startsWith('og:')
     if (isProperty) {
       element.setAttribute('property', name)
     } else {

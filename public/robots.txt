@@ -23,7 +23,7 @@ Allow: /*.svg$
 Allow: /*.webp$
 
 # Sitemap
-Sitemap: https://alquilibres.com/sitemap.xml
+Sitemap: https://alqui-libres.vercel.app/sitemap.xml
 
 # Crawl-delay para bots específicos (opcional)
 # User-agent: Googlebot
