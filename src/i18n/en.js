@@ -250,7 +250,7 @@ export default {
     demoDescription: 'Use any of these credentials to test the system:',
     guest: 'Guest (rents):',
     owner: 'Owner (lists):',
-    demoWarning: 'Only work in demo mode (no real Firebase)'
+    demoWarning: 'Test accounts for evaluating the platform'
   },
   common: {
     loading: 'Loading...'

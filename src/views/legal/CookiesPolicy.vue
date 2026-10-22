@@ -53,9 +53,8 @@
             navegador:
           </p>
           <ul>
-            <li><strong>Google Analytics:</strong> Para analizar el tráfico y uso de la plataforma</li>
             <li><strong>MercadoPago:</strong> Para procesar pagos de suscripciones</li>
-            <li><strong>Redes sociales:</strong> Para compartir contenido y medir alcance</li>
+            <li><strong>Redes sociales:</strong> Para compartir contenido</li>
           </ul>
           <p>
             Estos terceros tienen sus propias políticas de cookies y privacidad. Te recomendamos

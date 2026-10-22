@@ -26,7 +26,7 @@
             <li><strong>Datos de registro:</strong> Nombre, email, contraseña, teléfono</li>
             <li><strong>Datos de perfil:</strong> Fotografía, biografía, preferencias</li>
             <li><strong>Información de propiedades:</strong> Dirección, descripción, fotos, precios, características</li>
-            <li><strong>Datos de pago:</strong> Información de tarjetas de crédito/débito (procesada por Stripe/MercadoPago)</li>
+            <li><strong>Datos de pago:</strong> Información de tarjetas de crédito/débito (procesada por MercadoPago)</li>
             <li><strong>Comunicaciones:</strong> Mensajes intercambiados en la plataforma</li>
           </ul>
 
@@ -95,9 +95,9 @@
 
           <h3>4.2 Proveedores de Servicios</h3>
           <ul>
-            <li><strong>Procesamiento de pagos:</strong> Stripe, MercadoPago</li>
-            <li><strong>Hosting y almacenamiento:</strong> Firebase, Google Cloud</li>
-            <li><strong>Analytics:</strong> Google Analytics (anonimizado)</li>
+            <li><strong>Procesamiento de pagos:</strong> MercadoPago</li>
+            <li><strong>Hosting, API y base de datos:</strong> Vercel</li>
+            <li><strong>Almacenamiento de imágenes:</strong> Vercel Blob</li>
             <li><strong>Email:</strong> SendGrid para notificaciones</li>
           </ul>
 
@@ -213,7 +213,7 @@
           <h2>10. Transferencias Internacionales</h2>
           <p>
             Sus datos pueden ser procesados en servidores ubicados fuera de Argentina 
-            (principalmente en Google Cloud, Estados Unidos). Aseguramos niveles adecuados 
+            (en la infraestructura de Vercel y MercadoPago). Aseguramos niveles adecuados 
             de protección mediante cláusulas contractuales estándar.
           </p>
         </section>
