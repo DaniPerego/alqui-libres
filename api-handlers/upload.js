@@ -1,14 +1,26 @@
 import { put } from '@vercel/blob'
+import { HttpError, sendError } from './lib/http.js'
 
 export const config = {
   runtime: 'nodejs'
 }
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024
+const ALLOWED_IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/avif',
+  'image/gif'
+])
 
 function getExtension(fileName, mimeType) {
   const byMime = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
     'image/webp': 'webp',
+    'image/avif': 'avif',
+    'image/gif': 'gif'
   }
   const rawExt = fileName.split('.').pop()?.toLowerCase()
   if (rawExt) return rawExt
@@ -17,15 +29,22 @@ function getExtension(fileName, mimeType) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return sendError(res, new HttpError('METHOD', 'Method not allowed', 405))
   }
 
   try {
-    const formData = new FormData()
     const buffers = []
+    let totalSize = 0
 
     await new Promise((resolve, reject) => {
-      req.on('data', (chunk) => buffers.push(chunk))
+      req.on('data', (chunk) => {
+        totalSize += chunk.length
+        if (totalSize > MAX_FILE_SIZE) {
+          reject(new HttpError('VALIDATION', 'File exceeds maximum size of 5MB', 400))
+          return
+        }
+        buffers.push(chunk)
+      })
       req.on('end', resolve)
       req.on('error', reject)
     })
@@ -33,16 +52,25 @@ export default async function handler(req, res) {
     const raw = Buffer.concat(buffers)
     const boundary = req.headers['content-type']?.split('boundary=')[1]
     if (!boundary) {
-      return res.status(400).json({ error: 'No boundary in content-type' })
+      throw new HttpError('VALIDATION', 'No boundary in content-type', 400)
     }
 
     const parts = parseMultipart(raw, boundary)
     const fileField = parts.find(p => p.name === 'file')
     if (!fileField || !fileField.data) {
-      return res.status(400).json({ error: 'No file provided' })
+      throw new HttpError('VALIDATION', 'No file provided', 400)
     }
 
-    const ext = getExtension(fileField.filename || 'image.jpg', fileField.contentType || 'image/jpeg')
+    const normalizedType = (fileField.contentType || '').toLowerCase()
+    if (!ALLOWED_IMAGE_TYPES.has(normalizedType)) {
+      throw new HttpError(
+        'VALIDATION',
+        `Invalid file type: ${fileField.contentType || 'unknown'}. Only JPEG, PNG, WebP, AVIF and GIF images are allowed`,
+        400
+      )
+    }
+
+    const ext = getExtension(fileField.filename || 'image.jpg', normalizedType)
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`
     const folder = req.headers['x-upload-type'] === 'profile' ? 'users' : 'properties'
     const filepath = `${folder}/${filename}`
@@ -72,7 +100,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ url: blob.url, filePath: blob.pathname })
   } catch (error) {
     console.error('Upload error:', error)
-    return res.status(500).json({ error: error.message || 'Error uploading file' })
+    return sendError(res, error)
   }
 }
 

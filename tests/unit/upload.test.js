@@ -1,0 +1,136 @@
+// tests/unit/upload.test.js
+//
+// Unit tests for api-handlers/upload.js — multipart upload guardrails:
+//   oversized request -> 400 VALIDATION (no storage write)
+//   non-image file    -> 400 VALIDATION (no storage write)
+//   valid image       -> 200 with public URL (storage dependency mocked)
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const mocks = vi.hoisted(() => ({
+  put: vi.fn()
+}))
+
+vi.mock('@vercel/blob', () => ({ put: mocks.put }))
+
+import uploadHandler from '../../api-handlers/upload.js'
+
+function mockRes() {
+  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+}
+
+function buildMultipart({ filename = 'test.jpg', contentType = 'image/jpeg', body = Buffer.from('fake-image') }) {
+  const boundary = '----TestBoundary42'
+  const head = Buffer.from(
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
+    `Content-Type: ${contentType}\r\n\r\n`
+  )
+  const tail = Buffer.from(`\r\n--${boundary}--`)
+  return {
+    boundary,
+    body: Buffer.concat([head, body, tail])
+  }
+}
+
+function mockReq({ method = 'POST', body, boundary, headers = {} } = {}) {
+  return {
+    method,
+    headers: {
+      'content-type': boundary ? `multipart/form-data; boundary=${boundary}` : '',
+      ...headers
+    },
+    on(event, cb) {
+      if (event === 'data') {
+        // Emit body in chunks to exercise the streaming size guard
+        const chunkSize = 1024
+        for (let i = 0; i < body.length; i += chunkSize) {
+          cb(body.slice(i, i + chunkSize))
+        }
+      }
+      if (event === 'end') cb()
+    }
+  }
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+describe('POST /api/upload', () => {
+  it('rejects requests larger than 5MB without writing to storage', async () => {
+    const { boundary } = buildMultipart({
+      filename: 'big.jpg',
+      contentType: 'image/jpeg',
+      body: Buffer.alloc(5 * 1024 * 1024 + 1, 0xff)
+    })
+    const res = mockRes()
+
+    await uploadHandler(mockReq({ boundary, body: Buffer.alloc(5 * 1024 * 1024 + 1, 0xff) }), res)
+
+    expect(mocks.put).not.toHaveBeenCalled()
+    expect(res.status).toHaveBeenCalledWith(400)
+    expect(res.json).toHaveBeenCalledWith({
+      error: {
+        code: 'VALIDATION',
+        message: expect.stringMatching(/5MB/i)
+      }
+    })
+  })
+
+  it('rejects non-image content types without writing to storage', async () => {
+    const { boundary, body } = buildMultipart({
+      filename: 'malicious.exe',
+      contentType: 'application/octet-stream',
+      body: Buffer.from('MZ')
+    })
+    const res = mockRes()
+
+    await uploadHandler(mockReq({ boundary, body }), res)
+
+    expect(mocks.put).not.toHaveBeenCalled()
+    expect(res.status).toHaveBeenCalledWith(400)
+    expect(res.json).toHaveBeenCalledWith({
+      error: {
+        code: 'VALIDATION',
+        message: expect.stringMatching(/Invalid file type/i)
+      }
+    })
+  })
+
+  it('accepts a valid image and returns the public blob URL', async () => {
+    mocks.put.mockResolvedValue({
+      url: 'https://example.blob.vercel-storage.com/properties/123456.jpg',
+      pathname: 'properties/123456.jpg'
+    })
+
+    const { boundary, body } = buildMultipart({
+      filename: 'room.jpg',
+      contentType: 'image/jpeg',
+      body: Buffer.from('valid-jpeg-bytes')
+    })
+    const res = mockRes()
+
+    await uploadHandler(mockReq({ boundary, body, headers: { 'x-upload-type': 'property' } }), res)
+
+    expect(mocks.put).toHaveBeenCalledTimes(1)
+    expect(mocks.put).toHaveBeenCalledWith(
+      expect.stringMatching(/^properties\/\d+-[a-z0-9]+\.jpg$/),
+      expect.any(Buffer),
+      expect.objectContaining({ access: 'public', contentType: 'image/jpeg' })
+    )
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(res.json).toHaveBeenCalledWith({
+      url: 'https://example.blob.vercel-storage.com/properties/123456.jpg',
+      filePath: 'properties/123456.jpg'
+    })
+  })
+
+  it('rejects non-POST methods', async () => {
+    const res = mockRes()
+    await uploadHandler(mockReq({ method: 'GET', body: Buffer.alloc(0) }), res)
+    expect(res.status).toHaveBeenCalledWith(405)
+    expect(res.json).toHaveBeenCalledWith({
+      error: { code: 'METHOD', message: expect.any(String) }
+    })
+  })
+})
