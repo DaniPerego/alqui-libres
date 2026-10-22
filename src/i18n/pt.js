@@ -9,7 +9,8 @@ export default {
     logout: 'Sair',
     myProperties: 'Meus Imóveis',
     messages: 'Mensagens',
-    subscription: 'Assinatura'
+    subscription: 'Assinatura',
+    notifications: 'Notificações'
   },
   hero: {
     title: 'Aluguéis',
@@ -160,6 +161,27 @@ export default {
     qualityPhotosDesc: 'Imóveis com 5 ou mais fotos profissionais recebem 40% mais consultas.',
     respondFast: 'Responda Rápido',
     respondFastDesc: 'Responda mensagens em menos de 1 hora para aumentar suas chances de reserva.'
+  },
+  notifications: {
+    title: 'Notificações',
+    subtitle: 'Todas as suas novidades em um só lugar',
+    loading: 'Carregando notificações...',
+    error: 'Não foi possível carregar as notificações.',
+    tryAgain: 'Tentar novamente',
+    markAsRead: 'Marcar como lida',
+    unread: 'Não lida',
+    read: 'Lida',
+    empty: {
+      title: 'Você não tem notificações',
+      description: 'Novidades aparecerão aqui'
+    },
+    types: {
+      reservation: 'Reserva',
+      message: 'Mensagem',
+      payment: 'Pagamento',
+      property: 'Imóvel',
+      system: 'Sistema'
+    }
   },
   messages: {
     title: 'Mensagens',

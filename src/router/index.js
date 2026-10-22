@@ -9,6 +9,7 @@ const PropertyDetail = () => import('@/views/PropertyDetail.vue')
 const Login = () => import('@/views/auth/Login.vue')
 const Register = () => import('@/views/auth/Register.vue')
 const ForcePasswordChange = () => import('@/views/auth/ForcePasswordChange.vue')
+const Notifications = () => import('@/views/Notifications.vue')
 
 // Panel del Locatario
 const Dashboard = () => import('@/views/owner/Dashboard.vue')
@@ -91,6 +92,16 @@ const routes = [
     component: ForcePasswordChange,
     meta: {
       title: 'Cambiar Contraseña | AlquiLibres',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/notificaciones',
+    name: 'notifications',
+    component: Notifications,
+    meta: {
+      title: 'Notificaciones | AlquiLibres',
+      description: 'Centro de notificaciones de AlquiLibres',
       requiresAuth: true
     }
   },

@@ -7,6 +7,10 @@
             <span class="sidebar-icon"><LayoutDashboard :size="20" /></span>
             Inicio
           </router-link>
+          <router-link to="/notificaciones" class="sidebar-link">
+            <span class="sidebar-icon"><Bell :size="20" /></span>
+            Notificaciones
+          </router-link>
           <router-link to="/panel/propiedades" class="sidebar-link">
             <span class="sidebar-icon"><Home :size="20" /></span>
             Mis Propiedades
@@ -51,7 +55,7 @@
 
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import { LayoutDashboard, Home, Calendar, MessageSquare, User, CreditCard, Star, BarChart3 } from '@lucide/vue'
+import { LayoutDashboard, Home, Calendar, MessageSquare, User, CreditCard, Star, BarChart3, Bell } from '@lucide/vue'
 
 const authStore = useAuthStore()
 </script>

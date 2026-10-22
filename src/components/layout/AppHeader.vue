@@ -28,6 +28,12 @@
             <router-link v-if="authStore.user?.role === 'admin'" to="/admin" class="nav-link admin-link">
               <Crown :size="18" /> {{ t('nav.admin') }}
             </router-link>
+            <router-link to="/notificaciones" class="nav-link notifications-link" :aria-label="t('nav.notifications')">
+              <span class="notifications-bell">
+                <Bell :size="20" />
+                <span v-if="unreadCount > 0" class="notifications-badge">{{ unreadCount }}</span>
+              </span>
+            </router-link>
             <router-link v-if="authStore.user?.role === 'guest'" to="/panel/perfil" class="nav-link">{{ t('nav.myProfile') }}</router-link>
             <router-link v-else-if="authStore.user?.role !== 'admin'" to="/panel" class="nav-link">{{ t('nav.myPanel') }}</router-link>
             <button @click="handleLogout" class="btn btn-secondary btn-sm">{{ t('nav.logout') }}</button>
@@ -105,7 +111,13 @@
                 <Crown :size="18" />
                 <span>{{ t('nav.admin') }}</span>
               </router-link>
-              
+
+              <router-link to="/notificaciones" class="mobile-link" @click="mobileMenuOpen = false">
+                <Bell :size="18" />
+                <span>{{ t('nav.notifications') }}</span>
+                <span v-if="unreadCount > 0" class="mobile-notifications-badge">{{ unreadCount }}</span>
+              </router-link>
+
               <router-link v-if="authStore.user?.role === 'guest'" to="/panel/perfil" class="mobile-link" @click="mobileMenuOpen = false">
                 <User :size="18" />
                 <span>{{ t('nav.myProfile') }}</span>
@@ -148,16 +160,30 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
-import { Search, User, Crown, LayoutDashboard, LogOut, Menu, X, Plus, MessageSquare, CreditCard, Building, Sparkles } from '@lucide/vue'
+import { getUnreadNotificationsCount } from '@/services/notifications'
+import { Search, User, Crown, LayoutDashboard, LogOut, Menu, X, Plus, MessageSquare, CreditCard, Building, Sparkles, Bell } from '@lucide/vue'
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const mobileMenuOpen = ref(false)
+const unreadCount = ref(0)
+
+async function refreshUnreadCount() {
+  if (!authStore.isAuthenticated) {
+    unreadCount.value = 0
+    return
+  }
+  unreadCount.value = await getUnreadNotificationsCount()
+}
+
+onMounted(refreshUnreadCount)
+watch(() => authStore.isAuthenticated, refreshUnreadCount)
+router.afterEach(refreshUnreadCount)
 
 const switchLang = (lang) => {
   locale.value = lang
@@ -254,6 +280,51 @@ const handleLogout = async () => {
 .admin-link:hover {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: white !important;
+}
+
+.notifications-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.notifications-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notifications-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-notifications-badge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Mobile Menu Button */

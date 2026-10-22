@@ -9,7 +9,8 @@ export default {
     logout: 'Cerrar Sesión',
     myProperties: 'Mis Propiedades',
     messages: 'Mensajes',
-    subscription: 'Suscripción'
+    subscription: 'Suscripción',
+    notifications: 'Notificaciones'
   },
   hero: {
     title: 'Alquileres',
@@ -160,6 +161,27 @@ export default {
     qualityPhotosDesc: 'Las propiedades con 5 o más fotos profesionales reciben un 40% más de consultas.',
     respondFast: 'Responde Rápido',
     respondFastDesc: 'Contesta mensajes en menos de 1 hora para aumentar tus posibilidades de reserva.'
+  },
+  notifications: {
+    title: 'Notificaciones',
+    subtitle: 'Todas tus novedades en un solo lugar',
+    loading: 'Cargando notificaciones...',
+    error: 'No se pudieron cargar las notificaciones.',
+    tryAgain: 'Intentar de nuevo',
+    markAsRead: 'Marcar como leída',
+    unread: 'Sin leer',
+    read: 'Leída',
+    empty: {
+      title: 'No tenés notificaciones',
+      description: 'Cuando haya novedades, aparecerán aquí'
+    },
+    types: {
+      reservation: 'Reserva',
+      message: 'Mensaje',
+      payment: 'Pago',
+      property: 'Propiedad',
+      system: 'Sistema'
+    }
   },
   messages: {
     title: 'Mensajes',

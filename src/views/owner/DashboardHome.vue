@@ -185,6 +185,7 @@ import { useAuthStore } from '@/stores/auth'
 import { usePaymentStore } from '@/stores/payment'
 import { usePropertyStore } from '@/stores/property'
 import { useI18n } from 'vue-i18n'
+import { useRelativeTime } from '@/composables/useRelativeTime'
 import { getMessages } from '@/services/messages'
 import { getNotifications } from '@/services/notifications'
 import { getOwnerReservations } from '@/services/reservations'
@@ -208,7 +209,8 @@ import {
   Bell
 } from '@lucide/vue'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
+const formatRelativeTime = useRelativeTime()
 const authStore = useAuthStore()
 const paymentStore = usePaymentStore()
 const propertyStore = usePropertyStore()
@@ -393,24 +395,6 @@ const loadStats = async () => {
   } finally {
     isLoading.value = false
   }
-}
-
-const formatRelativeTime = (timestamp) => {
-  const now = Date.now()
-  const diff = now - timestamp
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-
-  if (minutes < 1) return t('dashboard.time.justNow')
-  if (minutes < 60) return t('dashboard.time.minutesAgo', minutes)
-  if (hours < 24) return t('dashboard.time.hoursAgo', hours)
-  if (days === 1) return t('dashboard.time.yesterday')
-  if (days < 7) return t('dashboard.time.daysAgo', days)
-  return new Date(timestamp).toLocaleDateString(locale.value || 'es', {
-    day: 'numeric',
-    month: 'short'
-  })
 }
 
 onMounted(() => {

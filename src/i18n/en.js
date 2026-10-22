@@ -9,7 +9,8 @@ export default {
     logout: 'Sign Out',
     myProperties: 'My Properties',
     messages: 'Messages',
-    subscription: 'Subscription'
+    subscription: 'Subscription',
+    notifications: 'Notifications'
   },
   hero: {
     title: 'Rentals',
@@ -160,6 +161,27 @@ export default {
     qualityPhotosDesc: 'Properties with 5 or more professional photos receive 40% more inquiries.',
     respondFast: 'Respond Fast',
     respondFastDesc: 'Reply to messages in less than 1 hour to increase your booking chances.'
+  },
+  notifications: {
+    title: 'Notifications',
+    subtitle: 'All your updates in one place',
+    loading: 'Loading notifications...',
+    error: 'Could not load notifications.',
+    tryAgain: 'Try again',
+    markAsRead: 'Mark as read',
+    unread: 'Unread',
+    read: 'Read',
+    empty: {
+      title: 'You have no notifications',
+      description: 'New updates will appear here'
+    },
+    types: {
+      reservation: 'Reservation',
+      message: 'Message',
+      payment: 'Payment',
+      property: 'Property',
+      system: 'System'
+    }
   },
   messages: {
     title: 'Messages',
