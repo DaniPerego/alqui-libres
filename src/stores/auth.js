@@ -136,6 +136,11 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async checkAuth() {
+      // The router guard awaits this on EVERY navigation, so once the session
+      // has been resolved for this page load we must not pay another network
+      // roundtrip per route change.
+      if (this.initialized) return this.user
+
       const token = this.sessionToken || getToken()
 
       if (!token) {

@@ -25,7 +25,13 @@ export function isDemoMode() {
 }
 
 export function getAuthToken() {
-  return useAuthStore().sessionToken
+  const store = useAuthStore()
+  // After a hard reload the in-memory token is empty while the persisted one
+  // is still valid. Reading only state.sessionToken made every request
+  // unauthenticated after a refresh, which then cleared the session.
+  return typeof store.getSessionToken === 'function'
+    ? store.getSessionToken()
+    : store.sessionToken
 }
 
 function statusToCode(status) {

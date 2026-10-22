@@ -130,11 +130,11 @@
         </div>
 
         <div class="featured-grid">
-          <div
+          <router-link
             v-for="property in filteredFeatured"
             :key="property.id"
+            :to="{ name: 'property-detail', params: { id: property.id } }"
             class="property-card"
-            @click="viewProperty(property.id)"
           >
             <div class="card-image">
               <img :src="property.mainImage" :alt="property.title" loading="lazy" />
@@ -160,7 +160,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </router-link>
         </div>
       </div>
     </section>
@@ -330,10 +330,6 @@ const handleSearch = () => {
   searchStore.updateFilters(filters)
   router.push('/buscar')
 }
-
-const viewProperty = (id) => {
-  router.push(`/propiedad/${id}`)
-}
 </script>
 
 <style scoped>
@@ -500,6 +496,9 @@ const viewProperty = (id) => {
 }
 
 .property-card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
   background: white;
   border: 1px solid var(--gray-100);
   border-radius: var(--radius-xl);

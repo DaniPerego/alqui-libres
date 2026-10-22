@@ -45,5 +45,9 @@ firestore-debug.log
 .vercel
 .env*
 
+# Playwright
+test-results/
+playwright-report/
+
 # OpenCode
 .atl/
