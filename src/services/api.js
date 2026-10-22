@@ -2,6 +2,10 @@ import { useAuthStore } from '@/stores/auth'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
+export function getAuthToken() {
+  return useAuthStore().sessionToken
+}
+
 function statusToCode(status) {
   if (status === 400 || status === 422) return 'VALIDATION'
   if (status === 401) return 'UNAUTHORIZED'
@@ -36,8 +40,7 @@ function buildUrl(path, params) {
 
 async function request(method, path, body = null, options = {}) {
   const { public: isPublic = false } = options
-  const authStore = useAuthStore()
-  const token = authStore.sessionToken
+  const token = getAuthToken()
 
   if (!isPublic && !token) {
     return {

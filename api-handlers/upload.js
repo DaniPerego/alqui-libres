@@ -1,5 +1,6 @@
 import { put } from '@vercel/blob'
-import { HttpError, sendError } from './lib/http.js'
+import { HttpError, sendError, asyncRoute } from './lib/http.js'
+import { requireAuth, requireRole } from './lib/auth.js'
 
 export const config = {
   runtime: 'nodejs'
@@ -27,10 +28,15 @@ function getExtension(fileName, mimeType) {
   return byMime[mimeType] || 'jpg'
 }
 
-export default async function handler(req, res) {
+export default asyncRoute(async (req, res) => {
   if (req.method !== 'POST') {
     return sendError(res, new HttpError('METHOD', 'Method not allowed', 405))
   }
+
+  const authed = await requireAuth(req, res)
+  if (!authed) return
+  const roleOk = requireRole('owner', 'admin')(req, res)
+  if (!roleOk) return
 
   try {
     const buffers = []
@@ -102,7 +108,7 @@ export default async function handler(req, res) {
     console.error('Upload error:', error)
     return sendError(res, error)
   }
-}
+})
 
 function parseMultipart(buffer, boundary) {
   const parts = []

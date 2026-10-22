@@ -1,10 +1,17 @@
+import { getAuthToken } from './api.js'
+
 const API_BASE = '/api'
+
+function authHeaders() {
+  const token = getAuthToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 async function uploadToApi(file, type) {
   const formData = new FormData()
   formData.append('file', file)
 
-  const headers = {}
+  const headers = authHeaders()
   if (type === 'profile') {
     headers['x-upload-type'] = 'profile'
   }
@@ -32,7 +39,7 @@ async function deleteFromApi(url) {
 
   const res = await fetch(`${API_BASE}/upload/delete`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ url })
   })
 

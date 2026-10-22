@@ -1,21 +1,38 @@
 // tests/unit/upload.test.js
 //
 // Unit tests for api-handlers/upload.js — multipart upload guardrails:
+//   anonymous -> 401 | guest -> 403 | owner/admin -> body validated
 //   oversized request -> 400 VALIDATION (no storage write)
 //   non-image file    -> 400 VALIDATION (no storage write)
 //   valid image       -> 200 with public URL (storage dependency mocked)
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import jwt from 'jsonwebtoken'
 
 const mocks = vi.hoisted(() => ({
-  put: vi.fn()
+  put: vi.fn(),
+  findUnique: vi.fn()
 }))
 
 vi.mock('@vercel/blob', () => ({ put: mocks.put }))
+vi.mock('@prisma/client', () => ({
+  PrismaClient: class {
+    user = { findUnique: mocks.findUnique }
+  }
+}))
 
 import uploadHandler from '../../api-handlers/upload.js'
 
 function mockRes() {
   return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+}
+
+function authHeaders(role = 'owner') {
+  const token = jwt.sign(
+    { sub: 'uid-1', email: 'owner@example.com', role },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  )
+  return { authorization: `Bearer ${token}` }
 }
 
 function buildMultipart({ filename = 'test.jpg', contentType = 'image/jpeg', body = Buffer.from('fake-image') }) {
@@ -54,18 +71,55 @@ function mockReq({ method = 'POST', body, boundary, headers = {} } = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.findUnique.mockResolvedValue({ id: 'uid-1', role: 'owner', isActive: true })
 })
 
 describe('POST /api/upload', () => {
+  it('rejects anonymous requests with 401 and does not write to storage', async () => {
+    const { boundary, body } = buildMultipart({
+      filename: 'room.jpg',
+      contentType: 'image/jpeg',
+      body: Buffer.from('valid-jpeg-bytes')
+    })
+    const res = mockRes()
+
+    await uploadHandler(mockReq({ boundary, body }), res)
+
+    expect(mocks.put).not.toHaveBeenCalled()
+    expect(res.status).toHaveBeenCalledWith(401)
+    expect(res.json).toHaveBeenCalledWith({
+      error: { code: 'UNAUTHORIZED', message: expect.any(String) }
+    })
+  })
+
+  it('rejects authenticated guests with 403 and does not write to storage', async () => {
+    mocks.findUnique.mockResolvedValue({ id: 'uid-1', role: 'guest', isActive: true })
+    const { boundary, body } = buildMultipart({
+      filename: 'room.jpg',
+      contentType: 'image/jpeg',
+      body: Buffer.from('valid-jpeg-bytes')
+    })
+    const res = mockRes()
+
+    await uploadHandler(mockReq({ boundary, body, headers: authHeaders('guest') }), res)
+
+    expect(mocks.put).not.toHaveBeenCalled()
+    expect(res.status).toHaveBeenCalledWith(403)
+    expect(res.json).toHaveBeenCalledWith({
+      error: { code: 'FORBIDDEN', message: expect.any(String) }
+    })
+  })
+
   it('rejects requests larger than 5MB without writing to storage', async () => {
     const { boundary } = buildMultipart({
       filename: 'big.jpg',
       contentType: 'image/jpeg',
       body: Buffer.alloc(5 * 1024 * 1024 + 1, 0xff)
     })
+    const bigBody = Buffer.alloc(5 * 1024 * 1024 + 1, 0xff)
     const res = mockRes()
 
-    await uploadHandler(mockReq({ boundary, body: Buffer.alloc(5 * 1024 * 1024 + 1, 0xff) }), res)
+    await uploadHandler(mockReq({ boundary, body: bigBody, headers: authHeaders() }), res)
 
     expect(mocks.put).not.toHaveBeenCalled()
     expect(res.status).toHaveBeenCalledWith(400)
@@ -85,7 +139,7 @@ describe('POST /api/upload', () => {
     })
     const res = mockRes()
 
-    await uploadHandler(mockReq({ boundary, body }), res)
+    await uploadHandler(mockReq({ boundary, body, headers: authHeaders() }), res)
 
     expect(mocks.put).not.toHaveBeenCalled()
     expect(res.status).toHaveBeenCalledWith(400)
@@ -110,7 +164,7 @@ describe('POST /api/upload', () => {
     })
     const res = mockRes()
 
-    await uploadHandler(mockReq({ boundary, body, headers: { 'x-upload-type': 'property' } }), res)
+    await uploadHandler(mockReq({ boundary, body, headers: { ...authHeaders(), 'x-upload-type': 'property' } }), res)
 
     expect(mocks.put).toHaveBeenCalledTimes(1)
     expect(mocks.put).toHaveBeenCalledWith(
@@ -127,7 +181,7 @@ describe('POST /api/upload', () => {
 
   it('rejects non-POST methods', async () => {
     const res = mockRes()
-    await uploadHandler(mockReq({ method: 'GET', body: Buffer.alloc(0) }), res)
+    await uploadHandler(mockReq({ method: 'GET', body: Buffer.alloc(0), headers: authHeaders() }), res)
     expect(res.status).toHaveBeenCalledWith(405)
     expect(res.json).toHaveBeenCalledWith({
       error: { code: 'METHOD', message: expect.any(String) }
