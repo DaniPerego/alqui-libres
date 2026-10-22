@@ -69,9 +69,19 @@ describe('HttpError + sendError (error contract)', () => {
       NOT_FOUND: 'NOT_FOUND',
       METHOD: 'METHOD',
       CONFLICT: 'CONFLICT',
+      PAYMENT_REQUIRED: 'PAYMENT_REQUIRED',
       SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
       INTERNAL: 'INTERNAL',
     })
+  })
+
+  it('PAYMENT_REQUIRED -> 402', () => {
+    expect(new HttpError('PAYMENT_REQUIRED', 'subscription required').status).toBe(402)
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+    res.json.mockReturnValue(res)
+    sendError(res, new HttpError('PAYMENT_REQUIRED', 'subscription required'))
+    expect(res.status).toHaveBeenCalledWith(402)
+    expect(res.json).toHaveBeenCalledWith({ error: { code: 'PAYMENT_REQUIRED', message: 'subscription required' } })
   })
 
   it('SERVICE_UNAVAILABLE -> 503', () => {

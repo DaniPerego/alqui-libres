@@ -28,6 +28,17 @@ function normalizeProperty(row) {
   }
 }
 
+function mapCreatePropertyError(apiError) {
+  if (apiError?.code === 'PAYMENT_REQUIRED') {
+    const limitMatch = apiError.message?.match(/limit:\s*(\d+)/i)
+    if (limitMatch) {
+      return `Alcanzaste el límite de propiedades de tu plan (${limitMatch[1]}). Actualizá tu suscripción para publicar más.`
+    }
+    return 'Necesitás una suscripción activa para publicar propiedades.'
+  }
+  return apiError?.message || 'Failed to create property'
+}
+
 function flattenProperty(data) {
   const flat = {}
   const scalar = (key, value) => {
@@ -142,7 +153,7 @@ export const usePropertyStore = defineStore('property', {
         const payload = flattenProperty(propertyData)
         const result = await apiPost('/properties', payload)
         if (!result.success) {
-          this.error = result.error?.message || 'Failed to create property'
+          this.error = mapCreatePropertyError(result.error)
           return { success: false, error: this.error }
         }
 

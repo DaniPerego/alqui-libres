@@ -58,6 +58,21 @@ function authAs({ uid = 'owner-1', role = 'owner', email = 'owner@test.com', dis
 function anon() {
 }
 
+function withActiveSubscription({ maxProperties = 10, expiresAt = new Date('2027-01-01T00:00:00.000Z') } = {}) {
+  mocks.delegates.subscription.findFirst.mockResolvedValue({
+    id: 'sub-1',
+    userId: 'owner-1',
+    planId: 'pro',
+    status: 'active',
+    expiresAt,
+  })
+  mocks.delegates.subscriptionPlan.findUnique.mockResolvedValue({
+    id: 'pro',
+    name: 'Plan Profesional',
+    maxProperties,
+  })
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.$queryRaw.mockResolvedValue([])
@@ -187,6 +202,7 @@ describe('POST /api/properties', () => {
 
   it('owner -> 201 con ownerId del token subject (AUTH-02)', async () => {
     authAs()
+    withActiveSubscription()
     mocks.delegates.platformSettings.findUnique.mockResolvedValue({ moderateProperties: false })
     mocks.delegates.property.create.mockImplementation(async ({ data }) => ({ id: 'new-1', ...data }))
     const res = mockRes()
@@ -199,8 +215,59 @@ describe('POST /api/properties', () => {
     expect(createArgs.data.isActive).toBe(true)
   })
 
+  it('admin -> 201 sin importar suscripcion', async () => {
+    authAs({ role: 'admin' })
+    mocks.delegates.platformSettings.findUnique.mockResolvedValue({ moderateProperties: false })
+    mocks.delegates.property.create.mockImplementation(async ({ data }) => ({ id: 'new-admin', ...data }))
+    const res = mockRes()
+    await propertiesHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
+    expect(res.status).toHaveBeenCalledWith(201)
+    expect(mocks.delegates.subscription.findFirst).not.toHaveBeenCalled()
+  })
+
+  it('owner sin suscripcion activa -> 402 y no crea propiedad', async () => {
+    authAs()
+    mocks.delegates.subscription.findFirst.mockResolvedValue(null)
+    mocks.delegates.platformSettings.findUnique.mockResolvedValue({ moderateProperties: false })
+    const res = mockRes()
+    await propertiesHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
+    expect(res.status).toHaveBeenCalledWith(402)
+    expect(res.json).toHaveBeenCalledWith({
+      error: { code: 'PAYMENT_REQUIRED', message: expect.any(String) }
+    })
+    expect(mocks.delegates.property.create).not.toHaveBeenCalled()
+  })
+
+  it('owner con suscripcion vencida -> 402 y no crea propiedad', async () => {
+    authAs()
+    // Prisma filters by status=active AND expiresAt > now; a mocked findFirst
+    // returns the resolved value verbatim, so returning null simulates that the
+    // expired row is not considered active.
+    mocks.delegates.subscription.findFirst.mockResolvedValue(null)
+    mocks.delegates.platformSettings.findUnique.mockResolvedValue({ moderateProperties: false })
+    const res = mockRes()
+    await propertiesHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
+    expect(res.status).toHaveBeenCalledWith(402)
+    expect(mocks.delegates.property.create).not.toHaveBeenCalled()
+  })
+
+  it('owner activo pero en limite de propiedades -> 402 y no crea propiedad', async () => {
+    authAs()
+    withActiveSubscription({ maxProperties: 2 })
+    mocks.delegates.platformSettings.findUnique.mockResolvedValue({ moderateProperties: false })
+    mocks.delegates.property.count.mockResolvedValue(2)
+    const res = mockRes()
+    await propertiesHandler({ query: {}, method: 'POST', headers: authHeaders, body: validBody }, res)
+    expect(res.status).toHaveBeenCalledWith(402)
+    expect(res.json).toHaveBeenCalledWith({
+      error: { code: 'PAYMENT_REQUIRED', message: expect.stringContaining('2') }
+    })
+    expect(mocks.delegates.property.create).not.toHaveBeenCalled()
+  })
+
   it('moderateProperties=true -> status pending e isActive false', async () => {
     authAs()
+    withActiveSubscription()
     mocks.delegates.platformSettings.findUnique.mockResolvedValue({ moderateProperties: true })
     mocks.delegates.property.create.mockImplementation(async ({ data }) => ({ id: 'new-1', ...data }))
     const res = mockRes()

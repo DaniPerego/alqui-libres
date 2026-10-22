@@ -3,7 +3,8 @@
 // HTTP error contract (design API section):
 //   { "error": { "code", "message" } }
 // Codes: VALIDATION (400) | UNAUTHORIZED (401) | FORBIDDEN (403) |
-//        NOT_FOUND (404) | METHOD (405) | CONFLICT (409) | INTERNAL (500)
+//        NOT_FOUND (404) | METHOD (405) | CONFLICT (409) |
+//        PAYMENT_REQUIRED (402) | INTERNAL (500)
 // Plus offset pagination helpers (D4): ?page=1&limit=20 (max 100).
 
 export const ERROR_CODES = {
@@ -13,6 +14,9 @@ export const ERROR_CODES = {
   NOT_FOUND: 'NOT_FOUND',
   METHOD: 'METHOD',
   CONFLICT: 'CONFLICT',
+  // 402 — the caller must have an active, unexpired subscription (or is over
+  // the plan's property limit) to complete the action.
+  PAYMENT_REQUIRED: 'PAYMENT_REQUIRED',
   // 503 — the backend explicitly signals a dependency is not configured
   // (e.g. MercadoPago access token missing), distinct from a generic 500.
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
@@ -26,6 +30,7 @@ const STATUS_BY_CODE = {
   NOT_FOUND: 404,
   METHOD: 405,
   CONFLICT: 409,
+  PAYMENT_REQUIRED: 402,
   SERVICE_UNAVAILABLE: 503,
   INTERNAL: 500,
 }

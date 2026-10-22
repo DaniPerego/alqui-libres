@@ -8,7 +8,7 @@
 //        subject (AUTH-02); status is pending when moderateProperties is
 //        enabled, otherwise active (design D2 / platform settings).
 import { prisma } from './lib/prisma.js'
-import { HttpError, asyncRoute, readJsonBody, parsePagination, buildMeta } from './lib/http.js'
+import { HttpError, asyncRoute, readJsonBody, parsePagination, buildMeta, ERROR_CODES } from './lib/http.js'
 import { requireAuth, requireRole } from './lib/auth.js'
 import { searchProperties, countSearchProperties } from './lib/search.js'
 
@@ -160,6 +160,48 @@ export default asyncRoute(async (req, res) => {
     if (!roleOk) return
     const body = await readJsonBody(req)
     const data = parsePropertyBody(body)
+
+    // Admins operate the platform and are exempt from subscription gates.
+    // Owners need an active, unexpired subscription and must stay within the
+    // plan's maxProperties limit (-1 means unlimited).
+    if (req.auth.role !== 'admin') {
+      const subscription = await prisma.subscription.findFirst({
+        where: {
+          userId: req.auth.userId,
+          status: 'active',
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+      if (!subscription) {
+        throw new HttpError(
+          ERROR_CODES.PAYMENT_REQUIRED,
+          'Active subscription required to publish a property',
+          402
+        )
+      }
+
+      const plan = await prisma.subscriptionPlan.findUnique({ where: { id: subscription.planId } })
+      if (!plan) {
+        throw new HttpError(
+          ERROR_CODES.PAYMENT_REQUIRED,
+          'Subscription plan not found',
+          402
+        )
+      }
+
+      if (plan.maxProperties !== -1) {
+        const propertyCount = await prisma.property.count({ where: { ownerId: req.auth.userId } })
+        if (propertyCount >= plan.maxProperties) {
+          throw new HttpError(
+            ERROR_CODES.PAYMENT_REQUIRED,
+            `Property limit reached for your plan: ${plan.maxProperties}`,
+            402
+          )
+        }
+      }
+    }
+
     const settings = await prisma.platformSettings.findUnique({ where: { id: 'general' } })
     const moderate = settings?.moderateProperties ?? false
     if (moderate) {
