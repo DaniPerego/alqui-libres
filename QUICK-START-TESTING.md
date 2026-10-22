@@ -2,113 +2,69 @@
 
 ## ⚡ Empezar Ahora
 
-1. **Abrir en el navegador:** http://localhost:5173
-2. **Abrir la consola:** F12 o Ctrl+Shift+I
-3. **Escribir en consola:** `alquiTest.help()`
+1. **Levantar el servidor de desarrollo:** `npm run dev`
+2. **Abrir en el navegador:** http://localhost:5173
+3. **Abrir la consola:** F12 o Ctrl+Shift+I para ver errores
 
 ## 🎯 Tests Prioritarios (15 minutos)
 
 ### 1️⃣ Filtros Hiper-Locales (Feature Diferenciador) - 3 min
 
-**En consola:** `alquiTest.tests.filterGrill()`
+- Ir a `/buscar`
+- Click "Filtros Avanzados"
+- Seleccionar "Carbón" en Tipo de Parrilla
+- Verificar: 2 propiedades mostradas
 
-```
-✓ Ir a /buscar
-✓ Click "Filtros Avanzados" 
-✓ Seleccionar "Carbón" en Tipo de Parrilla
-✓ Verificar: 2 propiedades mostradas
-```
-
-**¿Por qué es importante?** 
+**¿Por qué es importante?**
 Este es el diferenciador clave vs Airbnb/Booking. Ninguna otra plataforma tiene filtros tan específicos para alquileres locales.
 
 ---
 
 ### 2️⃣ Calculadora de Ahorro (Feature Competitivo) - 4 min
 
-**En consola:** `alquiTest.tests.calculator()`
+- Login con `huesped@alquilibres.com` / `guest123`
+- Ir a `/panel/suscripcion`
+- Cambiar a 10 reservas/mes × $100/noche
+- Verificar cálculos:
+  - Airbnb (15%): ~$150/mes
+  - Booking (18%): ~$180/mes
+  - Ahorro anual destacado
 
-```
-✓ Login (demo@alquilubres.com / demo123)
-✓ Ir a /panel/suscripcion
-✓ Cambiar a 10 reservas/mes × $100/noche
-✓ Verificar cálculos:
-  • Airbnb (15%): ~$150/mes
-  • Booking (18%): ~$180/mes
-  • Ahorro anual destacado
-```
-
-**¿Por qué es importante?** 
+**¿Por qué es importante?**
 Muestra el ROI claro de la suscripción vs comisiones. Es el argumento de venta principal.
 
 ---
 
 ### 3️⃣ Login y Dashboard - 3 min
 
-**En consola:** `alquiTest.tests.loginDemo()`
-
-```
-✓ Ir a /login
-✓ Email: demo@alquilubres.com
-✓ Password: demo123
-✓ Click "Iniciar Sesión"
-✓ Verificar redirección a /panel
-✓ Verificar estadísticas: 3 propiedades, 2 mensajes
-```
+- Ir a `/login`
+- Email: `huesped@alquilibres.com`
+- Password: `guest123`
+- Click "Iniciar Sesión"
+- Verificar redirección a `/panel`
+- Verificar estadísticas: 3 propiedades, 2 mensajes
 
 ---
 
 ### 4️⃣ CRUD de Propiedades - 3 min
 
-**En consola:** `alquiTest.tests.crud()`
-
-```
-✓ Estando logueado, ir a /panel/propiedades
-✓ Click "Agregar Nueva Propiedad"
-✓ Verificar sección "CARACTERÍSTICAS LOCALES" destacada
-✓ Completar formulario
-✓ Verificar validaciones
-```
+- Estando logueado, ir a `/panel/propiedades`
+- Click "Agregar Nueva Propiedad"
+- Verificar sección "CARACTERÍSTICAS LOCALES" destacada
+- Completar formulario
+- Verificar validaciones
 
 ---
 
 ### 5️⃣ Responsive Mobile - 2 min
 
-**En consola:** `alquiTest.tests.responsive()`
-
-```
-✓ F12 → Toggle device toolbar (Ctrl+Shift+M)
-✓ Seleccionar iPhone 12 Pro (390px)
-✓ Verificar:
-  • Navegación hamburger
-  • Cards apilan en 1 columna
-  • Sin scroll horizontal
-  • Botones fáciles de clickear
-```
-
----
-
-## 🛠️ Comandos Útiles en Consola
-
-```javascript
-// Ver todas las rutas
-alquiTest.routes()
-
-// Ver features clave
-alquiTest.features()
-
-// Navegación rápida
-alquiTest.nav.search()      // Ir a búsqueda
-alquiTest.nav.login()        // Ir a login
-alquiTest.nav.dashboard()    // Ir a dashboard
-alquiTest.nav.subscription() // Ir a suscripción
-
-// Ver datos disponibles
-alquiTest.data
-
-// Información general
-alquiTest.info()
-```
+- F12 → Toggle device toolbar (Ctrl+Shift+M)
+- Seleccionar iPhone 12 Pro (390px)
+- Verificar:
+  - Navegación hamburger
+  - Cards apilan en 1 columna
+  - Sin scroll horizontal
+  - Botones fáciles de clickear
 
 ---
 
@@ -143,7 +99,7 @@ Marca las funcionalidades que probaste:
 ### Banner Demo (Top)
 ```
 🧪 Modo de Prueba: Usando datos de ejemplo
-   Login: demo@alquilubres.com / demo123
+   Login: huesped@alquilibres.com / guest123
 ```
 
 ### Hero Homepage
@@ -165,10 +121,10 @@ Sin Comisiones
 💰 Calculadora de Ahorro
    Reservas mensuales: [10]
    Precio promedio: [$100]
-   
+
    VS Airbnb (15%): $150/mes
    VS Booking (18%): $180/mes
-   
+
    AHORRO ANUAL: $XXX ← GRANDE Y DESTACADO
 ```
 
@@ -185,8 +141,8 @@ Sin Comisiones
 
 ## 📊 Criterios de Éxito
 
-✅ **PASS:** Todas las funcionalidades trabajan como se espera  
-⚠️ **WARN:** Funciona pero tiene issues menores de UX  
+✅ **PASS:** Todas las funcionalidades trabajan como se espera
+⚠️ **WARN:** Funciona pero tiene issues menores de UX
 ❌ **FAIL:** No funciona o tiene bugs críticos
 
 ---
@@ -204,15 +160,15 @@ Validar que:
 ## ⏭️ Después del Testing
 
 Si todo funciona bien:
-1. Configurar Firebase real
-2. Implementar subida de imágenes
+1. Revisar variables de entorno en producción
+2. Verificar token de Vercel Blob para subida de imágenes
 3. Integrar pasarela de pago
 4. Deploy a producción
 
 ---
 
-**Tiempo estimado total:** 15-20 minutos  
-**Prioridad:** Testear diferenciadores competitivos primero  
+**Tiempo estimado total:** 15-20 minutos
+**Prioridad:** Testear diferenciadores competitivos primero
 **Documentación completa:** Ver `TESTING.md` y `TEST-PLAN.md`
 
 ---
