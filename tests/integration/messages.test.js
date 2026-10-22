@@ -38,7 +38,9 @@ import messagesHandler from '../../api-handlers/messages.js'
 import messageIdHandler from '../../api-handlers/messages/[id].js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 let authHeaders = {}

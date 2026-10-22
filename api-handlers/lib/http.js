@@ -42,6 +42,10 @@ export class HttpError extends Error {
 // Normalizes any thrown error into the API error contract. 5xx responses
 // never leak internal details; the original error is logged instead.
 export function sendError(res, err) {
+  if (res.headersSent) {
+    console.error('[api] headers already sent, skipping double error write:', err)
+    return
+  }
   if (err instanceof HttpError) {
     const message = err.status >= 500 ? 'Internal server error' : err.message
     if (err.status >= 500) {

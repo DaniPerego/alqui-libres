@@ -40,7 +40,9 @@ import planIdHandler from '../../api-handlers/plans/[id].js'
 import settingsHandler from '../../api-handlers/platform-settings.js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 let authHeaders = {}

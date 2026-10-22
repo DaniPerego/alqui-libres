@@ -57,7 +57,9 @@ vi.mock('mercadopago', () => ({
 import preferenceHandler from '../../api-handlers/mercadopago/preference.js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 let authHeaders = {}

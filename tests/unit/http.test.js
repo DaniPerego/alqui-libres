@@ -36,6 +36,7 @@ describe('HttpError + sendError (error contract)', () => {
 
   it('serializa { error: { code, message } }', () => {
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+    res.json.mockReturnValue(res)
     sendError(res, new HttpError('NOT_FOUND', 'No existe'))
     expect(res.status).toHaveBeenCalledWith(404)
     expect(res.json).toHaveBeenCalledWith({ error: { code: 'NOT_FOUND', message: 'No existe' } })
@@ -43,6 +44,7 @@ describe('HttpError + sendError (error contract)', () => {
 
   it('errores desconocidos -> 500 INTERNAL sin filtrar internals', () => {
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+    res.json.mockReturnValue(res)
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     sendError(res, new Error('stack trace secreto'))
     expect(res.status).toHaveBeenCalledWith(500)
@@ -52,6 +54,7 @@ describe('HttpError + sendError (error contract)', () => {
 
   it('HttpError 5xx tampoco filtra internals', () => {
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+    res.json.mockReturnValue(res)
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     sendError(res, new HttpError('INTERNAL', 'detalle interno'))
     expect(res.json).toHaveBeenCalledWith({ error: { code: 'INTERNAL', message: 'Internal server error' } })
@@ -74,6 +77,7 @@ describe('HttpError + sendError (error contract)', () => {
   it('SERVICE_UNAVAILABLE -> 503', () => {
     expect(new HttpError('SERVICE_UNAVAILABLE', 'x').status).toBe(503)
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+    res.json.mockReturnValue(res)
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     sendError(res, new HttpError('SERVICE_UNAVAILABLE', 'detalle'))
     expect(res.status).toHaveBeenCalledWith(503)

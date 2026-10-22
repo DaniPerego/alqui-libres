@@ -23,7 +23,9 @@ vi.mock('@prisma/client', () => ({
 import uploadHandler from '../../api-handlers/upload.js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 function authHeaders(role = 'owner') {

@@ -23,7 +23,9 @@ vi.mock('@prisma/client', () => ({
 import { requireAuth, requireRole, extractBearer } from '../../api-handlers/lib/auth.js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 beforeEach(() => {
@@ -93,6 +95,14 @@ describe('requireAuth (AUTH-01, AUTH-02)', () => {
     })
     expect(res.status).not.toHaveBeenCalled()
   })
+
+  it('returns falsy after sending 401 with a Vercel-shaped res', async () => {
+    const res = mockRes()
+    const ok = await requireAuth({ headers: {} }, res)
+    expect(ok).toBeFalsy()
+    expect(res.status).toHaveBeenCalledWith(401)
+    expect(res.json).toHaveBeenCalledWith({ error: { code: 'UNAUTHORIZED', message: expect.any(String) } })
+  })
 })
 
 describe('requireRole (AUTH-02)', () => {
@@ -124,6 +134,22 @@ describe('requireRole (AUTH-02)', () => {
     const res = mockRes()
     const next = vi.fn()
     requireRole('admin')({}, res, next)
+    expect(res.status).toHaveBeenCalledWith(401)
+    expect(res.json).toHaveBeenCalledWith({ error: { code: 'UNAUTHORIZED', message: expect.any(String) } })
+  })
+
+  it('returns falsy after sending 403 with a Vercel-shaped res (wrong role)', () => {
+    const res = mockRes()
+    const ok = requireRole('admin')({ auth: { role: 'guest' } }, res)
+    expect(ok).toBeFalsy()
+    expect(res.status).toHaveBeenCalledWith(403)
+    expect(res.json).toHaveBeenCalledWith({ error: { code: 'FORBIDDEN', message: expect.any(String) } })
+  })
+
+  it('returns falsy after sending 401 with a Vercel-shaped res (missing req.auth)', () => {
+    const res = mockRes()
+    const ok = requireRole('admin')({}, res)
+    expect(ok).toBeFalsy()
     expect(res.status).toHaveBeenCalledWith(401)
     expect(res.json).toHaveBeenCalledWith({ error: { code: 'UNAUTHORIZED', message: expect.any(String) } })
   })

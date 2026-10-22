@@ -49,7 +49,9 @@ const state = vi.hoisted(() => ({ currentUser: null, targets: {}, emails: {} }))
 let authHeaders = {}
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 // Fake bcrypt hash present on every mocked user row so any response that
@@ -95,6 +97,14 @@ describe('POST /api/users (admin create, native bcrypt)', () => {
     authAs()
     const res = mockRes()
     await usersHandler({ query: {}, method: 'POST', headers: authHeaders, body: { email: 'x@test.com', role: 'guest' } }, res)
+    expect(res.status).toHaveBeenCalledWith(403)
+    expect(mocks.delegates.user.create).not.toHaveBeenCalled()
+  })
+
+  it('owner with Vercel-shaped res cannot bypass the admin guard (no user.create)', async () => {
+    authAs()
+    const res = mockRes()
+    await usersHandler({ query: {}, method: 'POST', headers: authHeaders, body: { email: 'bypass@test.com', role: 'guest' } }, res)
     expect(res.status).toHaveBeenCalledWith(403)
     expect(mocks.delegates.user.create).not.toHaveBeenCalled()
   })

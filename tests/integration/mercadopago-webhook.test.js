@@ -58,7 +58,9 @@ vi.mock('mercadopago', () => ({
 import webhookHandler from '../../api-handlers/mercadopago/webhook.js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 const SUB = {

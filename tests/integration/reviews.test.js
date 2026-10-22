@@ -36,7 +36,9 @@ vi.mock('@prisma/client', async () => {
 import reviewsHandler from '../../api-handlers/reviews.js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 let authHeaders = {}

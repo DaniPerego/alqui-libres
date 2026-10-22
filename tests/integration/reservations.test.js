@@ -40,7 +40,9 @@ import reservationDetailHandler from '../../api-handlers/reservations/[id].js'
 import reservationStatusHandler from '../../api-handlers/reservations/[id]/status.js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 let authHeaders = {}

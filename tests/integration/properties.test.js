@@ -42,7 +42,9 @@ import propertyDetailHandler from '../../api-handlers/properties/[id].js'
 import propertyMineHandler from '../../api-handlers/properties/mine.js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 let authHeaders = {}

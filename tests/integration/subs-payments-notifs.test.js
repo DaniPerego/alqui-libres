@@ -50,7 +50,9 @@ import notificationsHandler from '../../api-handlers/notifications.js'
 import notificationIdHandler from '../../api-handlers/notifications/[id].js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 let authHeaders = {}

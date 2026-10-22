@@ -44,7 +44,9 @@ import authHandler from '../../api-handlers/auth.js'
 const state = vi.hoisted(() => ({ caller: null, targets: {} }))
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 function route() {

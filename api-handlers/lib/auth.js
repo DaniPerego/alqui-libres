@@ -53,12 +53,18 @@ export function requireRole(...roles) {
   return (req, res, next) => {
     if (!req?.auth) {
       const err = new HttpError('UNAUTHORIZED', 'Authentication required', 401)
-      if (res?.status) return sendError(res, err)
+      if (res?.status) {
+        sendError(res, err)
+        return false
+      }
       throw err
     }
     if (!roles.includes(req.auth.role)) {
       const err = new HttpError('FORBIDDEN', `Requires role: ${roles.join(' or ')}`, 403)
-      if (res?.status) return sendError(res, err)
+      if (res?.status) {
+        sendError(res, err)
+        return false
+      }
       throw err
     }
     return next ? next() : true

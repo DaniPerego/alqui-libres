@@ -20,7 +20,9 @@ vi.mock('@prisma/client', () => ({
 import deleteHandler from '../../../api-handlers/upload/delete.js'
 
 function mockRes() {
-  return { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
+  res.json.mockReturnValue(res)
+  return res
 }
 
 function mockReq({ method = 'POST', body, headers = {} } = {}) {
