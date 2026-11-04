@@ -5,13 +5,14 @@
         <div class="footer-section">
           <h3 class="footer-title">
             <span class="pdl-logo pdl-logo-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-              <polygon points="16,3.8 28.8,10.9 3.2,10.9" fill="#2563eb" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
-              <rect x="6.2" y="11.8" width="9.3" height="9.3" rx="2" fill="#2563eb" opacity="1"/>
-              <rect x="16.5" y="11.8" width="9.3" height="9.3" rx="2" fill="#2563eb" opacity="0.7"/>
-              <rect x="6.2" y="22.1" width="9.3" height="9.3" rx="2" fill="#2563eb" opacity="0.5"/>
-              <rect x="16.5" y="22.1" width="9.3" height="9.3" rx="2" fill="#2563eb" opacity="0.3"/>
-              <path d="M13.1 31.4 V27.5 Q13.1 24.3 16 24.3 Q18.9 24.3 18.9 27.5 V31.4 Z" fill="#fff"/>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden="true">
+              <rect x="271" y="283" width="226" height="224" rx="21" fill="#fff" opacity="0.5"/>
+              <rect x="528" y="283" width="224" height="224" rx="21" fill="#fff" opacity="0.7"/>
+              <rect x="271" y="545" width="226" height="223" rx="21" fill="#fff" opacity="0.5"/>
+              <rect x="528" y="545" width="224" height="223" rx="21" fill="#fff" opacity="0.5"/>
+              <g fill="#fff" stroke="#fff" stroke-width="40" stroke-linejoin="round" opacity="0.85">
+                <polygon points="511.4,223.1 194.2,585 828.6,585"/>
+              </g>
             </svg>
             </span>
             AlquiLibres
