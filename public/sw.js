@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alquilibres-v4'
+const CACHE_NAME = 'alquilibres-v5'
 
 // Precache the app shell so offline navigations still have a fallback page.
 const PRECACHE_ASSETS = [

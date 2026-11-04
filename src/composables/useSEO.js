@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 // Must match the production deployment domain.
 export const SITE_URL = 'https://alqui-libres.vercel.app'
 
-const DEFAULT_OG_IMAGE = `${SITE_URL}/icon-192.png`
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`
 
 /**
  * Composable to update meta tags dynamically based on the current route.
