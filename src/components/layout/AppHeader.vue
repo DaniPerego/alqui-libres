@@ -238,12 +238,12 @@ const handleLogout = async () => {
 }
 
 .logo-text {
-  display: none;
+  font-size: 1.25rem;
 }
 
 @media (min-width: 640px) {
   .logo-text {
-    display: inline;
+    font-size: 1.5rem;
   }
 }
 
