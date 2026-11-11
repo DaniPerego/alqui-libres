@@ -35,6 +35,8 @@ import propertiesHandler from '../api-handlers/properties.js'
 import propertiesMineHandler from '../api-handlers/properties/mine.js'
 import propertiesIdHandler from '../api-handlers/properties/[id].js'
 import propertiesIdAvailabilityHandler from '../api-handlers/properties/[id]/availability.js'
+import propertiesIdCalendarHandler from '../api-handlers/properties/[id]/calendar.js'
+import propertiesIdIcalHandler from '../api-handlers/properties/[id]/ical.js'
 import reservationsHandler from '../api-handlers/reservations.js'
 import reservationsIdHandler from '../api-handlers/reservations/[id].js'
 import reservationsIdStatusHandler from '../api-handlers/reservations/[id]/status.js'
@@ -84,6 +86,8 @@ const STATIC_ROUTES = [
 const DYNAMIC_ROUTES = [
   { segments: ['auth', ':action'], handler: authHandler },
   { segments: ['properties', ':id', 'availability'], handler: propertiesIdAvailabilityHandler },
+  { segments: ['properties', ':id', 'calendar'], handler: propertiesIdCalendarHandler },
+  { segments: ['properties', ':id', 'ical'], handler: propertiesIdIcalHandler },
   { segments: ['reservations', ':id', 'status'], handler: reservationsIdStatusHandler },
   { segments: ['messages', ':id'], handler: messagesIdHandler },
   { segments: ['notifications', ':id'], handler: notificationsIdHandler },
