@@ -73,7 +73,7 @@
         <div class="footer-bottom-content">
           <p>&copy; 2026 AlquiLibres. {{ t('footer.rights') }}</p>
           <p class="footer-brand">
-            <a href="https://desarrolloweb-pdl.vercel.app" target="_blank" rel="noopener noreferrer">
+            <a href="https://desarrolloweb-pdl.dev" target="_blank" rel="noopener noreferrer">
             <span class="pdl-logo pdl-logo-sm">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
                 <rect x="4" y="4" width="11" height="11" rx="2" fill="currentColor" opacity="1"/>
